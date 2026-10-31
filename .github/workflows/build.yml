@@ -1,43 +1,33 @@
-
 name: Build and type-check
-
 on:
   push:
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
-
-      - name: Validate source
-        run: npm run syntax
-
-      - name: Validate contracts
-        run: npm run contracts
-
-      - name: Type-check
-        run: npm run check
-
-      - name: Build application
-        run: npm run build
+      - run: npm install --no-audit --no-fund
+      - name: Verify publishable Supabase build configuration
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
-
-      - name: Upload website files
-        uses: actions/upload-artifact@v4
+        run: |
+          test -n "$VITE_SUPABASE_URL" || { echo "Missing VITE_SUPABASE_URL repository variable"; exit 1; }
+          test -n "$VITE_SUPABASE_PUBLISHABLE_KEY" || { echo "Missing VITE_SUPABASE_PUBLISHABLE_KEY repository variable"; exit 1; }
+      - run: npm run syntax
+      - run: npm run contracts
+      - run: npm run check
+      - run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      - uses: actions/upload-artifact@v4
         with:
           name: nexus-ttrpg-dist
           path: dist/
