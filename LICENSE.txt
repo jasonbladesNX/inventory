@@ -1,0 +1,1 @@
+The bundled QRCode implementation by Kazuhiko Arase is licensed under the MIT license (see source file headers). Original code: http://www.d-project.com/ . Adapted from the vendored copy in npm qrcode-terminal.
