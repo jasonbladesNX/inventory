@@ -6,7 +6,7 @@ import './character-screen.css';
 export type InventoryTab = 'character' | 'inventory' | 'shop' | 'craft';
 type Slot = {id:string; label:string; code?:string};
 type Effect = {attribute_code:string; total_bonus:number|string};
-type Equipped = {id:string; slot:string; name:string};
+type Equipped = {id:string; itemId:string; slot:string; name:string};
 type Money = {currency_id:string; code:string; name:string; available:number|string; precision_digits:number};
 type InventoryItem = {item_id:string; display_name:string; quantity:number|string; eligible:boolean};
 type Props = {
@@ -52,7 +52,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});
       try{
         const [assignments,currency,compatibility]=await Promise.all([
-          db.rpc('list_character_equipped_items',{p_character:character}),
+          db.rpc('list_character_equipped_instances',{p_character:character}),
           db.rpc('list_my_trade_currency',{p_character:character}),
           db.rpc('list_character_valid_equipment_slots',{p_character:character}),
         ]);
@@ -63,6 +63,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         const slotLookup=new Map(slots.map(s=>[s.id,s.label]));
         setEquipped((assignments.data||[]).map(row=>({
           id:row.assignment_id,
+          itemId:row.item_id,
           slot:slotLookup.get(row.slot_id)||'Equipment',
           name:row.item_name,
         })));
@@ -79,6 +80,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     return()=>{cancelled=true};
   },[db,campaign,character,inventoryVersion,slots]);
 
+  const equippedByItem=new Map(equipped.map(row=>[row.itemId,row]));
   const walletOrder=(code:string)=>({PP:0,GP:1,EP:2,SP:3,CP:4}[code.toUpperCase()]??5);
   return <div className="multiverse">
     <div className="mv-hero">
@@ -111,12 +113,13 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       <section className="mv-panel" aria-labelledby="mv-inventory-title">
         <h3 id="mv-inventory-title"><Backpack size={20}/> Backpack <span className="mv-item-count">{items.length} {items.length===1?'item':'items'}</span></h3>
         {items.length===0?<p className="mv-empty">Your backpack is empty. Add an item using the campaign tools above.</p>:
-          <div className="mv-inventory-items">{items.map(item=><article className="mv-inventory-item" key={item.item_id}>
+          <div className="mv-inventory-items">{items.map(item=><article className={'mv-inventory-item'+(equippedByItem.has(item.item_id)?' is-equipped':'')} key={item.item_id}>
             <div className="mv-item-icon" aria-hidden="true"><Sword size={25}/></div>
             <div className="mv-item-info">
               <strong>{item.display_name}</strong>
+              {equippedByItem.has(item.item_id)&&<span className="mv-equipped-indicator"><Shield size={13} aria-hidden="true"/> Equipped · {equippedByItem.get(item.item_id)?.slot}</span>}
               <span>Quantity: {numberText(item.quantity)}</span>
-              {!item.eligible&&<small>Equipped or stored · unavailable for trade</small>}
+              {!item.eligible&&<small>{equippedByItem.has(item.item_id)?'Unavailable for trade while equipped':'Stored · unavailable for trade'}</small>}
             </div>
             {item.eligible&&!loading&&(validSlots[item.item_id]||[]).length>0&&<select className="mv-equip-select" aria-label={`Equip ${item.display_name}`} value="" disabled={busy} onChange={event=>{const slotId=event.target.value;if(slotId)onEquip(item.item_id,slotId)}}>
               <option value="">Equip…</option>
