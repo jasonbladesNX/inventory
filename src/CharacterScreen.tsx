@@ -90,12 +90,18 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     setItemDetails(null);setDetailsError('');
     if(!expandedItem){setDetailsLoading(false);return;}
     setDetailsLoading(true);
-    void db.rpc('get_character_item_details',{p_character:character,p_item:expandedItem}).then(({data,error})=>{
-      if(cancelled)return;
-      if(error)throw error;
-      setItemDetails(data as ItemDetails);
-    }).catch(e=>{if(!cancelled)setDetailsError(e instanceof Error?e.message:String(e))})
-      .finally(()=>{if(!cancelled)setDetailsLoading(false)});
+    async function loadDetails(itemId:string){
+      try{
+        const {data,error}=await db.rpc('get_character_item_details',{p_character:character,p_item:itemId});
+        if(error)throw error;
+        if(!cancelled)setItemDetails(data as ItemDetails);
+      }catch(e){
+        if(!cancelled)setDetailsError(e instanceof Error?e.message:String(e));
+      }finally{
+        if(!cancelled)setDetailsLoading(false);
+      }
+    }
+    void loadDetails(expandedItem);
     return()=>{cancelled=true};
   },[db,character,inventoryVersion,expandedItem]);
 
