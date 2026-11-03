@@ -9,6 +9,7 @@ type Effect = {attribute_code:string; total_bonus:number|string};
 type Equipped = {id:string; itemId:string; slot:string; name:string};
 type Money = {currency_id:string; code:string; name:string; available:number|string; precision_digits:number};
 type InventoryItem = {item_id:string; display_name:string; quantity:number|string; eligible:boolean};
+type ItemDetails = {item_id:string; category:string; description:string; condition:string; identified:boolean; properties:Record<string,unknown>; effects:{attribute:string;operation:string;value:unknown}[]};
 type Props = {
   db:SupabaseClient;
   campaign:string;
@@ -46,6 +47,10 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [validSlots,setValidSlots]=useState<Record<string,string[]>>({});
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
+  const [expandedItem,setExpandedItem]=useState<string|null>(null);
+  const [itemDetails,setItemDetails]=useState<ItemDetails|null>(null);
+  const [detailsError,setDetailsError]=useState('');
+  const [detailsLoading,setDetailsLoading]=useState(false);
   useEffect(()=>{
     let cancelled=false;
     async function load(){
@@ -79,6 +84,20 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     void load();
     return()=>{cancelled=true};
   },[db,campaign,character,inventoryVersion,slots]);
+
+  useEffect(()=>{
+    let cancelled=false;
+    setItemDetails(null);setDetailsError('');
+    if(!expandedItem){setDetailsLoading(false);return;}
+    setDetailsLoading(true);
+    void db.rpc('get_character_item_details',{p_character:character,p_item:expandedItem}).then(({data,error})=>{
+      if(cancelled)return;
+      if(error)throw error;
+      setItemDetails(data as ItemDetails);
+    }).catch(e=>{if(!cancelled)setDetailsError(e instanceof Error?e.message:String(e))})
+      .finally(()=>{if(!cancelled)setDetailsLoading(false)});
+    return()=>{cancelled=true};
+  },[db,character,inventoryVersion,expandedItem]);
 
   const equippedByItem=new Map(equipped.map(row=>[row.itemId,row]));
   const walletOrder=(code:string)=>({PP:0,GP:1,EP:2,SP:3,CP:4}[code.toUpperCase()]??5);
@@ -120,12 +139,23 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
               {equippedByItem.has(item.item_id)&&<span className="mv-equipped-indicator"><Shield size={13} aria-hidden="true"/> Equipped · {equippedByItem.get(item.item_id)?.slot}</span>}
               <span>Quantity: {numberText(item.quantity)}</span>
               {!item.eligible&&<small>{equippedByItem.has(item.item_id)?'Unavailable for trade while equipped':'Stored · unavailable for trade'}</small>}
+              <button type="button" className="mv-details-toggle" aria-expanded={expandedItem===item.item_id} aria-controls={'mv-details-'+item.item_id} onClick={()=>setExpandedItem(current=>current===item.item_id?null:item.item_id)}>{expandedItem===item.item_id?'Hide details':'View details'}</button>
             </div>
             {item.eligible&&!loading&&(validSlots[item.item_id]||[]).length>0&&<select className="mv-equip-select" aria-label={`Equip ${item.display_name}`} value="" disabled={busy} onChange={event=>{const slotId=event.target.value;if(slotId)onEquip(item.item_id,slotId)}}>
               <option value="">Equip…</option>
               {slots.filter(slot=>(validSlots[item.item_id]||[]).includes(slot.id)).map(slot=><option key={slot.id} value={slot.id}>{slot.label}</option>)}
             </select>}
             {item.eligible&&!loading&&(validSlots[item.item_id]||[]).length===0&&<small>No compatible equipment slots</small>}
+            {expandedItem===item.item_id&&<div className="mv-item-details" id={'mv-details-'+item.item_id}>
+              {detailsLoading?<p>Loading item details…</p>:detailsError?<p className="mv-error" role="alert">Unable to load item details: {detailsError}</p>:itemDetails&&itemDetails.item_id===item.item_id?<>
+                <div className="mv-detail-grid"><span>Category</span><strong>{titleCase(itemDetails.category)}</strong><span>Condition</span><strong>{itemDetails.condition?titleCase(itemDetails.condition):'Not specified'}</strong><span>Quantity</span><strong>{numberText(item.quantity)}</strong></div>
+                {!itemDetails.identified?<p>This item has not been identified. Additional information is hidden.</p>:<>
+                  <p className="mv-detail-description">{itemDetails.description||'No description available.'}</p>
+                  {Object.keys(itemDetails.properties||{}).length>0&&<div className="mv-detail-section"><h4>Properties</h4><div className="mv-detail-grid">{Object.entries(itemDetails.properties).map(([key,value])=><React.Fragment key={key}><span>{titleCase(key)}</span><strong>{typeof value==='boolean'?(value?'Yes':'No'):Array.isArray(value)?value.map(String).join(', '):typeof value==='object'?JSON.stringify(value):String(value)}</strong></React.Fragment>)}</div></div>}
+                  {itemDetails.effects.length>0&&<div className="mv-detail-section"><h4>Item effects</h4><div className="mv-detail-grid">{itemDetails.effects.map((effect,index)=><React.Fragment key={index}><span>{titleCase(effect.attribute)}</span><strong>{titleCase(effect.operation)} {typeof effect.value==='object'?JSON.stringify(effect.value):String(effect.value)}</strong></React.Fragment>)}</div></div>}
+                </>}
+              </>:<p>Details are unavailable.</p>}
+            </div>}
           </article>)}</div>}
         {slots.length===0&&<p className="mv-empty">No equipment slots have been configured for this campaign yet.</p>}
       </section>
