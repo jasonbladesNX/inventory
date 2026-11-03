@@ -33,7 +33,7 @@ const categoryIcons:Record<string,typeof Sword> = {
   weapon:Sword, shield:Shield, armor:ShieldCheck, clothing:Shirt,
   headgear:Crown, jewelry:Gem, ring:CircleDot, footwear:Footprints,
   focus:WandSparkles, tool:Wrench, wondrous:Sparkles,
-  gear:Backpack, unknown:PackageOpen,
+  gear:Backpack, container:Backpack, unknown:PackageOpen,
 };
 
 const navigation: {id:InventoryTab; label:string; Icon:typeof UserRound}[] = [
