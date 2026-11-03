@@ -257,3 +257,6 @@
 .mv-item-modal .mv-container-contents{min-height:0;flex-shrink:1;overflow-y:auto;overscroll-behavior:contain}
 .mv-item-modal .mv-modal-actions{flex-shrink:1;min-height:0}
 .mv-item-modal .mv-modal-body{flex:1 1 auto}
+
+/* Keep failed capacity moves visible within the active item popup. */
+.mv-item-modal .mv-storage-error{grid-column:1;width:100%;margin:0;padding:10px 12px;border:1px solid #bd766c;border-radius:8px;background:#4d252a;color:#ffd1c7;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
