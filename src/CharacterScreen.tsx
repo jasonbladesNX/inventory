@@ -20,7 +20,7 @@ type Props = {
   inventoryVersion:number;
   items:InventoryItem[];
   busy:boolean;
-  onEquip:(itemId:string,slotId:string,replace:boolean)=>void;
+  onEquip:(itemId:string,slotId:string)=>void;
   onUnequip:(assignmentId:string)=>void;
   tab:InventoryTab;
   onTabChange:(tab:InventoryTab)=>void;
@@ -110,10 +110,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
               <span>Quantity: {numberText(item.quantity)}</span>
               {!item.eligible&&<small>Equipped or stored · unavailable for trade</small>}
             </div>
-            {item.eligible&&slots.length>0&&<select className="mv-equip-select" aria-label={`Equip or replace gear with ${item.display_name}`} value="" disabled={busy} onChange={event=>{const chosen=event.target.value;if(chosen){const [action,slotId]=chosen.split(":");if(slotId)onEquip(item.item_id,slotId,action==="swap")}}}>
-              <option value="">Equip / Swap…</option>
-              <optgroup label="Equip in empty slot">{slots.map(slot=><option key={"equip:"+slot.id} value={"equip:"+slot.id}>Equip: {slot.label}</option>)}</optgroup>
-              <optgroup label="Replace equipped gear">{slots.map(slot=><option key={"swap:"+slot.id} value={"swap:"+slot.id}>Replace: {slot.label}</option>)}</optgroup>
+            {item.eligible&&slots.length>0&&<select className="mv-equip-select" aria-label={`Equip ${item.display_name}`} value="" disabled={busy} onChange={event=>{const slotId=event.target.value;if(slotId)onEquip(item.item_id,slotId)}}>
+              <option value="">Equip…</option>
+              {slots.map(slot=><option key={slot.id} value={slot.id}>{slot.label}</option>)}
             </select>}
           </article>)}</div>}
         {slots.length===0&&<p className="mv-empty">No equipment slots have been configured for this campaign yet.</p>}
