@@ -248,7 +248,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
             {!loading&&!equippedByItem.has(selectedItem.item_id)&&storage[selectedItem.item_id]&&!storage[selectedItem.item_id].is_container&&<>
               {storage[selectedItem.item_id].container_item_id&&
                 <button type="button" className="mv-modal-action-button" disabled={busy} onClick={()=>onMoveStorage(selectedItem.item_id,null)}>Take out</button>}
-              {storageContainers.some(container=>container.item_id!==selectedItem.item_id)&&
+              {storageContainers.some(container=>container.item_id!==selectedItem.item_id&&container.item_id!==storage[selectedItem.item_id]?.container_item_id)&&
                 <label className="mv-modal-action-field"><span>Storage</span>
                   <select className="mv-storage-select" aria-label={`Put ${selectedItem.display_name} in a container`} value="" disabled={busy}
                     onChange={event=>{if(event.target.value)onMoveStorage(selectedItem.item_id,event.target.value)}}>
