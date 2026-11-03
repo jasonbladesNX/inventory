@@ -8,6 +8,7 @@ type Slot = {id:string; label:string; code?:string};
 type Effect = {attribute_code:string; total_bonus:number|string};
 type Equipped = {id:string; slot:string; name:string};
 type Money = {currency_id:string; code:string; name:string; available:number|string; precision_digits:number};
+type InventoryItem = {item_id:string; display_name:string; quantity:number|string; eligible:boolean};
 type Props = {
   db:SupabaseClient;
   campaign:string;
@@ -17,6 +18,9 @@ type Props = {
   slots:Slot[];
   effects:Effect[];
   inventoryVersion:number;
+  items:InventoryItem[];
+  busy:boolean;
+  onEquip:(itemId:string,slotId:string)=>void;
   tab:InventoryTab;
   onTabChange:(tab:InventoryTab)=>void;
 };
@@ -35,7 +39,7 @@ function numberText(value:number|string, digits=0):string {
 }
 function titleCase(code:string):string {return code.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}
 
-export default function CharacterScreen({db,campaign,campaignName,character,characterName,slots,effects,inventoryVersion,tab,onTabChange}:Props){
+export default function CharacterScreen({db,campaign,campaignName,character,characterName,slots,effects,inventoryVersion,items,busy,onEquip,tab,onTabChange}:Props){
   const [equipped,setEquipped]=useState<Equipped[]>([]);
   const [wallet,setWallet]=useState<Money[]>([]);
   const [loading,setLoading]=useState(false);
@@ -114,7 +118,26 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       </div>
       {error&&<p className="mv-error" role="alert">Unable to load equipment or wallet: {error}</p>}
     </div>}
-    {tab==='inventory'&&<div className="mv-tab-intro"><Backpack size={21}/><div><strong>Inventory & Trading</strong><small>Manage equipment, items and authorized trade offers below.</small></div></div>}
+    {tab==='inventory'&&<div className="mv-inventory-view">
+      <section className="mv-panel" aria-labelledby="mv-inventory-title">
+        <h3 id="mv-inventory-title"><Backpack size={20}/> Backpack <span className="mv-item-count">{items.length} {items.length===1?'item':'items'}</span></h3>
+        {items.length===0?<p className="mv-empty">Your backpack is empty. Add an item using the campaign tools above.</p>:
+          <div className="mv-inventory-items">{items.map(item=><article className="mv-inventory-item" key={item.item_id}>
+            <div className="mv-item-icon" aria-hidden="true"><Sword size={25}/></div>
+            <div className="mv-item-info">
+              <strong>{item.display_name}</strong>
+              <span>Quantity: {numberText(item.quantity)}</span>
+              {!item.eligible&&<small>Equipped or stored · unavailable for trade</small>}
+            </div>
+            {item.eligible&&slots.length>0&&<select className="mv-equip-select" aria-label={`Equip ${item.display_name}`} value="" disabled={busy} onChange={event=>{const slotId=event.target.value;if(slotId)onEquip(item.item_id,slotId)}}>
+              <option value="">Equip…</option>
+              {slots.map(slot=><option key={slot.id} value={slot.id}>{slot.label}</option>)}
+            </select>}
+          </article>)}</div>}
+        {slots.length===0&&<p className="mv-empty">No equipment slots have been configured for this campaign yet.</p>}
+      </section>
+      <p className="mv-inventory-hint">Trading and connection diagnostics remain available below the inventory panel during testing.</p>
+    </div>}
     {tab==='shop'&&<section className="mv-panel mv-placeholder"><ShoppingBag size={30}/><h3>Campaign Shops</h3><p>Shop browsing and purchases are not enabled yet. Merchant transactions will be connected after security testing.</p></section>}
     {tab==='craft'&&<section className="mv-panel mv-placeholder"><FlaskConical size={30}/><h3>Crafting</h3><p>Recipes, materials and crafting actions are planned. No materials can be consumed from this preview.</p></section>}
     <nav className="mv-tabs" aria-label="Character inventory navigation">
