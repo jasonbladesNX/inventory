@@ -1,6 +1,7 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
+import {createPortal} from 'react-dom';
 import type {SupabaseClient} from '@supabase/supabase-js';
-import {Backpack, Coins, Crown, FlaskConical, Gem, PackageOpen, ScrollText, Shield, ShoppingBag, Sparkles, Sword, UserRound, Wrench} from 'lucide-react';
+import {Backpack, Coins, Crown, FlaskConical, Gem, PackageOpen, ScrollText, Shield, ShoppingBag, Sparkles, Sword, UserRound, Wrench, X} from 'lucide-react';
 import './character-screen.css';
 
 export type InventoryTab = 'character' | 'inventory' | 'shop' | 'craft';
@@ -51,6 +52,8 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [itemDetails,setItemDetails]=useState<ItemDetails|null>(null);
   const [detailsError,setDetailsError]=useState('');
   const [detailsLoading,setDetailsLoading]=useState(false);
+  const modalCloseRef=useRef<HTMLButtonElement>(null);
+  const previousFocusRef=useRef<HTMLElement|null>(null);
   useEffect(()=>{
     let cancelled=false;
     async function load(){
@@ -105,6 +108,37 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     return()=>{cancelled=true};
   },[db,character,inventoryVersion,expandedItem]);
 
+  useEffect(()=>{
+    if(!expandedItem)return;
+    modalCloseRef.current?.focus();
+    const onKeyDown=(event:KeyboardEvent)=>{
+      if(event.key==='Escape'){
+        event.preventDefault();
+        setExpandedItem(null);
+      }
+      if(event.key==='Tab'){
+        const dialog=modalCloseRef.current?.closest('[role="dialog"]');
+        const focusables=dialog?.querySelectorAll<HTMLElement>('button:not(:disabled),[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex]:not([tabindex="-1"])');
+        if(!focusables?.length)return;
+        const first=focusables[0];
+        const last=focusables[focusables.length-1];
+        if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}
+        else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}
+      }
+    };
+    document.addEventListener('keydown',onKeyDown);
+    return()=>document.removeEventListener('keydown',onKeyDown);
+  },[expandedItem]);
+
+  const closeDetails=()=>{
+    setExpandedItem(null);
+    previousFocusRef.current?.focus();
+  };
+  const openDetails=(itemId:string,event:React.MouseEvent<HTMLButtonElement>)=>{
+    previousFocusRef.current=event.currentTarget;
+    setExpandedItem(itemId);
+  };
+  const selectedItem=items.find(item=>item.item_id===expandedItem);
   const equippedByItem=new Map(equipped.map(row=>[row.itemId,row]));
   const walletOrder=(code:string)=>({PP:0,GP:1,EP:2,SP:3,CP:4}[code.toUpperCase()]??5);
   return <div className="multiverse">
@@ -139,29 +173,19 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         <h3 id="mv-inventory-title"><Backpack size={20}/> Backpack <span className="mv-item-count">{items.length} {items.length===1?'item':'items'}</span></h3>
         {items.length===0?<p className="mv-empty">Your backpack is empty. Add an item using the campaign tools above.</p>:
           <div className="mv-inventory-items">{items.map(item=><article className={'mv-inventory-item'+(equippedByItem.has(item.item_id)?' is-equipped':'')} key={item.item_id}>
-            <div className="mv-item-icon" aria-hidden="true"><Sword size={25}/></div>
+            <button type="button" className="mv-item-icon mv-item-icon-button" aria-label={`View details for ${item.display_name}`} aria-haspopup="dialog" onClick={event=>openDetails(item.item_id,event)}><Sword size={25} aria-hidden="true"/></button>
             <div className="mv-item-info">
               <strong>{item.display_name}</strong>
               {equippedByItem.has(item.item_id)&&<span className="mv-equipped-indicator"><Shield size={13} aria-hidden="true"/> Equipped · {equippedByItem.get(item.item_id)?.slot}</span>}
               <span>Quantity: {numberText(item.quantity)}</span>
               {!item.eligible&&<small>{equippedByItem.has(item.item_id)?'Unavailable for trade while equipped':'Stored · unavailable for trade'}</small>}
-              <button type="button" className="mv-details-toggle" aria-expanded={expandedItem===item.item_id} aria-controls={'mv-details-'+item.item_id} onClick={()=>setExpandedItem(current=>current===item.item_id?null:item.item_id)}>{expandedItem===item.item_id?'Hide details':'View details'}</button>
             </div>
             {item.eligible&&!loading&&(validSlots[item.item_id]||[]).length>0&&<select className="mv-equip-select" aria-label={`Equip ${item.display_name}`} value="" disabled={busy} onChange={event=>{const slotId=event.target.value;if(slotId)onEquip(item.item_id,slotId)}}>
               <option value="">Equip…</option>
               {slots.filter(slot=>(validSlots[item.item_id]||[]).includes(slot.id)).map(slot=><option key={slot.id} value={slot.id}>{slot.label}</option>)}
             </select>}
             {item.eligible&&!loading&&(validSlots[item.item_id]||[]).length===0&&<small>No compatible equipment slots</small>}
-            {expandedItem===item.item_id&&<div className="mv-item-details" id={'mv-details-'+item.item_id}>
-              {detailsLoading?<p>Loading item details…</p>:detailsError?<p className="mv-error" role="alert">Unable to load item details: {detailsError}</p>:itemDetails&&itemDetails.item_id===item.item_id?<>
-                <div className="mv-detail-grid"><span>Category</span><strong>{titleCase(itemDetails.category)}</strong><span>Condition</span><strong>{itemDetails.condition?titleCase(itemDetails.condition):'Not specified'}</strong><span>Quantity</span><strong>{numberText(item.quantity)}</strong></div>
-                {!itemDetails.identified?<p>This item has not been identified. Additional information is hidden.</p>:<>
-                  <p className="mv-detail-description">{itemDetails.description||'No description available.'}</p>
-                  {Object.keys(itemDetails.properties||{}).length>0&&<div className="mv-detail-section"><h4>Properties</h4><div className="mv-detail-grid">{Object.entries(itemDetails.properties).map(([key,value])=><React.Fragment key={key}><span>{titleCase(key)}</span><strong>{typeof value==='boolean'?(value?'Yes':'No'):Array.isArray(value)?value.map(String).join(', '):typeof value==='object'?JSON.stringify(value):String(value)}</strong></React.Fragment>)}</div></div>}
-                  {itemDetails.effects.length>0&&<div className="mv-detail-section"><h4>Item effects</h4><div className="mv-detail-grid">{itemDetails.effects.map((effect,index)=><React.Fragment key={index}><span>{titleCase(effect.attribute)}</span><strong>{titleCase(effect.operation)} {typeof effect.value==='object'?JSON.stringify(effect.value):String(effect.value)}</strong></React.Fragment>)}</div></div>}
-                </>}
-              </>:<p>Details are unavailable.</p>}
-            </div>}
+
           </article>)}</div>}
         {slots.length===0&&<p className="mv-empty">No equipment slots have been configured for this campaign yet.</p>}
       </section>
@@ -169,6 +193,27 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     </div>}
     {tab==='shop'&&<section className="mv-panel mv-placeholder"><ShoppingBag size={30}/><h3>Campaign Shops</h3><p>Shop browsing and purchases are not enabled yet. Merchant transactions will be connected after security testing.</p></section>}
     {tab==='craft'&&<section className="mv-panel mv-placeholder"><FlaskConical size={30}/><h3>Crafting</h3><p>Recipes, materials and crafting actions are planned. No materials can be consumed from this preview.</p></section>}
+    {tab==='inventory'&&expandedItem&&selectedItem&&createPortal(
+      <div className="mv-modal-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)closeDetails()}}>
+        <section role="dialog" aria-modal="true" aria-labelledby="mv-modal-title" aria-describedby="mv-modal-description" className="mv-item-modal">
+          <div className="mv-modal-header">
+            <div className="mv-modal-heading"><Sword size={24} aria-hidden="true"/><div><span className="mv-modal-eyebrow">Item details</span><h3 id="mv-modal-title">{selectedItem.display_name}</h3></div></div>
+            <button ref={modalCloseRef} type="button" className="mv-modal-close" aria-label="Close item details" onClick={closeDetails}><X size={22}/></button>
+          </div>
+          <div className="mv-modal-body" id="mv-modal-description">
+            {equippedByItem.has(selectedItem.item_id)&&<span className="mv-equipped-indicator"><Shield size={13} aria-hidden="true"/> Equipped · {equippedByItem.get(selectedItem.item_id)?.slot}</span>}
+            {detailsLoading?<p>Loading item details…</p>:detailsError?<p className="mv-error" role="alert">Unable to load item details: {detailsError}</p>:itemDetails&&itemDetails.item_id===selectedItem.item_id?<>
+              <div className="mv-detail-grid"><span>Category</span><strong>{titleCase(itemDetails.category)}</strong><span>Condition</span><strong>{itemDetails.condition?titleCase(itemDetails.condition):'Not specified'}</strong><span>Quantity</span><strong>{numberText(selectedItem.quantity)}</strong></div>
+              {!itemDetails.identified?<p>This item has not been identified. Additional information is hidden.</p>:<>
+                <p className="mv-detail-description">{itemDetails.description||'No description available.'}</p>
+                {Object.keys(itemDetails.properties||{}).length>0&&<div className="mv-detail-section"><h4>Properties</h4><div className="mv-detail-grid">{Object.entries(itemDetails.properties).map(([key,value])=><React.Fragment key={key}><span>{titleCase(key)}</span><strong>{typeof value==='boolean'?(value?'Yes':'No'):Array.isArray(value)?value.map(String).join(', '):typeof value==='object'?JSON.stringify(value):String(value)}</strong></React.Fragment>)}</div></div>}
+                {itemDetails.effects.length>0&&<div className="mv-detail-section"><h4>Item effects</h4><div className="mv-detail-grid">{itemDetails.effects.map((effect,index)=><React.Fragment key={index}><span>{titleCase(effect.attribute)}</span><strong>{titleCase(effect.operation)} {typeof effect.value==='object'?JSON.stringify(effect.value):String(effect.value)}</strong></React.Fragment>)}</div></div>}
+              </>}
+            </>:<p>Details are unavailable.</p>}
+          </div>
+          <div className="mv-modal-footer"><button type="button" className="mv-modal-done" onClick={closeDetails}>Close</button></div>
+        </section>
+      </div>,document.body)}
     <nav className="mv-tabs" aria-label="Character inventory navigation">
       {navigation.map(({id,label,Icon})=><button key={id} type="button" onClick={()=>onTabChange(id)} aria-current={tab===id?'page':undefined} className={'mv-tab '+(tab===id?'is-active':'')}><Icon size={21}/><span>{label}</span></button>)}
     </nav>
