@@ -43,19 +43,22 @@ function titleCase(code:string):string {return code.replace(/_/g,' ').replace(/\
 export default function CharacterScreen({db,campaign,campaignName,character,characterName,slots,effects,inventoryVersion,items,busy,onEquip,onUnequip,tab,onTabChange}:Props){
   const [equipped,setEquipped]=useState<Equipped[]>([]);
   const [wallet,setWallet]=useState<Money[]>([]);
+  const [validSlots,setValidSlots]=useState<Record<string,string[]>>({});
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
   useEffect(()=>{
     let cancelled=false;
     async function load(){
-      setLoading(true);setError('');setEquipped([]);setWallet([]);
+      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});
       try{
-        const [assignments,currency]=await Promise.all([
+        const [assignments,currency,compatibility]=await Promise.all([
           db.rpc('list_character_equipped_items',{p_character:character}),
           db.rpc('list_my_trade_currency',{p_character:character}),
+          db.rpc('list_character_valid_equipment_slots',{p_character:character}),
         ]);
         if(assignments.error)throw assignments.error;
         if(currency.error)throw currency.error;
+        if(compatibility.error)throw compatibility.error;
         if(cancelled)return;
         const slotLookup=new Map(slots.map(s=>[s.id,s.label]));
         setEquipped((assignments.data||[]).map(row=>({
@@ -64,6 +67,11 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           name:row.item_name,
         })));
         setWallet((currency.data||[]) as Money[]);
+        const allowed:Record<string,string[]>={};
+        for(const row of compatibility.data||[]){
+          (allowed[row.item_id]??=[]).push(row.slot_id);
+        }
+        setValidSlots(allowed);
       }catch(e){if(!cancelled)setError(e instanceof Error?e.message:String(e))}
       finally{if(!cancelled)setLoading(false)}
     }
@@ -110,10 +118,11 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
               <span>Quantity: {numberText(item.quantity)}</span>
               {!item.eligible&&<small>Equipped or stored · unavailable for trade</small>}
             </div>
-            {item.eligible&&slots.length>0&&<select className="mv-equip-select" aria-label={`Equip ${item.display_name}`} value="" disabled={busy} onChange={event=>{const slotId=event.target.value;if(slotId)onEquip(item.item_id,slotId)}}>
+            {item.eligible&&!loading&&(validSlots[item.item_id]||[]).length>0&&<select className="mv-equip-select" aria-label={`Equip ${item.display_name}`} value="" disabled={busy} onChange={event=>{const slotId=event.target.value;if(slotId)onEquip(item.item_id,slotId)}}>
               <option value="">Equip…</option>
-              {slots.map(slot=><option key={slot.id} value={slot.id}>{slot.label}</option>)}
+              {slots.filter(slot=>(validSlots[item.item_id]||[]).includes(slot.id)).map(slot=><option key={slot.id} value={slot.id}>{slot.label}</option>)}
             </select>}
+            {item.eligible&&!loading&&(validSlots[item.item_id]||[]).length===0&&<small>No compatible equipment slots</small>}
           </article>)}</div>}
         {slots.length===0&&<p className="mv-empty">No equipment slots have been configured for this campaign yet.</p>}
       </section>
