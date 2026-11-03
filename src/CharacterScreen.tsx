@@ -208,24 +208,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
               {equippedByItem.has(item.item_id)&&<span className="mv-equipped-indicator"><Shield size={13} aria-hidden="true"/> Equipped · {equippedByItem.get(item.item_id)?.slot}</span>}
               <span>Quantity: {numberText(item.quantity)}</span>
               {storage[item.item_id]?.container_item_id&&<span className="mv-storage-status"><Backpack size={13} aria-hidden="true"/> Inside {storage[item.item_id].location_name}</span>}
-              {!item.eligible&&<small>{equippedByItem.has(item.item_id)?'Unavailable for trade while equipped':'Stored · unavailable for trade'}</small>}
             </div>
-            {item.eligible&&!loading&&(validSlots[item.item_id]||[]).length>0&&<select className="mv-equip-select" aria-label={`Equip ${item.display_name}`} value="" disabled={busy} onChange={event=>{const slotId=event.target.value;if(slotId)onEquip(item.item_id,slotId)}}>
-              <option value="">Equip…</option>
-              {slots.filter(slot=>(validSlots[item.item_id]||[]).includes(slot.id)).map(slot=><option key={slot.id} value={slot.id}>{slot.label}</option>)}
-            </select>}
-            {item.eligible&&!loading&&(validSlots[item.item_id]||[]).length===0&&<small>No compatible equipment slots</small>}
-            {!loading&&!equippedByItem.has(item.item_id)&&storage[item.item_id]&&!storage[item.item_id].is_container&&(storageContainers.length>0||storage[item.item_id].container_item_id)&&
-              <label className="mv-storage-control"><span>Storage</span>
-                <select aria-label={`Storage location for ${item.display_name}`}
-                  disabled={busy} value={storage[item.item_id].container_item_id||''}
-                  onChange={event=>onMoveStorage(item.item_id,event.target.value||null)}>
-                  <option value="">Carried</option>
-                  {storageContainers.map(container=><option key={container.item_id} value={container.item_id}>Inside {container.display_name}</option>)}
-                </select>
-              </label>
-            }
-
           </article>)}</div>}
         {slots.length===0&&<p className="mv-empty">No equipment slots have been configured for this campaign yet.</p>}
       </section>
@@ -242,6 +225,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           </div>
           <div className="mv-modal-body" id="mv-modal-description">
             {equippedByItem.has(selectedItem.item_id)&&<span className="mv-equipped-indicator"><Shield size={13} aria-hidden="true"/> Equipped · {equippedByItem.get(selectedItem.item_id)?.slot}</span>}
+            {storage[selectedItem.item_id]?.container_item_id&&<span className="mv-storage-status"><Backpack size={13} aria-hidden="true"/> Inside {storage[selectedItem.item_id].location_name}</span>}
             {detailsLoading?<p>Loading item details…</p>:detailsError?<p className="mv-error" role="alert">Unable to load item details: {detailsError}</p>:itemDetails&&itemDetails.item_id===selectedItem.item_id?<>
               <div className="mv-detail-grid"><span>Category</span><strong>{titleCase(itemDetails.category)}</strong><span>Condition</span><strong>{itemDetails.condition?titleCase(itemDetails.condition):'Not specified'}</strong><span>Quantity</span><strong>{numberText(selectedItem.quantity)}</strong></div>
               {!itemDetails.identified?<p>This item has not been identified. Additional information is hidden.</p>:<>
@@ -250,6 +234,30 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
                 {itemDetails.effects.length>0&&<div className="mv-detail-section"><h4>Item effects</h4><div className="mv-detail-grid">{itemDetails.effects.map((effect,index)=><React.Fragment key={index}><span>{titleCase(effect.attribute)}</span><strong>{titleCase(effect.operation)} {typeof effect.value==='object'?JSON.stringify(effect.value):String(effect.value)}</strong></React.Fragment>)}</div></div>}
               </>}
             </>:<p>Details are unavailable.</p>}
+          </div>
+          <div className="mv-modal-actions" aria-label="Item actions">
+            <h4>Actions</h4>
+            {equippedByItem.has(selectedItem.item_id)?<button type="button" className="mv-modal-action-button" disabled={busy||loading} onClick={()=>onUnequip(equippedByItem.get(selectedItem.item_id)!.id)}>Unequip</button>:
+              selectedItem.eligible&&!loading&&(validSlots[selectedItem.item_id]||[]).length>0?
+                <label className="mv-modal-action-field"><span>Equip</span>
+                  <select className="mv-equip-select" aria-label={`Equip ${selectedItem.display_name}`} value="" disabled={busy} onChange={event=>{const slotId=event.target.value;if(slotId)onEquip(selectedItem.item_id,slotId)}}>
+                    <option value="">Equip…</option>
+                    {slots.filter(slot=>(validSlots[selectedItem.item_id]||[]).includes(slot.id)).map(slot=><option key={slot.id} value={slot.id}>{slot.label}</option>)}
+                  </select>
+                </label>:null}
+            {!loading&&!equippedByItem.has(selectedItem.item_id)&&storage[selectedItem.item_id]&&!storage[selectedItem.item_id].is_container&&<>
+              {storage[selectedItem.item_id].container_item_id&&
+                <button type="button" className="mv-modal-action-button" disabled={busy} onClick={()=>onMoveStorage(selectedItem.item_id,null)}>Take out</button>}
+              {storageContainers.some(container=>container.item_id!==selectedItem.item_id)&&
+                <label className="mv-modal-action-field"><span>Storage</span>
+                  <select className="mv-storage-select" aria-label={`Put ${selectedItem.display_name} in a container`} value="" disabled={busy}
+                    onChange={event=>{if(event.target.value)onMoveStorage(selectedItem.item_id,event.target.value)}}>
+                    <option value="">Put in…</option>
+                    {storageContainers.filter(container=>container.item_id!==selectedItem.item_id&&container.item_id!==storage[selectedItem.item_id]?.container_item_id).map(container=><option key={container.item_id} value={container.item_id}>{container.display_name}</option>)}
+                  </select>
+                </label>}
+            </>}
+            {!loading&&!equippedByItem.has(selectedItem.item_id)&&selectedItem.eligible&&(validSlots[selectedItem.item_id]||[]).length===0&&<span className="mv-modal-action-note">No compatible equipment slots.</span>}
           </div>
           <div className="mv-modal-footer"><button type="button" className="mv-modal-done" onClick={closeDetails}>Close</button></div>
         </section>
