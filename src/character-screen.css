@@ -20,3 +20,16 @@
 .mv-placeholder{margin:18px 16px;min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}.mv-placeholder h3{border:0;padding:0}.mv-placeholder p{max-width:350px;color:var(--mv-muted);font-size:13px;line-height:1.6}
 .mv-tabs{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid #39b3cb;background:#06131e;padding:9px 8px 13px;gap:4px}.mv-tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border:1px solid transparent;border-radius:9px;background:none;color:#b4c6ce;padding:12px 3px;font-size:10px;text-transform:uppercase;font-weight:700;cursor:pointer;min-width:0}.mv-tab:hover{background:#11516566}.mv-tab.is-active{color:#8af2ff;border-color:#4be7fb;background:#05384c;box-shadow:inset 0 0 15px #22d9ee36,0 0 11px #18d0e442}.mv-tab span{white-space:nowrap}
 @media(max-width:420px){.mv-panels{padding:15px 10px 10px;gap:9px}.mv-panel{padding:12px}.mv-hero{padding-top:24px}.mv-equipment-row{grid-template-columns:20px minmax(65px,1fr) minmax(105px,1.55fr);gap:7px;font-size:12px}.mv-equipment-row span{font-size:10px}.mv-bottom-panels{grid-template-columns:1.2fr 1fr;gap:8px}.mv-loot-panel strong{font-size:15px}.mv-tab{font-size:9px}.mv-tab span{letter-spacing:-.25px}}
+
+/* Live inventory cards: share the Character screen's illuminated style. */
+.mv-inventory-view{padding:17px 16px 14px}
+.mv-item-count{margin-left:auto;font:600 11px Inter,system-ui,sans-serif;color:#80c5d8;letter-spacing:0;text-transform:none}
+.mv-inventory-items{display:grid;gap:10px}
+.mv-inventory-item{display:flex;align-items:center;gap:12px;padding:13px 11px;border:1px solid #295970;background:linear-gradient(120deg,#0a2635,#061522);border-radius:9px;min-width:0}
+.mv-item-icon{width:47px;height:47px;display:grid;place-items:center;border:1px solid #3487a1;border-radius:9px;flex:none;color:#83ecff;background:#0b3548;box-shadow:inset 0 0 12px #00bfe226}
+.mv-item-info{display:grid;gap:5px;min-width:0;flex:1}
+.mv-item-info strong{font-family:Georgia,serif;color:#eafaff;font-weight:550;font-size:17px;overflow-wrap:anywhere}
+.mv-item-info span,.mv-item-info small{font-size:11px;color:#91b7c6;line-height:1.4}
+.mv-equip-select{width:auto;max-width:145px;margin:0;flex:none;padding:9px;font-size:12px;border-color:#3cb1cd;background:#082435}
+.mv-inventory-hint{color:#92bac9;font-size:11px;line-height:1.5;margin:11px 4px 0}
+@media(max-width:500px){.mv-inventory-view{padding:13px 10px}.mv-inventory-item{flex-wrap:wrap;gap:9px}.mv-item-info strong{font-size:15px}.mv-equip-select{width:100%;max-width:none;margin-left:59px}}
