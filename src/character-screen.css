@@ -33,3 +33,9 @@
 .mv-equip-select{width:auto;max-width:145px;margin:0;flex:none;padding:9px;font-size:12px;border-color:#3cb1cd;background:#082435}
 .mv-inventory-hint{color:#92bac9;font-size:11px;line-height:1.5;margin:11px 4px 0}
 @media(max-width:500px){.mv-inventory-view{padding:13px 10px}.mv-inventory-item{flex-wrap:wrap;gap:9px}.mv-item-info strong{font-size:15px}.mv-equip-select{width:100%;max-width:none;margin-left:59px}}
+
+/* Equipped gear can be returned to the backpack without deleting the item. */
+.mv-equipment-row{grid-template-columns:21px minmax(70px,1fr) minmax(105px,1.4fr) auto}
+.mv-unequip-button{background:#123748;border:1px solid #348ca5;color:#b7e8f1;border-radius:7px;font-size:11px;padding:8px 10px;font-weight:650;min-height:36px}
+.mv-unequip-button:hover:not(:disabled){background:#175469;border-color:#62d8ed}
+@media(max-width:500px){.mv-equipment-row{grid-template-columns:20px minmax(55px,.8fr) minmax(85px,1.35fr);gap:7px}.mv-unequip-button{grid-column:3;justify-self:start;font-size:10px;padding:6px 9px;min-height:32px}}
