@@ -3,3 +3,22 @@
 .trade-qr{width:min(100%,310px);max-height:310px;display:block;margin:14px auto;border:8px solid white;background:white}.qr-overlay{position:fixed;inset:0;background:#000b;display:grid;place-items:center;z-index:90;padding:18px}.qr-modal{background:#172234;color:#f1f5fa;border:1px solid #4a617e;border-radius:14px;padding:24px;width:min(100%,410px);text-align:center;box-shadow:0 20px 60px #0009}.listrow{flex-wrap:wrap}.listrow>div{flex:1 1 220px;min-width:0}
 
 .trade-review{margin:8px 0;padding:8px;border:1px solid #64748b;border-radius:8px}.trade-review summary{cursor:pointer;font-weight:600}.trade-terms{margin:9px 0}.trade-terms ul{padding-left:24px;margin:4px 0}
+
+/* Milestone 5.5 — keep the prototype shell usable at phone widths. */
+@media(max-width:600px){
+  html,body,#root{max-width:100%;min-width:0}
+  header{padding:12px 14px;gap:9px}
+  .brand{font-size:18px;letter-spacing:1.4px;min-width:0}
+  .brand span{letter-spacing:1px}
+  header .subtle{margin-left:auto;padding:10px 9px;min-height:44px;white-space:nowrap}
+  .shell{margin:17px auto;padding:0 10px}
+  .shell>h1{font-size:25px;line-height:1.2}
+  .layout{gap:12px;margin-top:18px}
+  .panel{padding:13px}
+  .grid{gap:12px}
+  .panel input,.panel select,.panel button{max-width:100%}
+  .panel input,.panel select{font-size:16px;min-height:44px}
+  .listrow{min-width:0;gap:8px}
+  .listrow>div{flex-basis:180px;min-width:0}
+  footer{margin:28px 0;line-height:1.6}
+}
