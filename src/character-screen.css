@@ -39,3 +39,8 @@
 .mv-unequip-button{background:#123748;border:1px solid #348ca5;color:#b7e8f1;border-radius:7px;font-size:11px;padding:8px 10px;font-weight:650;min-height:36px}
 .mv-unequip-button:hover:not(:disabled){background:#175469;border-color:#62d8ed}
 @media(max-width:500px){.mv-equipment-row{grid-template-columns:20px minmax(55px,.8fr) minmax(85px,1.35fr);gap:7px}.mv-unequip-button{grid-column:3;justify-self:start;font-size:10px;padding:6px 9px;min-height:32px}}
+
+/* Equipment configuration on the GM catalog form. */
+.item-property-toggle{display:flex;align-items:center;gap:9px;font-size:13px;color:#c7dfeb;margin:0 0 12px;line-height:1.35}
+.item-property-toggle input[type="checkbox"]{width:17px;height:17px;min-width:17px;accent-color:#2fc8e3;margin:0}
+.item-property-toggle:has(input:disabled){opacity:.55}
