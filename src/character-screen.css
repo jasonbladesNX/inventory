@@ -163,3 +163,72 @@
   .mv-modal-action-field{flex-basis:100%}
   .mv-modal-action-field select{font-size:16px}
 }
+
+/* Modal action layout correction: explicit vertical fields, isolated from app-wide form CSS. */
+.mv-item-modal .mv-modal-actions{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  align-items:stretch;
+  justify-items:stretch;
+  gap:14px;
+  padding:18px 22px 20px;
+  border-top:1px solid #316c81;
+  background:#071e2b;
+  width:100%;
+  min-width:0;
+  overflow-y:auto;
+  flex-shrink:0;
+  max-height:42dvh;
+}
+.mv-item-modal .mv-modal-actions h4{
+  grid-column:1;
+  margin:0;
+  padding:0;
+  font:500 16px/1.3 Georgia,serif;
+  letter-spacing:.6px;
+  text-transform:uppercase;
+  color:#d4f6ff;
+}
+.mv-item-modal .mv-modal-action-field{
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:7px;
+  width:100%;
+  min-width:0;
+  margin:0;
+  padding:0;
+}
+.mv-item-modal .mv-modal-action-field label{
+  display:block;
+  margin:0;
+  padding:0;
+  font:650 12px/1.4 Inter,system-ui,sans-serif;
+  letter-spacing:.2px;
+  color:#9ed4e3;
+}
+.mv-item-modal .mv-modal-action-field select,
+.mv-item-modal .mv-modal-action-field select.mv-equip-select{
+  display:block;
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  min-height:48px;
+  margin:0;
+  padding:11px 40px 11px 13px;
+  border:1px solid #3b9cb7;
+  border-radius:9px;
+  background-color:#09283b;
+  color:#e4faff;
+  font:500 16px/1.35 Inter,system-ui,sans-serif;
+}
+.mv-item-modal .mv-modal-actions .mv-modal-action-button{
+  width:100%;
+  min-height:46px;
+  margin:0;
+}
+.mv-item-modal .mv-modal-actions .mv-modal-action-note{display:block;line-height:1.5}
+@media(max-width:500px){
+  .mv-item-modal .mv-modal-actions{padding:16px 16px 18px;gap:13px;max-height:45dvh}
+}
