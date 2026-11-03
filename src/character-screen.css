@@ -85,3 +85,54 @@
 .mv-modal-done{padding:10px 22px;min-height:42px;border-radius:8px;border:1px solid #60d7eb;background:#0a455e;color:#e3faff;font-size:13px;font-weight:700;cursor:pointer}
 .mv-modal-done:hover,.mv-modal-done:focus-visible{background:#116480}
 @media(max-width:500px){.mv-modal-backdrop{padding:10px}.mv-item-modal{max-height:calc(100dvh - 20px)}.mv-modal-header{padding:15px}.mv-modal-body{padding:16px}.mv-modal-footer{padding:11px 15px}.mv-modal-body .mv-detail-grid{grid-template-columns:minmax(75px,1fr) minmax(0,1.6fr)}}
+
+/* Milestone 5.5 — iPhone-first layout refinements; presentation only. */
+.multiverse{width:100%;min-width:0}
+.mv-inventory-item{overflow-wrap:anywhere}
+.mv-item-info{min-width:0}
+.mv-item-info strong{line-height:1.3}
+.mv-item-info .mv-equipped-indicator{max-width:100%;white-space:normal}
+.mv-equip-select{min-height:44px;min-width:0;line-height:1.25}
+.mv-item-icon-button{touch-action:manipulation}
+.mv-unequip-button{touch-action:manipulation}
+.mv-tab{min-height:52px;touch-action:manipulation}
+.mv-tab:focus-visible,.mv-equip-select:focus-visible,.mv-unequip-button:focus-visible{outline:2px solid #8bf0ff;outline-offset:2px}
+.mv-modal-backdrop{padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+.mv-item-modal{max-width:100%;max-height:min(90dvh,calc(100dvh - 24px))}
+.mv-modal-body{min-height:0}
+.mv-modal-close,.mv-modal-done{touch-action:manipulation;min-height:44px}
+@media(max-width:600px){
+  .mv-inventory-view{padding:12px 10px 15px}
+  .mv-inventory-view>.mv-panel{padding:12px 10px}
+  .mv-inventory-item{display:grid;grid-template-columns:48px minmax(0,1fr);align-items:start;gap:8px 11px;padding:12px 10px}
+  .mv-item-icon-button{grid-column:1;grid-row:1;align-self:start}
+  .mv-item-info{grid-column:2;grid-row:1;align-self:center;gap:5px}
+  .mv-item-info strong{font-size:16px}
+  .mv-equip-select{grid-column:2;grid-row:auto;width:100%;max-width:none;margin:0;font-size:16px;padding:10px}
+  .mv-inventory-item>small{grid-column:2;min-width:0;line-height:1.5;overflow-wrap:anywhere;color:#a7c8d6}
+  .mv-equipped-indicator{width:fit-content;max-width:100%;line-height:1.4}
+  .mv-inventory-hint{margin:12px 2px 0}
+  .mv-panels{padding:13px 10px;gap:11px}
+  .mv-panel{padding:12px}
+  .mv-equipment-row{grid-template-columns:20px minmax(0,1fr) auto;gap:8px;padding:12px 0;align-items:center}
+  .mv-equipment-row>svg{grid-column:1;grid-row:1}
+  .mv-equipment-row>span{grid-column:2;grid-row:1;overflow-wrap:anywhere}
+  .mv-equipment-row>strong{grid-column:2;grid-row:2;font-size:13px}
+  .mv-unequip-button{grid-column:3;grid-row:1 / span 2;min-height:44px;padding:8px 11px;justify-self:end}
+  .mv-tabs{padding:8px 5px max(10px,env(safe-area-inset-bottom));gap:2px}
+  .mv-tab{min-height:54px;padding:9px 2px;gap:6px;font-size:10px;overflow-wrap:anywhere}
+  .mv-tab span{white-space:normal;text-align:center;letter-spacing:0}
+  .mv-hero{padding:25px 12px 15px}
+  .mv-campaign{letter-spacing:2px}
+  .mv-modal-backdrop{align-items:center}
+  .mv-modal-body{padding:16px}
+  .mv-modal-header{padding:15px}
+  .mv-modal-footer{padding:11px 15px max(11px,env(safe-area-inset-bottom))}
+}
+@media(max-width:360px){
+  .mv-bottom-panels{grid-template-columns:1fr}
+  .mv-inventory-item{column-gap:8px;padding:10px 8px}
+  .mv-item-info strong{font-size:15px}
+  .mv-modal-body .mv-detail-grid{grid-template-columns:minmax(70px,1fr) minmax(0,1.4fr)}
+  .mv-tab{font-size:9px}
+}
