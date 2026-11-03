@@ -50,38 +50,18 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       setLoading(true);setError('');setEquipped([]);setWallet([]);
       try{
         const [assignments,currency]=await Promise.all([
-          db.from('equipment_assignments').select('id,slot_id,item_instance_id').eq('campaign_id',campaign).eq('character_id',character),
+          db.rpc('list_character_equipped_items',{p_character:character}),
           db.rpc('list_my_trade_currency',{p_character:character}),
         ]);
         if(assignments.error)throw assignments.error;
         if(currency.error)throw currency.error;
-        const rows=assignments.data||[];
-        const ids=rows.map(a=>a.item_instance_id);
-        let items:{id:string;custom_name:string|null;definition_id:string}[]=[];
-        if(ids.length){
-          const result=await db.from('item_instances').select('id,custom_name,definition_id').eq('campaign_id',campaign).in('id',ids);
-          if(result.error)throw result.error;
-          items=result.data||[];
-        }
-        const defIds=[...new Set(items.map(item=>item.definition_id))];
-        let definitions:{id:string;name:string}[]=[];
-        if(defIds.length){
-          const result=await db.from('item_definitions').select('id,name').in('id',defIds);
-          if(result.error)throw result.error;
-          definitions=result.data||[];
-        }
         if(cancelled)return;
-        const itemLookup=new Map(items.map(i=>[i.id,i]));
-        const defLookup=new Map(definitions.map(i=>[i.id,i.name]));
         const slotLookup=new Map(slots.map(s=>[s.id,s.label]));
-        setEquipped(rows.map(row=>{
-          const item=itemLookup.get(row.item_instance_id);
-          return {
-            id:row.id,
-            slot:slotLookup.get(row.slot_id)||'Equipment',
-            name:item ? item.custom_name||defLookup.get(item.definition_id)||'Unnamed item' : 'Equipment details unavailable'
-          };
-        }));
+        setEquipped((assignments.data||[]).map(row=>({
+          id:row.assignment_id,
+          slot:slotLookup.get(row.slot_id)||'Equipment',
+          name:row.item_name,
+        })));
         setWallet((currency.data||[]) as Money[]);
       }catch(e){if(!cancelled)setError(e instanceof Error?e.message:String(e))}
       finally{if(!cancelled)setLoading(false)}
