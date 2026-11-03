@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import type {SupabaseClient} from '@supabase/supabase-js';
-import {Backpack, Coins, Crown, FlaskConical, Gem, PackageOpen, ScrollText, Shield, ShoppingBag, Sparkles, Sword, UserRound, Wrench, X} from 'lucide-react';
+import {Backpack, CircleDot, Coins, Crown, FlaskConical, Footprints, Gem, PackageOpen, ScrollText, Shield, ShieldCheck, Shirt, ShoppingBag, Sparkles, Sword, UserRound, WandSparkles, Wrench, X} from 'lucide-react';
 import './character-screen.css';
 
 export type InventoryTab = 'character' | 'inventory' | 'shop' | 'craft';
@@ -28,6 +28,14 @@ type Props = {
   onTabChange:(tab:InventoryTab)=>void;
 };
 
+// Presentation only: categories come from the secured character-scoped RPC, never from item names.
+const categoryIcons:Record<string,typeof Sword> = {
+  weapon:Sword, shield:Shield, armor:ShieldCheck, clothing:Shirt,
+  headgear:Crown, jewelry:Gem, ring:CircleDot, footwear:Footprints,
+  focus:WandSparkles, tool:Wrench, wondrous:Sparkles,
+  gear:Backpack, unknown:PackageOpen,
+};
+
 const navigation: {id:InventoryTab; label:string; Icon:typeof UserRound}[] = [
   {id:'character',label:'Character',Icon:UserRound},
   {id:'inventory',label:'Inventory',Icon:Backpack},
@@ -46,6 +54,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [equipped,setEquipped]=useState<Equipped[]>([]);
   const [wallet,setWallet]=useState<Money[]>([]);
   const [validSlots,setValidSlots]=useState<Record<string,string[]>>({});
+  const [itemCategories,setItemCategories]=useState<Record<string,string>>({});
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
   const [expandedItem,setExpandedItem]=useState<string|null>(null);
@@ -57,16 +66,18 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   useEffect(()=>{
     let cancelled=false;
     async function load(){
-      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});
+      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});
       try{
-        const [assignments,currency,compatibility]=await Promise.all([
+        const [assignments,currency,compatibility,categories]=await Promise.all([
           db.rpc('list_character_equipped_instances',{p_character:character}),
           db.rpc('list_my_trade_currency',{p_character:character}),
           db.rpc('list_character_valid_equipment_slots',{p_character:character}),
+          db.rpc('list_character_item_categories',{p_character:character}),
         ]);
         if(assignments.error)throw assignments.error;
         if(currency.error)throw currency.error;
         if(compatibility.error)throw compatibility.error;
+        if(categories.error)throw categories.error;
         if(cancelled)return;
         const slotLookup=new Map(slots.map(s=>[s.id,s.label]));
         setEquipped((assignments.data||[]).map(row=>({
@@ -81,6 +92,11 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           (allowed[row.item_id]??=[]).push(row.slot_id);
         }
         setValidSlots(allowed);
+        const iconsByItem:Record<string,string>={};
+        for(const row of categories.data||[]){
+          iconsByItem[row.item_id]=row.category;
+        }
+        setItemCategories(iconsByItem);
       }catch(e){if(!cancelled)setError(e instanceof Error?e.message:String(e))}
       finally{if(!cancelled)setLoading(false)}
     }
@@ -138,6 +154,10 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     previousFocusRef.current=event.currentTarget;
     setExpandedItem(itemId);
   };
+  const renderItemIcon=(itemId:string,size:number)=>{
+    const Icon=categoryIcons[itemCategories[itemId]??'unknown']??PackageOpen;
+    return <Icon size={size} aria-hidden="true"/>;
+  };
   const selectedItem=items.find(item=>item.item_id===expandedItem);
   const equippedByItem=new Map(equipped.map(row=>[row.itemId,row]));
   const walletOrder=(code:string)=>({PP:0,GP:1,EP:2,SP:3,CP:4}[code.toUpperCase()]??5);
@@ -173,7 +193,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         <h3 id="mv-inventory-title"><Backpack size={20}/> Backpack <span className="mv-item-count">{items.length} {items.length===1?'item':'items'}</span></h3>
         {items.length===0?<p className="mv-empty">Your backpack is empty. Add an item using the campaign tools above.</p>:
           <div className="mv-inventory-items">{items.map(item=><article className={'mv-inventory-item'+(equippedByItem.has(item.item_id)?' is-equipped':'')} key={item.item_id}>
-            <button type="button" className="mv-item-icon mv-item-icon-button" aria-label={`View details for ${item.display_name}`} aria-haspopup="dialog" onClick={event=>openDetails(item.item_id,event)}><Sword size={25} aria-hidden="true"/></button>
+            <button type="button" className="mv-item-icon mv-item-icon-button" aria-label={`View details for ${item.display_name}`} aria-haspopup="dialog" onClick={event=>openDetails(item.item_id,event)}>{renderItemIcon(item.item_id,25)}</button>
             <div className="mv-item-info">
               <strong>{item.display_name}</strong>
               {equippedByItem.has(item.item_id)&&<span className="mv-equipped-indicator"><Shield size={13} aria-hidden="true"/> Equipped · {equippedByItem.get(item.item_id)?.slot}</span>}
@@ -197,7 +217,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       <div className="mv-modal-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)closeDetails()}}>
         <section role="dialog" aria-modal="true" aria-labelledby="mv-modal-title" aria-describedby="mv-modal-description" className="mv-item-modal">
           <div className="mv-modal-header">
-            <div className="mv-modal-heading"><Sword size={24} aria-hidden="true"/><div><span className="mv-modal-eyebrow">Item details</span><h3 id="mv-modal-title">{selectedItem.display_name}</h3></div></div>
+            <div className="mv-modal-heading">{renderItemIcon(selectedItem.item_id,24)}<div><span className="mv-modal-eyebrow">Item details</span><h3 id="mv-modal-title">{selectedItem.display_name}</h3></div></div>
             <button ref={modalCloseRef} type="button" className="mv-modal-close" aria-label="Close item details" onClick={closeDetails}><X size={22}/></button>
           </div>
           <div className="mv-modal-body" id="mv-modal-description">
