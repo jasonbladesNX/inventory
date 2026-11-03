@@ -252,3 +252,8 @@
 .mv-container-content-row small{font-size:11px;color:#a7d6e5}
 .mv-container-view{color:#73d6eb;font-size:11px;font-weight:700}
 @media(max-width:500px){.mv-container-contents{padding:14px 15px}.mv-container-content-row{gap:6px;padding:10px 8px}.mv-container-view{font-size:10px}}
+
+/* Keep three sections of a tall container popup reachable on compact screens. */
+.mv-item-modal .mv-container-contents{min-height:0;flex-shrink:1;overflow-y:auto;overscroll-behavior:contain}
+.mv-item-modal .mv-modal-actions{flex-shrink:1;min-height:0}
+.mv-item-modal .mv-modal-body{flex:1 1 auto}
