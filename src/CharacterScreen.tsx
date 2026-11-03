@@ -10,6 +10,7 @@ type Effect = {attribute_code:string; total_bonus:number|string};
 type Equipped = {id:string; itemId:string; slot:string; name:string};
 type Money = {currency_id:string; code:string; name:string; available:number|string; precision_digits:number};
 type InventoryItem = {item_id:string; display_name:string; quantity:number|string; eligible:boolean};
+type StorageEntry = {item_id:string;container_item_id:string|null;is_container:boolean;location_name:string};
 type ItemDetails = {item_id:string; category:string; description:string; condition:string; identified:boolean; properties:Record<string,unknown>; effects:{attribute:string;operation:string;value:unknown}[]};
 type Props = {
   db:SupabaseClient;
@@ -24,6 +25,7 @@ type Props = {
   busy:boolean;
   onEquip:(itemId:string,slotId:string)=>void;
   onUnequip:(assignmentId:string)=>void;
+  onMoveStorage:(itemId:string,containerItemId:string|null)=>void;
   tab:InventoryTab;
   onTabChange:(tab:InventoryTab)=>void;
 };
@@ -50,11 +52,12 @@ function numberText(value:number|string, digits=0):string {
 }
 function titleCase(code:string):string {return code.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}
 
-export default function CharacterScreen({db,campaign,campaignName,character,characterName,slots,effects,inventoryVersion,items,busy,onEquip,onUnequip,tab,onTabChange}:Props){
+export default function CharacterScreen({db,campaign,campaignName,character,characterName,slots,effects,inventoryVersion,items,busy,onEquip,onUnequip,onMoveStorage,tab,onTabChange}:Props){
   const [equipped,setEquipped]=useState<Equipped[]>([]);
   const [wallet,setWallet]=useState<Money[]>([]);
   const [validSlots,setValidSlots]=useState<Record<string,string[]>>({});
   const [itemCategories,setItemCategories]=useState<Record<string,string>>({});
+  const [storage,setStorage]=useState<Record<string,StorageEntry>>({});
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
   const [expandedItem,setExpandedItem]=useState<string|null>(null);
@@ -66,18 +69,20 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   useEffect(()=>{
     let cancelled=false;
     async function load(){
-      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});
+      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setStorage({});
       try{
-        const [assignments,currency,compatibility,categories]=await Promise.all([
+        const [assignments,currency,compatibility,categories,storageRows]=await Promise.all([
           db.rpc('list_character_equipped_instances',{p_character:character}),
           db.rpc('list_my_trade_currency',{p_character:character}),
           db.rpc('list_character_valid_equipment_slots',{p_character:character}),
           db.rpc('list_character_item_categories',{p_character:character}),
+          db.rpc('list_character_storage',{p_character:character}),
         ]);
         if(assignments.error)throw assignments.error;
         if(currency.error)throw currency.error;
         if(compatibility.error)throw compatibility.error;
         if(categories.error)throw categories.error;
+        if(storageRows.error)throw storageRows.error;
         if(cancelled)return;
         const slotLookup=new Map(slots.map(s=>[s.id,s.label]));
         setEquipped((assignments.data||[]).map(row=>({
@@ -97,6 +102,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           iconsByItem[row.item_id]=row.category;
         }
         setItemCategories(iconsByItem);
+        const storageByItem:Record<string,StorageEntry>={};
+        for(const row of storageRows.data||[])storageByItem[row.item_id]=row as StorageEntry;
+        setStorage(storageByItem);
       }catch(e){if(!cancelled)setError(e instanceof Error?e.message:String(e))}
       finally{if(!cancelled)setLoading(false)}
     }
@@ -158,6 +166,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     const Icon=categoryIcons[itemCategories[itemId]??'unknown']??PackageOpen;
     return <Icon size={size} aria-hidden="true"/>;
   };
+  const storageContainers=items.filter(item=>storage[item.item_id]?.is_container && !storage[item.item_id]?.container_item_id);
   const selectedItem=items.find(item=>item.item_id===expandedItem);
   const equippedByItem=new Map(equipped.map(row=>[row.itemId,row]));
   const walletOrder=(code:string)=>({PP:0,GP:1,EP:2,SP:3,CP:4}[code.toUpperCase()]??5);
@@ -198,6 +207,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
               <strong>{item.display_name}</strong>
               {equippedByItem.has(item.item_id)&&<span className="mv-equipped-indicator"><Shield size={13} aria-hidden="true"/> Equipped · {equippedByItem.get(item.item_id)?.slot}</span>}
               <span>Quantity: {numberText(item.quantity)}</span>
+              {storage[item.item_id]?.container_item_id&&<span className="mv-storage-status"><Backpack size={13} aria-hidden="true"/> Inside {storage[item.item_id].location_name}</span>}
               {!item.eligible&&<small>{equippedByItem.has(item.item_id)?'Unavailable for trade while equipped':'Stored · unavailable for trade'}</small>}
             </div>
             {item.eligible&&!loading&&(validSlots[item.item_id]||[]).length>0&&<select className="mv-equip-select" aria-label={`Equip ${item.display_name}`} value="" disabled={busy} onChange={event=>{const slotId=event.target.value;if(slotId)onEquip(item.item_id,slotId)}}>
@@ -205,6 +215,16 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
               {slots.filter(slot=>(validSlots[item.item_id]||[]).includes(slot.id)).map(slot=><option key={slot.id} value={slot.id}>{slot.label}</option>)}
             </select>}
             {item.eligible&&!loading&&(validSlots[item.item_id]||[]).length===0&&<small>No compatible equipment slots</small>}
+            {!loading&&!equippedByItem.has(item.item_id)&&storage[item.item_id]&&!storage[item.item_id].is_container&&(storageContainers.length>0||storage[item.item_id].container_item_id)&&
+              <label className="mv-storage-control"><span>Storage</span>
+                <select aria-label={`Storage location for ${item.display_name}`}
+                  disabled={busy} value={storage[item.item_id].container_item_id||''}
+                  onChange={event=>onMoveStorage(item.item_id,event.target.value||null)}>
+                  <option value="">Carried</option>
+                  {storageContainers.map(container=><option key={container.item_id} value={container.item_id}>Inside {container.display_name}</option>)}
+                </select>
+              </label>
+            }
 
           </article>)}</div>}
         {slots.length===0&&<p className="mv-empty">No equipment slots have been configured for this campaign yet.</p>}
