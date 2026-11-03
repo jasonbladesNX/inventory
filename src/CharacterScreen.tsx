@@ -26,7 +26,7 @@ type Props = {
   busy:boolean;
   onEquip:(itemId:string,slotId:string)=>void;
   onUnequip:(assignmentId:string)=>void;
-  onMoveStorage:(itemId:string,containerItemId:string|null)=>void;
+  onMoveStorage:(itemId:string,containerItemId:string|null)=>Promise<void>;
   tab:InventoryTab;
   onTabChange:(tab:InventoryTab)=>void;
 };
@@ -65,6 +65,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [expandedItem,setExpandedItem]=useState<string|null>(null);
   const [itemDetails,setItemDetails]=useState<ItemDetails|null>(null);
   const [detailsError,setDetailsError]=useState('');
+  const [storageActionError,setStorageActionError]=useState('');
   const [detailsLoading,setDetailsLoading]=useState(false);
   const modalCloseRef=useRef<HTMLButtonElement>(null);
   const previousFocusRef=useRef<HTMLElement|null>(null);
@@ -161,6 +162,11 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     return()=>document.removeEventListener('keydown',onKeyDown);
   },[expandedItem]);
 
+  useEffect(()=>{setStorageActionError('')},[expandedItem,inventoryVersion]);
+  const moveStorage=async(itemId:string,destination:string|null)=>{
+    setStorageActionError('');
+    try{await onMoveStorage(itemId,destination)}catch(e){setStorageActionError(e instanceof Error?e.message:String(e))}
+  };
   const closeDetails=()=>{
     setExpandedItem(null);
     previousFocusRef.current?.focus();
@@ -279,18 +285,19 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
                 </div>:null}
             {!loading&&!equippedByItem.has(selectedItem.item_id)&&storage[selectedItem.item_id]&&!storage[selectedItem.item_id].is_container&&<>
               {storage[selectedItem.item_id].container_item_id&&
-                <button type="button" className="mv-modal-action-button" disabled={busy} onClick={()=>onMoveStorage(selectedItem.item_id,null)}>Take out</button>}
+                <button type="button" className="mv-modal-action-button" disabled={busy} onClick={()=>{void moveStorage(selectedItem.item_id,null)}}>Take out</button>}
               {storageContainers.some(container=>container.item_id!==selectedItem.item_id&&container.item_id!==storage[selectedItem.item_id]?.container_item_id)&&
                 <div className="mv-modal-action-field">
                   <label htmlFor="mv-detail-storage">Put in…</label>
                   <select id="mv-detail-storage" aria-label={`Put ${selectedItem.display_name} in a container`} value="" disabled={busy}
-                    onChange={event=>{if(event.target.value)onMoveStorage(selectedItem.item_id,event.target.value)}}>
+                    onChange={event=>{if(event.target.value)void moveStorage(selectedItem.item_id,event.target.value)}}>
                     <option value="">Choose container…</option>
                     {storageContainers.filter(container=>container.item_id!==selectedItem.item_id&&container.item_id!==storage[selectedItem.item_id]?.container_item_id).map(container=><option key={container.item_id} value={container.item_id}>{container.display_name}</option>)}
                   </select>
                 </div>}
             </>}
             {!loading&&!equippedByItem.has(selectedItem.item_id)&&selectedItem.eligible&&(validSlots[selectedItem.item_id]||[]).length===0&&<span className="mv-modal-action-note">No compatible equipment slots.</span>}
+            {storageActionError&&<p className="mv-storage-error" role="alert">{storageActionError}</p>}
           </div>
           <div className="mv-modal-footer"><button type="button" className="mv-modal-done" onClick={closeDetails}>Close</button></div>
         </section>
