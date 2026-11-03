@@ -136,3 +136,12 @@
   .mv-modal-body .mv-detail-grid{grid-template-columns:minmax(70px,1fr) minmax(0,1.4fr)}
   .mv-tab{font-size:9px}
 }
+
+/* Milestone 6.1: one-level character backpack/pouch storage. */
+.mv-storage-status{display:inline-flex;align-items:center;gap:5px;color:#9ce5eb!important;font-weight:650;overflow-wrap:anywhere}
+.mv-storage-status svg{flex:none}
+.mv-storage-control{display:grid;gap:5px;flex:0 1 175px;min-width:0;color:#9ed4e3;font-size:11px;font-weight:650}
+.mv-storage-control>span{letter-spacing:.4px}
+.mv-storage-control select{width:100%;max-width:100%;margin:0;min-height:44px;padding:8px;background:#082435;border:1px solid #327d93;color:#e4faff;border-radius:7px;font-size:13px}
+.mv-storage-control select:focus-visible{outline:2px solid #87efff;outline-offset:2px}
+@media(max-width:600px){.mv-storage-control{grid-column:2;grid-row:auto;width:100%;max-width:none;flex:initial}.mv-storage-control select{font-size:16px}}
