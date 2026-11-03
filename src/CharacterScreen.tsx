@@ -21,6 +21,7 @@ type Props = {
   items:InventoryItem[];
   busy:boolean;
   onEquip:(itemId:string,slotId:string)=>void;
+  onUnequip:(assignmentId:string)=>void;
   tab:InventoryTab;
   onTabChange:(tab:InventoryTab)=>void;
 };
@@ -39,7 +40,7 @@ function numberText(value:number|string, digits=0):string {
 }
 function titleCase(code:string):string {return code.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}
 
-export default function CharacterScreen({db,campaign,campaignName,character,characterName,slots,effects,inventoryVersion,items,busy,onEquip,tab,onTabChange}:Props){
+export default function CharacterScreen({db,campaign,campaignName,character,characterName,slots,effects,inventoryVersion,items,busy,onEquip,onUnequip,tab,onTabChange}:Props){
   const [equipped,setEquipped]=useState<Equipped[]>([]);
   const [wallet,setWallet]=useState<Money[]>([]);
   const [loading,setLoading]=useState(false);
@@ -82,7 +83,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       <section className="mv-panel" aria-labelledby="mv-equipped-title">
         <h3 id="mv-equipped-title"><Sword size={20}/> Equipped Items</h3>
         {loading?<p className="mv-empty">Loading equipment…</p>:equipped.length===0?<p className="mv-empty">No equipped items yet. Equip an item from Inventory to see it here.</p>:
-          <div className="mv-rows">{equipped.map(row=><div className="mv-equipment-row" key={row.id}><Shield size={18}/><span>{row.slot}</span><strong>{row.name}</strong></div>)}</div>}
+          <div className="mv-rows">{equipped.map(row=><div className="mv-equipment-row" key={row.id}><Shield size={18}/><span>{row.slot}</span><strong>{row.name}</strong><button type="button" className="mv-unequip-button" disabled={busy||loading} onClick={()=>onUnequip(row.id)} aria-label={`Unequip ${row.name} from ${row.slot}`}>Unequip</button></div>)}</div>}
       </section>
       <section className="mv-panel" aria-labelledby="mv-bonuses-title">
         <h3 id="mv-bonuses-title"><Sparkles size={20}/> Equipment Bonuses</h3>
