@@ -309,3 +309,21 @@
 .mv-weight-summary .mv-weight-note{margin:10px 0 0;color:#9dc4d0;font-size:11px;line-height:1.5}
 @media(max-width:500px){.mv-weight-summary{padding:11px;margin:10px 0 15px}.mv-weight-breakdown{gap:6px}.mv-weight-breakdown>div{padding:9px 7px}.mv-weight-breakdown>div strong{font-size:14px}}
 @media(max-width:350px){.mv-weight-breakdown{grid-template-columns:1fr}.mv-weight-breakdown>div{grid-template-columns:1fr auto;align-items:center}}
+
+/* Milestone 6.5 — D&D-first, ruleset-aware capacity preview. */
+.mv-carry-capacity{border-top:1px solid #326f84;margin-top:14px;padding-top:14px;min-width:0}
+.mv-carry-capacity-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px 12px;margin-bottom:10px}
+.mv-carry-capacity-heading strong{color:#d2f5ff;font:500 15px/1.35 Georgia,serif;text-transform:uppercase}
+.mv-carry-capacity-heading span{color:#cbf2fc;font-size:13px;font-weight:700}
+.mv-carry-capacity .mv-container-meter{margin:8px 0 10px}
+.mv-carry-capacity-status{color:#b9ecf8;font-size:12px;margin:0 0 7px;line-height:1.5}
+.mv-carry-capacity-note{color:#93bdcb;font-size:11px;line-height:1.5;margin:8px 0}
+.mv-carry-form{display:grid;grid-template-columns:minmax(92px,1fr) minmax(125px,1.2fr) auto;align-items:end;gap:10px;margin-top:12px}
+.mv-carry-form label{display:grid;min-width:0;gap:6px;font-size:12px;font-weight:650;color:#a6dce9}
+.mv-carry-form input,.mv-carry-form select{width:100%;min-width:0;max-width:100%;min-height:44px;box-sizing:border-box;margin:0;padding:9px 10px;border-radius:8px;border:1px solid #4787a0;background:#082636;color:#effcff;font-size:16px}
+.mv-carry-form button{min-height:44px;padding:10px 14px;white-space:nowrap;border-radius:8px;border:1px solid #65dcef;background:#0a485f;color:#f0ffff;font-size:12px;font-weight:700;cursor:pointer}
+.mv-carry-form button:hover:not(:disabled),.mv-carry-form button:focus-visible{background:#126681}
+.mv-carry-form button:disabled{opacity:.58;cursor:not-allowed}
+.mv-carry-capacity .mv-storage-error{margin-top:10px;padding:9px 11px;border:1px solid #bd766c;border-radius:8px;background:#4d252a;color:#ffd1c7;font-size:12px;line-height:1.5}
+@media(max-width:550px){.mv-carry-form{grid-template-columns:minmax(75px,.8fr) minmax(110px,1.2fr)}.mv-carry-form button{grid-column:1/-1;width:100%}}
+@media(max-width:350px){.mv-carry-form{grid-template-columns:1fr}.mv-carry-form button{grid-column:1}}
