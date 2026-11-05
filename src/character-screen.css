@@ -367,3 +367,9 @@
 .mv-attributes-cancel:hover:not(:disabled){background:#15445a}
 @media(max-width:500px){.mv-attributes-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.mv-attributes-modal-form .mv-attributes-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mv-attributes-modal-form>.mv-modal-body{padding:14px 15px}}
 @media(max-width:330px){.mv-attributes-summary{grid-template-columns:1fr 1fr;gap:5px}.mv-attribute-summary-item{padding:8px 4px;font-size:12px}.mv-attributes-modal-form .mv-attributes-grid{grid-template-columns:1fr}}
+
+/* M6.7 — distinguish effective scores from additive equipped item bonuses. */
+.mv-attribute-summary-item{flex-wrap:wrap}
+.mv-attribute-summary-item.has-equipment-bonus{border-color:#69c6d8;background:#0d3c4c}
+.mv-attribute-equipment-label{flex:1 0 100%;text-align:center;color:#89e6d1;font-size:10px;font-weight:750;line-height:1.3}
+.mv-attributes-summary-note{margin:12px 0 0;color:#9acbd8;font-size:11px;line-height:1.5}
