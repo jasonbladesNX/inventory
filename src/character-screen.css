@@ -287,3 +287,9 @@
  .mv-browse-container{grid-column:2;grid-row:auto;margin-left:0;justify-self:start}
  .mv-inventory-group{margin-top:14px}
 }
+
+/* Inline shortcut from stored item details back to its owning container. */
+.mv-modal-storage-location{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 12px;margin:0 0 14px;min-width:0}
+.mv-item-modal .mv-modal-body .mv-modal-storage-location .mv-storage-status{margin:0}
+.mv-modal-storage-location button{min-height:40px;padding:8px 12px;border:1px solid #367d98;background:#104155;color:#b8f0ff;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer}
+.mv-modal-storage-location button:hover,.mv-modal-storage-location button:focus-visible{border-color:#78e7f8;background:#18536b}
