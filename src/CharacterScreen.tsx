@@ -2,6 +2,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {Backpack, CircleDot, Coins, Crown, FlaskConical, Footprints, Gem, PackageOpen, ScrollText, Shield, ShieldCheck, Shirt, ShoppingBag, Sparkles, Sword, UserRound, WandSparkles, Wrench, X} from 'lucide-react';
+import {inventoryErrorMessage} from './inventoryErrors';
 import './character-screen.css';
 
 export type InventoryTab = 'character' | 'inventory' | 'shop' | 'craft';
@@ -165,7 +166,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   useEffect(()=>{setStorageActionError('')},[expandedItem,inventoryVersion]);
   const moveStorage=async(itemId:string,destination:string|null)=>{
     setStorageActionError('');
-    try{await onMoveStorage(itemId,destination)}catch(e){setStorageActionError(e instanceof Error?e.message:String(e))}
+    try{await onMoveStorage(itemId,destination)}catch(e){setStorageActionError(inventoryErrorMessage(e))}
   };
   const closeDetails=()=>{
     setExpandedItem(null);
