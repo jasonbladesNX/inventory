@@ -294,7 +294,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           </div>
           <div className="mv-modal-body" id="mv-modal-description">
             {equippedByItem.has(selectedItem.item_id)&&<span className="mv-equipped-indicator"><Shield size={13} aria-hidden="true"/> Equipped · {equippedByItem.get(selectedItem.item_id)?.slot}</span>}
-            {storage[selectedItem.item_id]?.container_item_id&&<span className="mv-storage-status"><Backpack size={13} aria-hidden="true"/> Inside {storage[selectedItem.item_id].location_name}</span>}
+            {storage[selectedItem.item_id]?.container_item_id&&<div className="mv-modal-storage-location"><span className="mv-storage-status"><Backpack size={13} aria-hidden="true"/> Inside {storage[selectedItem.item_id].location_name}</span><button type="button" onClick={()=>setExpandedItem(storage[selectedItem.item_id].container_item_id)}>View container</button></div>}
             {detailsLoading?<p>Loading item details…</p>:detailsError?<p className="mv-error" role="alert">Unable to load item details: {detailsError}</p>:itemDetails&&itemDetails.item_id===selectedItem.item_id?<>
               <div className="mv-detail-grid"><span>Category</span><strong>{titleCase(itemDetails.category)}</strong><span>Condition</span><strong>{itemDetails.condition?titleCase(itemDetails.condition):'Not specified'}</strong><span>Quantity</span><strong>{numberText(selectedItem.quantity)}</strong></div>
               {!itemDetails.identified?<p>This item has not been identified. Additional information is hidden.</p>:<>
@@ -341,7 +341,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
                 <button type="button" className="mv-modal-action-button" disabled={busy} onClick={()=>{void moveStorage(selectedItem.item_id,null)}}>Take out</button>}
               {storageContainers.some(container=>container.item_id!==selectedItem.item_id&&container.item_id!==storage[selectedItem.item_id]?.container_item_id)&&
                 <div className="mv-modal-action-field">
-                  <label htmlFor="mv-detail-storage">Put in…</label>
+                  <label htmlFor="mv-detail-storage">{storage[selectedItem.item_id]?.container_item_id?'Move to…':'Put in…'}</label>
                   <select id="mv-detail-storage" aria-label={`Put ${selectedItem.display_name} in a container`} value="" disabled={busy}
                     onChange={event=>{if(event.target.value)void moveStorage(selectedItem.item_id,event.target.value)}}>
                     <option value="">Choose container…</option>
