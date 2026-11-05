@@ -8,7 +8,8 @@
     "build": "vite build",
     "check": "tsc --noEmit --jsx react-jsx --module esnext --moduleResolution bundler --target es2022 --lib es2022,dom --allowSyntheticDefaultImports --skipLibCheck --types vite/client src/main.tsx src/Trading.tsx src/TradeQR.tsx src/ConnectionChecks.tsx",
     "syntax": "node scripts/validate-source.mjs",
-    "contracts": "node scripts/validate-contracts.mjs"
+    "contracts": "node scripts/validate-contracts.mjs",
+    "test:inventory-errors": "node scripts/test-inventory-errors.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.0",
