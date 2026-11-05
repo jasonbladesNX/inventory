@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "m6.3-container-organization",
+  "release": "m6.4-inventory-weight-preview",
   "date": "2026-11-05",
-  "note": "Inventory location filters, grouped container browsing, and direct item move controls"
+  "note": "Authorized known-weight totals for loose, equipped and container-stored inventory; unknown weights flagged"
 }
