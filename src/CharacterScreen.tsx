@@ -320,11 +320,11 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           <span>{row.attribute_code}:</span>
           <strong>{effective===null?'—':numberText(effective,2)}</strong>
           {modifier!==null&&<span className="mv-attribute-summary-mod">({modifier>=0?'+':''}{modifier})</span>}
-          {bonus!==0&&<small className="mv-attribute-equipment-label">Equip {bonus>0?'+':''}{numberText(bonus,2)}</small>}
+          {bonus!==0&&<small className="mv-attribute-equipment-label">Gear net {bonus>0?'+':''}{numberText(bonus,2)}</small>}
         </div>
       })}
     </div>
-    <p className="mv-attributes-summary-note">Effective scores and modifiers shown. Equipment adjustments are labeled; Edit Attributes changes base scores only.</p>
+    <p className="mv-attributes-summary-note">Effective scores are resolved from base attributes plus eligible equipment effects. Same-group bonuses do not stack, and the strongest score-setting effect takes precedence. Edit Attributes changes base scores only.</p>
     {!attributes.every(a=>a.is_editable)&&<p className="mv-attributes-note">Attribute editing is not configured for this ruleset yet.</p>}
   </section>;
   const attributeModal=attributeEditorOpen&&attributes.length>0&&attributes.every(a=>a.is_editable)&&createPortal(
@@ -406,7 +406,10 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       </section>
       <section className="mv-panel" aria-labelledby="mv-bonuses-title">
         <h3 id="mv-bonuses-title"><Sparkles size={20}/> Equipment Bonuses</h3>
-        {effects.length===0?<p className="mv-empty">No active equipment bonuses.</p>:<div className="mv-rows">{effects.filter(e=>Number(e.total_bonus)!==0).map(e=><div key={e.attribute_code} className="mv-bonus-row"><Gem size={17}/><span>{titleCase(e.attribute_code)}</span><strong>{Number(e.total_bonus)>0?'+':''}{numberText(e.total_bonus,2)}</strong></div>)}</div>}
+        {Object.values(derivedAttributes).filter(a=>Number(a.equipment_bonus)!==0).length===0?
+          <p className="mv-empty">No active resolved equipment adjustments to ability scores.</p>:
+          <div className="mv-rows">{Object.values(derivedAttributes).filter(a=>Number(a.equipment_bonus)!==0).map(a=><div key={a.attribute_code} className="mv-bonus-row"><Gem size={17}/><span>{a.attribute_label}</span><strong>{Number(a.equipment_bonus)>0?'+':''}{numberText(a.equipment_bonus,2)}</strong></div>)}</div>}
+        <p className="mv-weight-note">Only identified, unconditional add/set ability effects are resolved here. Conditional and other effect operations await ruleset handlers.</p>
       </section>
       <div className="mv-bottom-panels">
         <section className="mv-panel" aria-labelledby="mv-currency-title">
