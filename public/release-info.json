@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "m6.6-compact-attribute-summary-popup",
+  "release": "m6.7-derived-attribute-equipment-bonuses",
   "date": "2026-11-05",
-  "note": "Compact saved ability score summary with modal editing and unchanged secure attribute saving"
+  "note": "Base and effective ability scores separated, additive equipment effects displayed with derived modifiers"
 }
