@@ -14,6 +14,7 @@ type InventoryItem = {item_id:string; display_name:string; quantity:number|strin
 type StorageEntry = {item_id:string;container_item_id:string|null;is_container:boolean;location_name:string};
 type ContainerUsage = {container_item_id:string;used_weight_lb:number|string;capacity_weight_lb:number|string|null;item_count:number;unknown_weight_count:number};
 type WeightSummary = {known_weight_lb:number|string;carried_weight_lb:number|string;stored_weight_lb:number|string;unknown_item_count:number;item_count:number};
+type CarryProfile = {ruleset_code:string;capacity_mode:string;strength:number|null;creature_size:string|null;capacity_lb:number|string|null;drag_lift_push_lb:number|string|null};
 type ItemDetails = {item_id:string; category:string; description:string; condition:string; identified:boolean; properties:Record<string,unknown>; effects:{attribute:string;operation:string;value:unknown}[]};
 type Props = {
   db:SupabaseClient;
@@ -29,6 +30,7 @@ type Props = {
   onEquip:(itemId:string,slotId:string)=>void;
   onUnequip:(assignmentId:string)=>void;
   onMoveStorage:(itemId:string,containerItemId:string|null)=>Promise<void>;
+  onSaveCarryProfile:(strength:number,size:string)=>Promise<void>;
   tab:InventoryTab;
   onTabChange:(tab:InventoryTab)=>void;
 };
@@ -55,7 +57,7 @@ function numberText(value:number|string, digits=0):string {
 }
 function titleCase(code:string):string {return code.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}
 
-export default function CharacterScreen({db,campaign,campaignName,character,characterName,slots,effects,inventoryVersion,items,busy,onEquip,onUnequip,onMoveStorage,tab,onTabChange}:Props){
+export default function CharacterScreen({db,campaign,campaignName,character,characterName,slots,effects,inventoryVersion,items,busy,onEquip,onUnequip,onMoveStorage,onSaveCarryProfile,tab,onTabChange}:Props){
   const [equipped,setEquipped]=useState<Equipped[]>([]);
   const [wallet,setWallet]=useState<Money[]>([]);
   const [validSlots,setValidSlots]=useState<Record<string,string[]>>({});
@@ -64,6 +66,11 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [inventoryLocation,setInventoryLocation]=useState<string>('all');
   const [containerUsage,setContainerUsage]=useState<Record<string,ContainerUsage>>({});
   const [weightSummary,setWeightSummary]=useState<WeightSummary|null>(null);
+  const [carryProfile,setCarryProfile]=useState<CarryProfile|null>(null);
+  const [draftStrength,setDraftStrength]=useState('');
+  const [draftSize,setDraftSize]=useState('');
+  const [carryError,setCarryError]=useState('');
+  const [carrySaving,setCarrySaving]=useState(false);
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
   const [expandedItem,setExpandedItem]=useState<string|null>(null);
@@ -76,9 +83,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   useEffect(()=>{
     let cancelled=false;
     async function load(){
-      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setStorage({});setContainerUsage({});setWeightSummary(null);
+      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setStorage({});setContainerUsage({});setWeightSummary(null);setCarryProfile(null);
       try{
-        const [assignments,currency,compatibility,categories,storageRows,usageRows,weightRows]=await Promise.all([
+        const [assignments,currency,compatibility,categories,storageRows,usageRows,weightRows,carryRows]=await Promise.all([
           db.rpc('list_character_equipped_instances',{p_character:character}),
           db.rpc('list_my_trade_currency',{p_character:character}),
           db.rpc('list_character_valid_equipment_slots',{p_character:character}),
@@ -86,6 +93,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           db.rpc('list_character_storage',{p_character:character}),
           db.rpc('list_character_container_usage',{p_character:character}),
           db.rpc('get_character_inventory_weight',{p_character:character}),
+          db.rpc('get_character_carry_capacity',{p_character:character}),
         ]);
         if(assignments.error)throw assignments.error;
         if(currency.error)throw currency.error;
@@ -94,6 +102,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         if(storageRows.error)throw storageRows.error;
         if(usageRows.error)throw usageRows.error;
         if(weightRows.error)throw weightRows.error;
+        if(carryRows.error)throw carryRows.error;
         if(cancelled)return;
         const slotLookup=new Map(slots.map(s=>[s.id,s.label]));
         setEquipped((assignments.data||[]).map(row=>({
@@ -120,6 +129,11 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         for(const row of usageRows.data||[])usageByItem[row.container_item_id]=row as ContainerUsage;
         setContainerUsage(usageByItem);
         setWeightSummary((weightRows.data?.[0]??null) as WeightSummary|null);
+        const profile=(carryRows.data?.[0]??null) as CarryProfile|null;
+        setCarryProfile(profile);
+        setDraftStrength(profile?.strength==null?'':String(profile.strength));
+        setDraftSize(profile?.creature_size??'');
+        setCarryError('');
       }catch(e){if(!cancelled)setError(e instanceof Error?e.message:String(e))}
       finally{if(!cancelled)setLoading(false)}
     }
@@ -226,6 +240,20 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       {storage[item.item_id]?.is_container&&<button type="button" className="mv-browse-container" onClick={()=>setInventoryLocation(item.item_id)} aria-label={`Browse contents of ${item.display_name}`}>View contents</button>}
     </article>
   );
+  const canShowCarryCapacity=carryProfile?.ruleset_code==='dnd5e'&&carryProfile.capacity_mode==='weight';
+  const carryLimit=carryProfile?.capacity_lb==null?null:Number(carryProfile.capacity_lb);
+  const knownTotal=weightSummary?Number(weightSummary.known_weight_lb):0;
+  const carryPercent=carryLimit!==null&&carryLimit>0?Math.min(100,Math.max(0,knownTotal/carryLimit*100)):0;
+  const saveCarryProfile=async(event:React.FormEvent<HTMLFormElement>)=>{
+    event.preventDefault();
+    const strength=Number(draftStrength);
+    if(!Number.isInteger(strength)||strength<1||strength>30){setCarryError('Enter a Strength score from 1 to 30.');return;}
+    if(!['Tiny','Small','Medium','Large','Huge','Gargantuan'].includes(draftSize)){setCarryError('Choose a valid creature size.');return;}
+    setCarrySaving(true);setCarryError('');
+    try{await onSaveCarryProfile(strength,draftSize)}
+    catch(e){setCarryError(inventoryErrorMessage(e))}
+    finally{setCarrySaving(false)}
+  };
   const inventoryWeightPanel=weightSummary&&<section className="mv-weight-summary" aria-label="Inventory weight overview">
     <div className="mv-weight-summary-heading"><Backpack size={17} aria-hidden="true"/><strong>Inventory Weight</strong><span>Known weights only</span></div>
     <div className="mv-weight-breakdown">
@@ -233,8 +261,34 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       <div><span>Loose &amp; equipped</span><strong>{numberText(weightSummary.carried_weight_lb,2)} lb</strong></div>
       <div><span>Inside containers</span><strong>{numberText(weightSummary.stored_weight_lb,2)} lb</strong></div>
     </div>
+    {canShowCarryCapacity&&<div className="mv-carry-capacity">
+      <div className="mv-carry-capacity-heading"><strong>D&amp;D 5e Carrying Capacity</strong>{carryLimit!==null&&<span>{numberText(weightSummary.known_weight_lb,2)} / {numberText(carryLimit,2)} lb</span>}</div>
+      {carryLimit!==null&&carryLimit>0&&<>
+        <div className="mv-container-meter" role="progressbar" aria-label="Known weight against carrying capacity" aria-valuemin={0} aria-valuemax={carryLimit} aria-valuenow={Math.min(knownTotal,carryLimit)}>
+          <span style={{width:`${carryPercent}%`}}/>
+        </div>
+        <p className="mv-carry-capacity-status">{knownTotal>carryLimit?'Known weight exceeds carrying capacity.':`At least ${numberText(Math.max(0,carryLimit-knownTotal),2)} lb of capacity remains based on known weights.`}</p>
+        <p className="mv-carry-capacity-note">Push, drag, or lift: up to {numberText(carryProfile.drag_lift_push_lb??0,2)} lb.</p>
+      </>}
+      {carryLimit===null&&<p className="mv-carry-capacity-note">Set Strength and creature size to calculate capacity. No score has been assumed.</p>}
+      <form className="mv-carry-form" onSubmit={event=>{void saveCarryProfile(event)}}>
+        <label htmlFor="mv-carry-strength">Strength score
+          <input id="mv-carry-strength" type="number" min={1} max={30} step={1} required value={draftStrength} onChange={event=>setDraftStrength(event.target.value)}/>
+        </label>
+        <label htmlFor="mv-carry-size">Creature size
+          <select id="mv-carry-size" required value={draftSize} onChange={event=>setDraftSize(event.target.value)}>
+            <option value="">Select size…</option>
+            {['Tiny','Small','Medium','Large','Huge','Gargantuan'].map(size=><option key={size} value={size}>{size}</option>)}
+          </select>
+        </label>
+        <button type="submit" disabled={busy||carrySaving||loading}>Save capacity</button>
+      </form>
+      {carryError&&<p className="mv-storage-error" role="alert">{carryError}</p>}
+      <p className="mv-carry-capacity-note">Preview only. Standard D&amp;D 5e size-based carrying rules; no movement penalties or item-move restrictions are applied.</p>
+    </div>}
+    {!canShowCarryCapacity&&carryProfile&&<p className="mv-weight-note">This campaign's ruleset has no carrying-capacity formula configured yet.</p>}
     {Number(weightSummary.unknown_item_count)>0&&<p className="mv-weight-unknown"><PackageOpen size={15} aria-hidden="true"/> {weightSummary.unknown_item_count} {Number(weightSummary.unknown_item_count)===1?'item has':'items have'} no recorded weight. The actual total may be higher.</p>}
-    <p className="mv-weight-note">Stored items still count toward total carried weight when you carry their containers. Carrying limits and movement penalties are not applied yet.</p>
+    <p className="mv-weight-note">Stored items count toward total carried weight while you carry their containers. Missing weights make the remaining-capacity estimate incomplete.</p>
   </section>;
   const walletOrder=(code:string)=>({PP:0,GP:1,EP:2,SP:3,CP:4}[code.toUpperCase()]??5);
   return <div className="multiverse">
