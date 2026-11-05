@@ -60,6 +60,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [validSlots,setValidSlots]=useState<Record<string,string[]>>({});
   const [itemCategories,setItemCategories]=useState<Record<string,string>>({});
   const [storage,setStorage]=useState<Record<string,StorageEntry>>({});
+  const [inventoryLocation,setInventoryLocation]=useState<string>('all');
   const [containerUsage,setContainerUsage]=useState<Record<string,ContainerUsage>>({});
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
@@ -164,6 +165,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   },[expandedItem]);
 
   useEffect(()=>{setStorageActionError('')},[expandedItem,inventoryVersion]);
+  useEffect(()=>{setInventoryLocation('all')},[character,campaign]);
   const moveStorage=async(itemId:string,destination:string|null)=>{
     setStorageActionError('');
     // Friendly early feedback; the server remains the authoritative capacity validator.
@@ -199,6 +201,26 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const selectedUsage=expandedItem?containerUsage[expandedItem]:undefined;
   const containedItems=expandedItem?items.filter(item=>storage[item.item_id]?.container_item_id===expandedItem):[];
   const equippedByItem=new Map(equipped.map(row=>[row.itemId,row]));
+  const carriedItems=items.filter(item=>!storage[item.item_id]?.container_item_id);
+  const storedItems=items.filter(item=>Boolean(storage[item.item_id]?.container_item_id));
+  const containerGroups=storageContainers.map(container=>({
+    container, contents:storedItems.filter(item=>storage[item.item_id]?.container_item_id===container.item_id)
+  }));
+  const locationExists=inventoryLocation==='all'||inventoryLocation==='carried'||storageContainers.some(item=>item.item_id===inventoryLocation);
+  const currentLocation=locationExists?inventoryLocation:'all';
+  const renderInventoryCard=(item:InventoryItem)=>(
+    <article className={'mv-inventory-item'+(equippedByItem.has(item.item_id)?' is-equipped':'')} key={item.item_id}>
+      <button type="button" className="mv-item-icon mv-item-icon-button" aria-label={`View details for ${item.display_name}`} aria-haspopup="dialog" onClick={event=>openDetails(item.item_id,event)}>{renderItemIcon(item.item_id,25)}</button>
+      <div className="mv-item-info">
+        <strong>{item.display_name}</strong>
+        {equippedByItem.has(item.item_id)&&<span className="mv-equipped-indicator"><Shield size={13} aria-hidden="true"/> Equipped · {equippedByItem.get(item.item_id)?.slot}</span>}
+        <span>Quantity: {numberText(item.quantity)}</span>
+        {containerUsage[item.item_id]&&<span className="mv-container-card-summary"><Backpack size={13} aria-hidden="true"/> {containerUsage[item.item_id].item_count} {Number(containerUsage[item.item_id].item_count)===1?'item':'items'} · {numberText(containerUsage[item.item_id].used_weight_lb,2)} / {containerUsage[item.item_id].capacity_weight_lb===null?'?':numberText(containerUsage[item.item_id].capacity_weight_lb,2)} lb</span>}
+        {storage[item.item_id]?.container_item_id&&<span className="mv-storage-status"><Backpack size={13} aria-hidden="true"/> Inside {storage[item.item_id].location_name}</span>}
+      </div>
+      {storage[item.item_id]?.is_container&&<button type="button" className="mv-browse-container" onClick={()=>setInventoryLocation(item.item_id)} aria-label={`Browse contents of ${item.display_name}`}>View contents</button>}
+    </article>
+  );
   const walletOrder=(code:string)=>({PP:0,GP:1,EP:2,SP:3,CP:4}[code.toUpperCase()]??5);
   return <div className="multiverse">
     <div className="mv-hero">
@@ -229,18 +251,34 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     </div>}
     {tab==='inventory'&&<div className="mv-inventory-view">
       <section className="mv-panel" aria-labelledby="mv-inventory-title">
-        <h3 id="mv-inventory-title"><Backpack size={20}/> Backpack <span className="mv-item-count">{items.length} {items.length===1?'item':'items'}</span></h3>
-        {items.length===0?<p className="mv-empty">Your backpack is empty. Add an item using the campaign tools above.</p>:
-          <div className="mv-inventory-items">{items.map(item=><article className={'mv-inventory-item'+(equippedByItem.has(item.item_id)?' is-equipped':'')} key={item.item_id}>
-            <button type="button" className="mv-item-icon mv-item-icon-button" aria-label={`View details for ${item.display_name}`} aria-haspopup="dialog" onClick={event=>openDetails(item.item_id,event)}>{renderItemIcon(item.item_id,25)}</button>
-            <div className="mv-item-info">
-              <strong>{item.display_name}</strong>
-              {equippedByItem.has(item.item_id)&&<span className="mv-equipped-indicator"><Shield size={13} aria-hidden="true"/> Equipped · {equippedByItem.get(item.item_id)?.slot}</span>}
-              <span>Quantity: {numberText(item.quantity)}</span>
-              {containerUsage[item.item_id]&&<span className="mv-container-card-summary"><Backpack size={13} aria-hidden="true"/> {containerUsage[item.item_id].item_count} {Number(containerUsage[item.item_id].item_count)===1?'item':'items'} · {numberText(containerUsage[item.item_id].used_weight_lb,2)} / {containerUsage[item.item_id].capacity_weight_lb===null?'?':numberText(containerUsage[item.item_id].capacity_weight_lb,2)} lb</span>}
-              {storage[item.item_id]?.container_item_id&&<span className="mv-storage-status"><Backpack size={13} aria-hidden="true"/> Inside {storage[item.item_id].location_name}</span>}
-            </div>
-          </article>)}</div>}
+        <h3 id="mv-inventory-title"><Backpack size={20}/> Inventory <span className="mv-item-count">{items.length} {items.length===1?'item':'items'}</span></h3>
+        {items.length===0?<p className="mv-empty">Your inventory is empty. Add an item using the campaign tools above.</p>:<>
+          <nav className="mv-inventory-locations" aria-label="Inventory locations">
+            <button type="button" className={'mv-location-tab'+(currentLocation==='all'?' is-active':'')} aria-current={currentLocation==='all'?'page':undefined} onClick={()=>setInventoryLocation('all')}>All <span>{items.length}</span></button>
+            <button type="button" className={'mv-location-tab'+(currentLocation==='carried'?' is-active':'')} aria-current={currentLocation==='carried'?'page':undefined} onClick={()=>setInventoryLocation('carried')}>Carried <span>{carriedItems.length}</span></button>
+            {containerGroups.map(({container,contents})=><button key={container.item_id} type="button" className={'mv-location-tab'+(currentLocation===container.item_id?' is-active':'')} aria-current={currentLocation===container.item_id?'page':undefined} onClick={()=>setInventoryLocation(container.item_id)}>
+              <Backpack size={15} aria-hidden="true"/> {container.display_name} <span>{contents.length}</span>
+            </button>)}
+          </nav>
+          {currentLocation==='all'?<>
+            <section className="mv-inventory-group" aria-label="Carried items">
+              <div className="mv-inventory-group-heading"><h4>Carried &amp; Equipped</h4><span>{carriedItems.length} items</span></div>
+              <div className="mv-inventory-items">{carriedItems.map(renderInventoryCard)}</div>
+            </section>
+            {containerGroups.filter(({contents})=>contents.length>0).map(({container,contents})=><section className="mv-inventory-group" key={container.item_id} aria-label={`Inside ${container.display_name}`}>
+              <div className="mv-inventory-group-heading"><h4><Backpack size={16} aria-hidden="true"/> Inside {container.display_name}</h4><button type="button" className="mv-group-browse" onClick={()=>setInventoryLocation(container.item_id)}>Browse · {contents.length}</button></div>
+              <div className="mv-inventory-items">{contents.map(renderInventoryCard)}</div>
+            </section>)}
+          </>:currentLocation==='carried'?<section className="mv-inventory-group">
+            <div className="mv-inventory-group-heading"><h4>Carried &amp; Equipped</h4><span>{carriedItems.length} items</span></div>
+            <div className="mv-inventory-items">{carriedItems.map(renderInventoryCard)}</div>
+          </section>:containerGroups.filter(({container})=>container.item_id===currentLocation).map(({container,contents})=><section className="mv-inventory-group" key={container.item_id}>
+            <div className="mv-inventory-group-heading"><h4><Backpack size={17} aria-hidden="true"/> {container.display_name} Contents</h4><button type="button" className="mv-group-browse" onClick={()=>setInventoryLocation('all')}>All items</button></div>
+            {containerUsage[container.item_id]&&<div className="mv-location-capacity">{numberText(containerUsage[container.item_id].used_weight_lb,2)} / {containerUsage[container.item_id].capacity_weight_lb===null?'?':numberText(containerUsage[container.item_id].capacity_weight_lb,2)} lb used</div>}
+            <button type="button" className="mv-container-detail-link" onClick={event=>openDetails(container.item_id,event)}>Open {container.display_name} details</button>
+            {contents.length===0?<p className="mv-empty">This container is empty.</p>:<div className="mv-inventory-items">{contents.map(renderInventoryCard)}</div>}
+          </section>)}
+        </>}
         {slots.length===0&&<p className="mv-empty">No equipment slots have been configured for this campaign yet.</p>}
       </section>
       <p className="mv-inventory-hint">Trading and connection diagnostics remain available below the inventory panel during testing.</p>
