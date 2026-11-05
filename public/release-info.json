@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "m6.5-ruleset-carry-capacity",
+  "release": "m6.6-character-attributes",
   "date": "2026-11-05",
-  "note": "D&D SRD 5.2.1 character Strength and creature-size carrying capacity preview"
+  "note": "Ruleset-backed Character Attributes editor for D&D ability scores and creature size; carrying capacity reads saved Strength"
 }
