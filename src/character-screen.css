@@ -293,3 +293,19 @@
 .mv-item-modal .mv-modal-body .mv-modal-storage-location .mv-storage-status{margin:0}
 .mv-modal-storage-location button{min-height:40px;padding:8px 12px;border:1px solid #367d98;background:#104155;color:#b8f0ff;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer}
 .mv-modal-storage-location button:hover,.mv-modal-storage-location button:focus-visible{border-color:#78e7f8;background:#18536b}
+
+/* Milestone 6.4 — read-only known-weight and unknown-weight inventory overview. */
+.mv-weight-summary{min-width:0;margin:13px 0 17px;padding:14px;border:1px solid #376b80;border-radius:12px;background:linear-gradient(145deg,#082c3d,#071e2d);color:#d8f5ff}
+.mv-weight-summary-heading{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;color:#c1eeff}
+.mv-weight-summary-heading>svg{color:#79e0f6;flex:none}
+.mv-weight-summary-heading>strong{font:500 16px/1.35 Georgia,serif;text-transform:uppercase;letter-spacing:.5px}
+.mv-weight-summary-heading>span{margin-left:auto;color:#9ec5d2;font-size:11px}
+.mv-weight-breakdown{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mv-weight-breakdown>div{min-width:0;display:grid;gap:5px;padding:10px;background:#0a3546;border:1px solid #245b70;border-radius:9px}
+.mv-weight-breakdown>div span{color:#a2d2df;font-size:11px;line-height:1.35}
+.mv-weight-breakdown>div strong{color:#e7faff;font-size:16px;font-weight:750;overflow-wrap:anywhere}
+.mv-weight-summary .mv-weight-unknown{display:flex;align-items:flex-start;gap:7px;margin:12px 0 0;color:#f6cda7;font-size:12px;line-height:1.5}
+.mv-weight-unknown svg{flex:none;margin-top:1px}
+.mv-weight-summary .mv-weight-note{margin:10px 0 0;color:#9dc4d0;font-size:11px;line-height:1.5}
+@media(max-width:500px){.mv-weight-summary{padding:11px;margin:10px 0 15px}.mv-weight-breakdown{gap:6px}.mv-weight-breakdown>div{padding:9px 7px}.mv-weight-breakdown>div strong{font-size:14px}}
+@media(max-width:350px){.mv-weight-breakdown{grid-template-columns:1fr}.mv-weight-breakdown>div{grid-template-columns:1fr auto;align-items:center}}
