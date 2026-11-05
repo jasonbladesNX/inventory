@@ -15,6 +15,7 @@ type StorageEntry = {item_id:string;container_item_id:string|null;is_container:b
 type ContainerUsage = {container_item_id:string;used_weight_lb:number|string;capacity_weight_lb:number|string|null;item_count:number;unknown_weight_count:number};
 type WeightSummary = {known_weight_lb:number|string;carried_weight_lb:number|string;stored_weight_lb:number|string;unknown_item_count:number;item_count:number};
 type CarryProfile = {ruleset_code:string;capacity_mode:string;strength:number|null;creature_size:string|null;capacity_lb:number|string|null;drag_lift_push_lb:number|string|null};
+type CharacterAttribute = {attribute_code:string;attribute_label:string;score:number|null;modifier:number|null;is_editable:boolean};
 type ItemDetails = {item_id:string; category:string; description:string; condition:string; identified:boolean; properties:Record<string,unknown>; effects:{attribute:string;operation:string;value:unknown}[]};
 type Props = {
   db:SupabaseClient;
@@ -30,7 +31,7 @@ type Props = {
   onEquip:(itemId:string,slotId:string)=>void;
   onUnequip:(assignmentId:string)=>void;
   onMoveStorage:(itemId:string,containerItemId:string|null)=>Promise<void>;
-  onSaveCarryProfile:(strength:number,size:string)=>Promise<void>;
+  onSaveAttributes:(scores:Record<string,number>,size:string)=>Promise<void>;
   tab:InventoryTab;
   onTabChange:(tab:InventoryTab)=>void;
 };
@@ -57,7 +58,7 @@ function numberText(value:number|string, digits=0):string {
 }
 function titleCase(code:string):string {return code.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}
 
-export default function CharacterScreen({db,campaign,campaignName,character,characterName,slots,effects,inventoryVersion,items,busy,onEquip,onUnequip,onMoveStorage,onSaveCarryProfile,tab,onTabChange}:Props){
+export default function CharacterScreen({db,campaign,campaignName,character,characterName,slots,effects,inventoryVersion,items,busy,onEquip,onUnequip,onMoveStorage,onSaveAttributes,tab,onTabChange}:Props){
   const [equipped,setEquipped]=useState<Equipped[]>([]);
   const [wallet,setWallet]=useState<Money[]>([]);
   const [validSlots,setValidSlots]=useState<Record<string,string[]>>({});
@@ -67,10 +68,11 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [containerUsage,setContainerUsage]=useState<Record<string,ContainerUsage>>({});
   const [weightSummary,setWeightSummary]=useState<WeightSummary|null>(null);
   const [carryProfile,setCarryProfile]=useState<CarryProfile|null>(null);
-  const [draftStrength,setDraftStrength]=useState('');
+  const [attributes,setAttributes]=useState<CharacterAttribute[]>([]);
+  const [draftScores,setDraftScores]=useState<Record<string,string>>({});
   const [draftSize,setDraftSize]=useState('');
   const [carryError,setCarryError]=useState('');
-  const [carrySaving,setCarrySaving]=useState(false);
+  const [attributesSaving,setAttributesSaving]=useState(false);
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
   const [expandedItem,setExpandedItem]=useState<string|null>(null);
@@ -83,9 +85,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   useEffect(()=>{
     let cancelled=false;
     async function load(){
-      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setStorage({});setContainerUsage({});setWeightSummary(null);setCarryProfile(null);
+      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setStorage({});setContainerUsage({});setWeightSummary(null);setCarryProfile(null);setAttributes([]);
       try{
-        const [assignments,currency,compatibility,categories,storageRows,usageRows,weightRows,carryRows]=await Promise.all([
+        const [assignments,currency,compatibility,categories,storageRows,usageRows,weightRows,carryRows,attributeRows]=await Promise.all([
           db.rpc('list_character_equipped_instances',{p_character:character}),
           db.rpc('list_my_trade_currency',{p_character:character}),
           db.rpc('list_character_valid_equipment_slots',{p_character:character}),
@@ -94,6 +96,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           db.rpc('list_character_container_usage',{p_character:character}),
           db.rpc('get_character_inventory_weight',{p_character:character}),
           db.rpc('get_character_carry_capacity',{p_character:character}),
+          db.rpc('list_character_attributes',{p_character:character}),
         ]);
         if(assignments.error)throw assignments.error;
         if(currency.error)throw currency.error;
@@ -103,6 +106,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         if(usageRows.error)throw usageRows.error;
         if(weightRows.error)throw weightRows.error;
         if(carryRows.error)throw carryRows.error;
+        if(attributeRows.error)throw attributeRows.error;
         if(cancelled)return;
         const slotLookup=new Map(slots.map(s=>[s.id,s.label]));
         setEquipped((assignments.data||[]).map(row=>({
@@ -131,7 +135,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         setWeightSummary((weightRows.data?.[0]??null) as WeightSummary|null);
         const profile=(carryRows.data?.[0]??null) as CarryProfile|null;
         setCarryProfile(profile);
-        setDraftStrength(profile?.strength==null?'':String(profile.strength));
+        const newAttrs=(attributeRows.data||[]) as CharacterAttribute[];
+        setAttributes(newAttrs);
+        setDraftScores(Object.fromEntries(newAttrs.map(a=>[a.attribute_code,a.score==null?'':String(a.score)])));
         setDraftSize(profile?.creature_size??'');
         setCarryError('');
       }catch(e){if(!cancelled)setError(e instanceof Error?e.message:String(e))}
@@ -244,16 +250,48 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const carryLimit=carryProfile?.capacity_lb==null?null:Number(carryProfile.capacity_lb);
   const knownTotal=weightSummary?Number(weightSummary.known_weight_lb):0;
   const carryPercent=carryLimit!==null&&carryLimit>0?Math.min(100,Math.max(0,knownTotal/carryLimit*100)):0;
-  const saveCarryProfile=async(event:React.FormEvent<HTMLFormElement>)=>{
+  const saveAttributes=async(event:React.FormEvent<HTMLFormElement>)=>{
     event.preventDefault();
-    const strength=Number(draftStrength);
-    if(!Number.isInteger(strength)||strength<1||strength>30){setCarryError('Enter a Strength score from 1 to 30.');return;}
+    const scores:Record<string,number>={};
+    for(const row of attributes){
+      const text=draftScores[row.attribute_code]?.trim()??'';
+      const value=Number(text);
+      if(!text||!Number.isInteger(value)||value<1||value>30){
+        setCarryError(`Enter a score from 1 to 30 for ${row.attribute_label}.`);return;
+      }
+      scores[row.attribute_code]=value;
+    }
     if(!['Tiny','Small','Medium','Large','Huge','Gargantuan'].includes(draftSize)){setCarryError('Choose a valid creature size.');return;}
-    setCarrySaving(true);setCarryError('');
-    try{await onSaveCarryProfile(strength,draftSize)}
+    setAttributesSaving(true);setCarryError('');
+    try{await onSaveAttributes(scores,draftSize)}
     catch(e){setCarryError(inventoryErrorMessage(e))}
-    finally{setCarrySaving(false)}
+    finally{setAttributesSaving(false)}
   };
+  const attributePanel=attributes.length>0&&<section className="mv-panel mv-attributes-panel" aria-labelledby="mv-attributes-title">
+    <h3 id="mv-attributes-title"><UserRound size={20}/> Character Attributes</h3>
+    <p className="mv-attributes-note">Scores are saved to this character. D&amp;D 5e modifiers are shown for reference.</p>
+    {attributes.every(a=>a.is_editable)?<form className="mv-attributes-form" onSubmit={event=>{void saveAttributes(event)}}>
+      <div className="mv-attributes-grid">
+        {attributes.map(row=><label key={row.attribute_code} className="mv-attribute-card">
+          <span className="mv-attribute-label">{row.attribute_label} <small>{row.attribute_code}</small></span>
+          <input type="number" min={1} max={30} step={1} required aria-label={row.attribute_label}
+            value={draftScores[row.attribute_code]??''} onChange={event=>setDraftScores(prev=>({...prev,[row.attribute_code]:event.target.value}))}/>
+          <span className="mv-attribute-modifier">{draftScores[row.attribute_code]&&Number.isInteger(Number(draftScores[row.attribute_code]))&&Number(draftScores[row.attribute_code])>=1&&Number(draftScores[row.attribute_code])<=30?
+            `Modifier ${Math.floor((Number(draftScores[row.attribute_code])-10)/2)>=0?'+':''}${Math.floor((Number(draftScores[row.attribute_code])-10)/2)}`:'Not set'}</span>
+        </label>)}
+      </div>
+      <div className="mv-attributes-footer">
+        <label htmlFor="mv-character-size">Creature size
+          <select id="mv-character-size" required value={draftSize} onChange={event=>setDraftSize(event.target.value)}>
+            <option value="">Select size…</option>
+            {['Tiny','Small','Medium','Large','Huge','Gargantuan'].map(size=><option key={size} value={size}>{size}</option>)}
+          </select>
+        </label>
+        <button type="submit" disabled={busy||loading||attributesSaving}>Save attributes</button>
+      </div>
+      {carryError&&<p className="mv-storage-error" role="alert">{carryError}</p>}
+    </form>:<div className="mv-attributes-readonly">{attributes.map(row=><div key={row.attribute_code}><span>{row.attribute_label}</span><strong>{row.score??'Not set'}</strong></div>)}<p>Attribute editing is not configured for this ruleset yet.</p></div>}
+  </section>;
   const inventoryWeightPanel=weightSummary&&<section className="mv-weight-summary" aria-label="Inventory weight overview">
     <div className="mv-weight-summary-heading"><Backpack size={17} aria-hidden="true"/><strong>Inventory Weight</strong><span>Known weights only</span></div>
     <div className="mv-weight-breakdown">
@@ -271,20 +309,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         <p className="mv-carry-capacity-note">Push, drag, or lift: up to {numberText(carryProfile.drag_lift_push_lb??0,2)} lb.</p>
       </>}
       {carryLimit===null&&<p className="mv-carry-capacity-note">Set Strength and creature size to calculate capacity. No score has been assumed.</p>}
-      <form className="mv-carry-form" onSubmit={event=>{void saveCarryProfile(event)}}>
-        <label htmlFor="mv-carry-strength">Strength score
-          <input id="mv-carry-strength" type="number" min={1} max={30} step={1} required value={draftStrength} onChange={event=>setDraftStrength(event.target.value)}/>
-        </label>
-        <label htmlFor="mv-carry-size">Creature size
-          <select id="mv-carry-size" required value={draftSize} onChange={event=>setDraftSize(event.target.value)}>
-            <option value="">Select size…</option>
-            {['Tiny','Small','Medium','Large','Huge','Gargantuan'].map(size=><option key={size} value={size}>{size}</option>)}
-          </select>
-        </label>
-        <button type="submit" disabled={busy||carrySaving||loading}>Save capacity</button>
-      </form>
-      {carryError&&<p className="mv-storage-error" role="alert">{carryError}</p>}
-      <p className="mv-carry-capacity-note">Preview only. Standard D&amp;D 5e size-based carrying rules; no movement penalties or item-move restrictions are applied.</p>
+      <p className="mv-carry-capacity-note">Edit Strength and creature size in Character Attributes to change this capacity.</p>
     </div>}
     {!canShowCarryCapacity&&carryProfile&&<p className="mv-weight-note">This campaign's ruleset has no carrying-capacity formula configured yet.</p>}
     {Number(weightSummary.unknown_item_count)>0&&<p className="mv-weight-unknown"><PackageOpen size={15} aria-hidden="true"/> {weightSummary.unknown_item_count} {Number(weightSummary.unknown_item_count)===1?'item has':'items have'} no recorded weight. The actual total may be higher.</p>}
@@ -299,6 +324,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       <div className="mv-ornament" aria-hidden="true">✦</div>
     </div>
     {tab==='character'&&<div className="mv-panels">
+      {attributePanel}
       {inventoryWeightPanel}
       <section className="mv-panel" aria-labelledby="mv-equipped-title">
         <h3 id="mv-equipped-title"><Sword size={20}/> Equipped Items</h3>
