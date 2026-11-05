@@ -324,7 +324,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         </div>
       })}
     </div>
-    <p className="mv-attributes-summary-note">Effective scores are resolved from base attributes plus eligible equipment effects. Same-group bonuses do not stack, and the strongest score-setting effect takes precedence. Edit Attributes changes base scores only.</p>
+    <p className="mv-attributes-summary-note">Effective scores include eligible equipment adjustments. Same-group effects do not stack; compatible operations follow the ruleset's resolution policy. Edit Attributes changes base scores only.</p>
     {!attributes.every(a=>a.is_editable)&&<p className="mv-attributes-note">Attribute editing is not configured for this ruleset yet.</p>}
   </section>;
   const attributeModal=attributeEditorOpen&&attributes.length>0&&attributes.every(a=>a.is_editable)&&createPortal(
@@ -405,11 +405,11 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           <div className="mv-rows">{equipped.map(row=><div className="mv-equipment-row" key={row.id}><Shield size={18}/><span>{row.slot}</span><strong>{row.name}</strong><button type="button" className="mv-unequip-button" disabled={busy||loading} onClick={()=>onUnequip(row.id)} aria-label={`Unequip ${row.name} from ${row.slot}`}>Unequip</button></div>)}</div>}
       </section>
       <section className="mv-panel" aria-labelledby="mv-bonuses-title">
-        <h3 id="mv-bonuses-title"><Sparkles size={20}/> Equipment Bonuses</h3>
+        <h3 id="mv-bonuses-title"><Sparkles size={20}/> Resolved Equipment Effects</h3>
         {Object.values(derivedAttributes).filter(a=>Number(a.equipment_bonus)!==0).length===0?
           <p className="mv-empty">No active resolved equipment adjustments to ability scores.</p>:
           <div className="mv-rows">{Object.values(derivedAttributes).filter(a=>Number(a.equipment_bonus)!==0).map(a=><div key={a.attribute_code} className="mv-bonus-row"><Gem size={17}/><span>{a.attribute_label}</span><strong>{Number(a.equipment_bonus)>0?'+':''}{numberText(a.equipment_bonus,2)}</strong></div>)}</div>}
-        <p className="mv-weight-note">Only identified, unconditional add/set ability effects are resolved here. Conditional and other effect operations await ruleset handlers.</p>
+        <p className="mv-weight-note">The ruleset controls supported effects. Identified equipment can apply add, set, multiply, minimum floors and maximum ceilings. Currently supported conditions can require an equipped item category; unknown conditions and flags are not applied to ability scores.</p>
       </section>
       <div className="mv-bottom-panels">
         <section className="mv-panel" aria-labelledby="mv-currency-title">
