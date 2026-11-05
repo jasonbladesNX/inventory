@@ -16,6 +16,7 @@ type ContainerUsage = {container_item_id:string;used_weight_lb:number|string;cap
 type WeightSummary = {known_weight_lb:number|string;carried_weight_lb:number|string;stored_weight_lb:number|string;unknown_item_count:number;item_count:number};
 type CarryProfile = {ruleset_code:string;capacity_mode:string;strength:number|null;creature_size:string|null;capacity_lb:number|string|null;drag_lift_push_lb:number|string|null};
 type CharacterAttribute = {attribute_code:string;attribute_label:string;score:number|null;modifier:number|null;is_editable:boolean};
+type DerivedAttribute = {attribute_code:string;attribute_label:string;base_score:number|null;equipment_bonus:number|string;effective_score:number|string|null;effective_modifier:number|null};
 type ItemDetails = {item_id:string; category:string; description:string; condition:string; identified:boolean; properties:Record<string,unknown>; effects:{attribute:string;operation:string;value:unknown}[]};
 type Props = {
   db:SupabaseClient;
@@ -69,6 +70,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [weightSummary,setWeightSummary]=useState<WeightSummary|null>(null);
   const [carryProfile,setCarryProfile]=useState<CarryProfile|null>(null);
   const [attributes,setAttributes]=useState<CharacterAttribute[]>([]);
+  const [derivedAttributes,setDerivedAttributes]=useState<Record<string,DerivedAttribute>>({});
   const [draftScores,setDraftScores]=useState<Record<string,string>>({});
   const [draftSize,setDraftSize]=useState('');
   const [carryError,setCarryError]=useState('');
@@ -88,9 +90,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   useEffect(()=>{
     let cancelled=false;
     async function load(){
-      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setStorage({});setContainerUsage({});setWeightSummary(null);setCarryProfile(null);setAttributes([]);
+      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setStorage({});setContainerUsage({});setWeightSummary(null);setCarryProfile(null);setAttributes([]);setDerivedAttributes({});
       try{
-        const [assignments,currency,compatibility,categories,storageRows,usageRows,weightRows,carryRows,attributeRows]=await Promise.all([
+        const [assignments,currency,compatibility,categories,storageRows,usageRows,weightRows,carryRows,attributeRows,derivedRows]=await Promise.all([
           db.rpc('list_character_equipped_instances',{p_character:character}),
           db.rpc('list_my_trade_currency',{p_character:character}),
           db.rpc('list_character_valid_equipment_slots',{p_character:character}),
@@ -100,6 +102,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           db.rpc('get_character_inventory_weight',{p_character:character}),
           db.rpc('get_character_carry_capacity',{p_character:character}),
           db.rpc('list_character_attributes',{p_character:character}),
+          db.rpc('list_character_derived_attributes',{p_character:character}),
         ]);
         if(assignments.error)throw assignments.error;
         if(currency.error)throw currency.error;
@@ -110,6 +113,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         if(weightRows.error)throw weightRows.error;
         if(carryRows.error)throw carryRows.error;
         if(attributeRows.error)throw attributeRows.error;
+        if(derivedRows.error)throw derivedRows.error;
         if(cancelled)return;
         const slotLookup=new Map(slots.map(s=>[s.id,s.label]));
         setEquipped((assignments.data||[]).map(row=>({
@@ -140,6 +144,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         setCarryProfile(profile);
         const newAttrs=(attributeRows.data||[]) as CharacterAttribute[];
         setAttributes(newAttrs);
+        setDerivedAttributes(Object.fromEntries(((derivedRows.data||[]) as DerivedAttribute[]).map(row=>[row.attribute_code,row])));
         setDraftScores(Object.fromEntries(newAttrs.map(a=>[a.attribute_code,a.score==null?'':String(a.score)])));
         setDraftSize(profile?.creature_size??'');
         setCarryError('');
@@ -305,12 +310,21 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       {attributes.every(a=>a.is_editable)&&<button type="button" ref={attributeTriggerRef} className="mv-attributes-edit-trigger" disabled={loading||busy} onClick={()=>{setCarryError('');setAttributeEditorOpen(true)}}>Edit Attributes</button>}
     </div>
     <div className="mv-attributes-summary" aria-label="Saved character ability scores">
-      {attributes.map(row=><div key={row.attribute_code} className="mv-attribute-summary-item">
-        <span>{row.attribute_code}:</span>
-        <strong>{row.score??'—'}</strong>
-        {row.modifier!==null&&<span className="mv-attribute-summary-mod">({row.modifier>=0?'+':''}{row.modifier})</span>}
-      </div>)}
+      {attributes.map(row=>{
+        const derived=derivedAttributes[row.attribute_code];
+        const bonus=Number(derived?.equipment_bonus??0);
+        const effective=derived?.effective_score??row.score;
+        const modifier=derived?.effective_modifier??row.modifier;
+        return <div key={row.attribute_code} className={'mv-attribute-summary-item'+(bonus!==0?' has-equipment-bonus':'')}
+          title={bonus!==0?`Base ${row.score??'not set'}; equipment ${bonus>0?'+':''}${numberText(bonus,2)}`:`Base ${row.score??'not set'}`}>
+          <span>{row.attribute_code}:</span>
+          <strong>{effective===null?'—':numberText(effective,2)}</strong>
+          {modifier!==null&&<span className="mv-attribute-summary-mod">({modifier>=0?'+':''}{modifier})</span>}
+          {bonus!==0&&<small className="mv-attribute-equipment-label">Equip {bonus>0?'+':''}{numberText(bonus,2)}</small>}
+        </div>
+      })}
     </div>
+    <p className="mv-attributes-summary-note">Effective scores and modifiers shown. Equipment adjustments are labeled; Edit Attributes changes base scores only.</p>
     {!attributes.every(a=>a.is_editable)&&<p className="mv-attributes-note">Attribute editing is not configured for this ruleset yet.</p>}
   </section>;
   const attributeModal=attributeEditorOpen&&attributes.length>0&&attributes.every(a=>a.is_editable)&&createPortal(
@@ -322,7 +336,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         </div>
         <form className="mv-attributes-form mv-attributes-modal-form" onSubmit={event=>{void saveAttributes(event)}}>
           <div className="mv-modal-body">
-            <p className="mv-attributes-note">Edit your six ability scores and creature size. Modifiers update as you type; changes are saved together.</p>
+            <p className="mv-attributes-note">Edit base ability scores and creature size. Equipment bonuses are applied separately and are not changed by this editor.</p>
             <div className="mv-attributes-grid">
               {attributes.map(row=><label key={row.attribute_code} className="mv-attribute-card">
                 <span className="mv-attribute-label">{row.attribute_label} <small>{row.attribute_code}</small></span>
