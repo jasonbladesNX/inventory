@@ -1,0 +1,6 @@
+{
+  "application": "Nexus Multiverse",
+  "release": "m6.2-storage-error-fix-v2",
+  "date": "2026-11-05",
+  "note": "Supabase error serialization and capacity preflight feedback"
+}
