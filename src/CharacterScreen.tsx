@@ -166,6 +166,20 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   useEffect(()=>{setStorageActionError('')},[expandedItem,inventoryVersion]);
   const moveStorage=async(itemId:string,destination:string|null)=>{
     setStorageActionError('');
+    // Friendly early feedback; the server remains the authoritative capacity validator.
+    if(destination&&itemDetails?.item_id===itemId){
+      const usage=containerUsage[destination];
+      const item=items.find(row=>row.item_id===itemId);
+      const unitWeight=Number(itemDetails.properties?.weight);
+      const quantity=Number(item?.quantity);
+      const capacity=Number(usage?.capacity_weight_lb);
+      const used=Number(usage?.used_weight_lb);
+      if(usage&&item&&Number.isFinite(unitWeight)&&Number.isFinite(quantity)&&Number.isFinite(capacity)&&Number.isFinite(used)&&
+        unitWeight>=0&&quantity>0&&capacity>0&&Number(usage.unknown_weight_count)===0&&used+unitWeight*quantity>capacity){
+        setStorageActionError(`Not enough room in this container. The item weighs ${unitWeight*quantity} lb, the container holds ${capacity} lb, and ${used} lb is already inside.`);
+        return;
+      }
+    }
     try{await onMoveStorage(itemId,destination)}catch(e){setStorageActionError(inventoryErrorMessage(e))}
   };
   const closeDetails=()=>{
