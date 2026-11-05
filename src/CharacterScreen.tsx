@@ -13,6 +13,7 @@ type Money = {currency_id:string; code:string; name:string; available:number|str
 type InventoryItem = {item_id:string; display_name:string; quantity:number|string; eligible:boolean};
 type StorageEntry = {item_id:string;container_item_id:string|null;is_container:boolean;location_name:string};
 type ContainerUsage = {container_item_id:string;used_weight_lb:number|string;capacity_weight_lb:number|string|null;item_count:number;unknown_weight_count:number};
+type WeightSummary = {known_weight_lb:number|string;carried_weight_lb:number|string;stored_weight_lb:number|string;unknown_item_count:number;item_count:number};
 type ItemDetails = {item_id:string; category:string; description:string; condition:string; identified:boolean; properties:Record<string,unknown>; effects:{attribute:string;operation:string;value:unknown}[]};
 type Props = {
   db:SupabaseClient;
@@ -62,6 +63,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [storage,setStorage]=useState<Record<string,StorageEntry>>({});
   const [inventoryLocation,setInventoryLocation]=useState<string>('all');
   const [containerUsage,setContainerUsage]=useState<Record<string,ContainerUsage>>({});
+  const [weightSummary,setWeightSummary]=useState<WeightSummary|null>(null);
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
   const [expandedItem,setExpandedItem]=useState<string|null>(null);
@@ -74,15 +76,16 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   useEffect(()=>{
     let cancelled=false;
     async function load(){
-      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setStorage({});setContainerUsage({});
+      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setStorage({});setContainerUsage({});setWeightSummary(null);
       try{
-        const [assignments,currency,compatibility,categories,storageRows,usageRows]=await Promise.all([
+        const [assignments,currency,compatibility,categories,storageRows,usageRows,weightRows]=await Promise.all([
           db.rpc('list_character_equipped_instances',{p_character:character}),
           db.rpc('list_my_trade_currency',{p_character:character}),
           db.rpc('list_character_valid_equipment_slots',{p_character:character}),
           db.rpc('list_character_item_categories',{p_character:character}),
           db.rpc('list_character_storage',{p_character:character}),
           db.rpc('list_character_container_usage',{p_character:character}),
+          db.rpc('get_character_inventory_weight',{p_character:character}),
         ]);
         if(assignments.error)throw assignments.error;
         if(currency.error)throw currency.error;
@@ -90,6 +93,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         if(categories.error)throw categories.error;
         if(storageRows.error)throw storageRows.error;
         if(usageRows.error)throw usageRows.error;
+        if(weightRows.error)throw weightRows.error;
         if(cancelled)return;
         const slotLookup=new Map(slots.map(s=>[s.id,s.label]));
         setEquipped((assignments.data||[]).map(row=>({
@@ -115,6 +119,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         const usageByItem:Record<string,ContainerUsage>={};
         for(const row of usageRows.data||[])usageByItem[row.container_item_id]=row as ContainerUsage;
         setContainerUsage(usageByItem);
+        setWeightSummary((weightRows.data?.[0]??null) as WeightSummary|null);
       }catch(e){if(!cancelled)setError(e instanceof Error?e.message:String(e))}
       finally{if(!cancelled)setLoading(false)}
     }
@@ -221,6 +226,16 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       {storage[item.item_id]?.is_container&&<button type="button" className="mv-browse-container" onClick={()=>setInventoryLocation(item.item_id)} aria-label={`Browse contents of ${item.display_name}`}>View contents</button>}
     </article>
   );
+  const inventoryWeightPanel=weightSummary&&<section className="mv-weight-summary" aria-label="Inventory weight overview">
+    <div className="mv-weight-summary-heading"><Backpack size={17} aria-hidden="true"/><strong>Inventory Weight</strong><span>Known weights only</span></div>
+    <div className="mv-weight-breakdown">
+      <div><span>Total</span><strong>{numberText(weightSummary.known_weight_lb,2)} lb</strong></div>
+      <div><span>Loose &amp; equipped</span><strong>{numberText(weightSummary.carried_weight_lb,2)} lb</strong></div>
+      <div><span>Inside containers</span><strong>{numberText(weightSummary.stored_weight_lb,2)} lb</strong></div>
+    </div>
+    {Number(weightSummary.unknown_item_count)>0&&<p className="mv-weight-unknown"><PackageOpen size={15} aria-hidden="true"/> {weightSummary.unknown_item_count} {Number(weightSummary.unknown_item_count)===1?'item has':'items have'} no recorded weight. The actual total may be higher.</p>}
+    <p className="mv-weight-note">Stored items still count toward total carried weight when you carry their containers. Carrying limits and movement penalties are not applied yet.</p>
+  </section>;
   const walletOrder=(code:string)=>({PP:0,GP:1,EP:2,SP:3,CP:4}[code.toUpperCase()]??5);
   return <div className="multiverse">
     <div className="mv-hero">
@@ -230,6 +245,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       <div className="mv-ornament" aria-hidden="true">✦</div>
     </div>
     {tab==='character'&&<div className="mv-panels">
+      {inventoryWeightPanel}
       <section className="mv-panel" aria-labelledby="mv-equipped-title">
         <h3 id="mv-equipped-title"><Sword size={20}/> Equipped Items</h3>
         {loading?<p className="mv-empty">Loading equipment…</p>:equipped.length===0?<p className="mv-empty">No equipped items yet. Equip an item from Inventory to see it here.</p>:
@@ -252,6 +268,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     {tab==='inventory'&&<div className="mv-inventory-view">
       <section className="mv-panel" aria-labelledby="mv-inventory-title">
         <h3 id="mv-inventory-title"><Backpack size={20}/> Inventory <span className="mv-item-count">{items.length} {items.length===1?'item':'items'}</span></h3>
+        {inventoryWeightPanel}
         {items.length===0?<p className="mv-empty">Your inventory is empty. Add an item using the campaign tools above.</p>:<>
           <nav className="mv-inventory-locations" aria-label="Inventory locations">
             <button type="button" className={'mv-location-tab'+(currentLocation==='all'?' is-active':'')} aria-current={currentLocation==='all'?'page':undefined} onClick={()=>setInventoryLocation('all')}>All <span>{items.length}</span></button>
