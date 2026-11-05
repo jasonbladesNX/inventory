@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "m6.4-inventory-weight-preview",
+  "release": "m6.5-ruleset-carry-capacity",
   "date": "2026-11-05",
-  "note": "Authorized known-weight totals for loose, equipped and container-stored inventory; unknown weights flagged"
+  "note": "D&D SRD 5.2.1 character Strength and creature-size carrying capacity preview"
 }
