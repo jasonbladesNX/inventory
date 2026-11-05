@@ -73,6 +73,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [draftSize,setDraftSize]=useState('');
   const [carryError,setCarryError]=useState('');
   const [attributesSaving,setAttributesSaving]=useState(false);
+  const [attributeEditorOpen,setAttributeEditorOpen]=useState(false);
+  const attributeCloseRef=useRef<HTMLButtonElement>(null);
+  const attributeTriggerRef=useRef<HTMLButtonElement>(null);
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
   const [expandedItem,setExpandedItem]=useState<string|null>(null);
@@ -191,6 +194,28 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
 
   useEffect(()=>{setStorageActionError('')},[expandedItem,inventoryVersion]);
   useEffect(()=>{setInventoryLocation('all')},[character,campaign]);
+  useEffect(()=>{setAttributeEditorOpen(false)},[character,campaign]);
+  useEffect(()=>{
+    if(!attributeEditorOpen)return;
+    attributeCloseRef.current?.focus();
+    const onKeyDown=(event:KeyboardEvent)=>{
+      if(event.key==='Escape'){
+        event.preventDefault();
+        setAttributeEditorOpen(false);
+        attributeTriggerRef.current?.focus();
+      }
+      if(event.key==='Tab'){
+        const dialog=attributeCloseRef.current?.closest('[role="dialog"]');
+        const focusables=dialog?.querySelectorAll<HTMLElement>('button:not(:disabled),[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex]:not([tabindex="-1"])');
+        if(!focusables?.length)return;
+        const first=focusables[0],last=focusables[focusables.length-1];
+        if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}
+        else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}
+      }
+    };
+    document.addEventListener('keydown',onKeyDown);
+    return()=>document.removeEventListener('keydown',onKeyDown);
+  },[attributeEditorOpen]);
   const moveStorage=async(itemId:string,destination:string|null)=>{
     setStorageActionError('');
     // Friendly early feedback; the server remains the authoritative capacity validator.
@@ -263,35 +288,68 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     }
     if(!['Tiny','Small','Medium','Large','Huge','Gargantuan'].includes(draftSize)){setCarryError('Choose a valid creature size.');return;}
     setAttributesSaving(true);setCarryError('');
-    try{await onSaveAttributes(scores,draftSize)}
+    try{await onSaveAttributes(scores,draftSize);setAttributeEditorOpen(false);attributeTriggerRef.current?.focus()}
     catch(e){setCarryError(inventoryErrorMessage(e))}
     finally{setAttributesSaving(false)}
   };
+  const closeAttributeEditor=()=>{
+    setAttributeEditorOpen(false);
+    setCarryError('');
+    setDraftScores(Object.fromEntries(attributes.map(a=>[a.attribute_code,a.score==null?'':String(a.score)])));
+    setDraftSize(carryProfile?.creature_size??'');
+    attributeTriggerRef.current?.focus();
+  };
   const attributePanel=attributes.length>0&&<section className="mv-panel mv-attributes-panel" aria-labelledby="mv-attributes-title">
-    <h3 id="mv-attributes-title"><UserRound size={20}/> Character Attributes</h3>
-    <p className="mv-attributes-note">Scores are saved to this character. D&amp;D 5e modifiers are shown for reference.</p>
-    {attributes.every(a=>a.is_editable)?<form className="mv-attributes-form" onSubmit={event=>{void saveAttributes(event)}}>
-      <div className="mv-attributes-grid">
-        {attributes.map(row=><label key={row.attribute_code} className="mv-attribute-card">
-          <span className="mv-attribute-label">{row.attribute_label} <small>{row.attribute_code}</small></span>
-          <input type="number" min={1} max={30} step={1} required aria-label={row.attribute_label}
-            value={draftScores[row.attribute_code]??''} onChange={event=>setDraftScores(prev=>({...prev,[row.attribute_code]:event.target.value}))}/>
-          <span className="mv-attribute-modifier">{draftScores[row.attribute_code]&&Number.isInteger(Number(draftScores[row.attribute_code]))&&Number(draftScores[row.attribute_code])>=1&&Number(draftScores[row.attribute_code])<=30?
-            `Modifier ${Math.floor((Number(draftScores[row.attribute_code])-10)/2)>=0?'+':''}${Math.floor((Number(draftScores[row.attribute_code])-10)/2)}`:'Not set'}</span>
-        </label>)}
-      </div>
-      <div className="mv-attributes-footer">
-        <label htmlFor="mv-character-size">Creature size
-          <select id="mv-character-size" required value={draftSize} onChange={event=>setDraftSize(event.target.value)}>
-            <option value="">Select size…</option>
-            {['Tiny','Small','Medium','Large','Huge','Gargantuan'].map(size=><option key={size} value={size}>{size}</option>)}
-          </select>
-        </label>
-        <button type="submit" disabled={busy||loading||attributesSaving}>Save attributes</button>
-      </div>
-      {carryError&&<p className="mv-storage-error" role="alert">{carryError}</p>}
-    </form>:<div className="mv-attributes-readonly">{attributes.map(row=><div key={row.attribute_code}><span>{row.attribute_label}</span><strong>{row.score??'Not set'}</strong></div>)}<p>Attribute editing is not configured for this ruleset yet.</p></div>}
+    <div className="mv-attributes-summary-heading">
+      <h3 id="mv-attributes-title"><UserRound size={20}/> Character Attributes</h3>
+      {attributes.every(a=>a.is_editable)&&<button type="button" ref={attributeTriggerRef} className="mv-attributes-edit-trigger" disabled={loading||busy} onClick={()=>{setCarryError('');setAttributeEditorOpen(true)}}>Edit Attributes</button>}
+    </div>
+    <div className="mv-attributes-summary" aria-label="Saved character ability scores">
+      {attributes.map(row=><div key={row.attribute_code} className="mv-attribute-summary-item">
+        <span>{row.attribute_code}:</span>
+        <strong>{row.score??'—'}</strong>
+        {row.modifier!==null&&<span className="mv-attribute-summary-mod">({row.modifier>=0?'+':''}{row.modifier})</span>}
+      </div>)}
+    </div>
+    {!attributes.every(a=>a.is_editable)&&<p className="mv-attributes-note">Attribute editing is not configured for this ruleset yet.</p>}
   </section>;
+  const attributeModal=attributeEditorOpen&&attributes.length>0&&attributes.every(a=>a.is_editable)&&createPortal(
+    <div className="mv-modal-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)closeAttributeEditor()}}>
+      <section role="dialog" aria-modal="true" aria-labelledby="mv-attributes-modal-title" className="mv-item-modal mv-attributes-modal">
+        <div className="mv-modal-header">
+          <div className="mv-modal-heading"><UserRound size={24} aria-hidden="true"/><div><span className="mv-modal-eyebrow">Character</span><h3 id="mv-attributes-modal-title">Edit Attributes</h3></div></div>
+          <button ref={attributeCloseRef} type="button" className="mv-modal-close" aria-label="Close attribute editor" onClick={closeAttributeEditor} disabled={attributesSaving}><X size={22}/></button>
+        </div>
+        <form className="mv-attributes-form mv-attributes-modal-form" onSubmit={event=>{void saveAttributes(event)}}>
+          <div className="mv-modal-body">
+            <p className="mv-attributes-note">Edit your six ability scores and creature size. Modifiers update as you type; changes are saved together.</p>
+            <div className="mv-attributes-grid">
+              {attributes.map(row=><label key={row.attribute_code} className="mv-attribute-card">
+                <span className="mv-attribute-label">{row.attribute_label} <small>{row.attribute_code}</small></span>
+                <input type="number" min={1} max={30} step={1} required aria-label={row.attribute_label}
+                  value={draftScores[row.attribute_code]??''} onChange={event=>setDraftScores(prev=>({...prev,[row.attribute_code]:event.target.value}))}/>
+                <span className="mv-attribute-modifier">{draftScores[row.attribute_code]&&Number.isInteger(Number(draftScores[row.attribute_code]))&&Number(draftScores[row.attribute_code])>=1&&Number(draftScores[row.attribute_code])<=30?
+                  `Modifier ${Math.floor((Number(draftScores[row.attribute_code])-10)/2)>=0?'+':''}${Math.floor((Number(draftScores[row.attribute_code])-10)/2)}`:'Not set'}</span>
+              </label>)}
+            </div>
+            <div className="mv-attributes-footer">
+              <label htmlFor="mv-character-size">Creature size
+                <select id="mv-character-size" required value={draftSize} onChange={event=>setDraftSize(event.target.value)}>
+                  <option value="">Select size…</option>
+                  {['Tiny','Small','Medium','Large','Huge','Gargantuan'].map(size=><option key={size} value={size}>{size}</option>)}
+                </select>
+              </label>
+            </div>
+            {carryError&&<p className="mv-storage-error" role="alert">{carryError}</p>}
+          </div>
+          <div className="mv-modal-footer mv-attributes-modal-footer">
+            <button type="button" className="mv-attributes-cancel" onClick={closeAttributeEditor} disabled={attributesSaving}>Cancel</button>
+            <button type="submit" className="mv-modal-done" disabled={busy||loading||attributesSaving}>{attributesSaving?'Saving…':'Save Attributes'}</button>
+          </div>
+        </form>
+      </section>
+    </div>,document.body
+  );
   const inventoryWeightPanel=weightSummary&&<section className="mv-weight-summary" aria-label="Inventory weight overview">
     <div className="mv-weight-summary-heading"><Backpack size={17} aria-hidden="true"/><strong>Inventory Weight</strong><span>Known weights only</span></div>
     <div className="mv-weight-breakdown">
@@ -325,6 +383,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     </div>
     {tab==='character'&&<div className="mv-panels">
       {attributePanel}
+      {attributeModal}
       {inventoryWeightPanel}
       <section className="mv-panel" aria-labelledby="mv-equipped-title">
         <h3 id="mv-equipped-title"><Sword size={20}/> Equipped Items</h3>
