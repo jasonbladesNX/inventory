@@ -327,3 +327,22 @@
 .mv-carry-capacity .mv-storage-error{margin-top:10px;padding:9px 11px;border:1px solid #bd766c;border-radius:8px;background:#4d252a;color:#ffd1c7;font-size:12px;line-height:1.5}
 @media(max-width:550px){.mv-carry-form{grid-template-columns:minmax(75px,.8fr) minmax(110px,1.2fr)}.mv-carry-form button{grid-column:1/-1;width:100%}}
 @media(max-width:350px){.mv-carry-form{grid-template-columns:1fr}.mv-carry-form button{grid-column:1}}
+
+/* M6.6 — versioned-ruleset character attributes with D&D ability modifiers. */
+.mv-attributes-panel{min-width:0}
+.mv-attributes-note{margin:4px 0 14px;color:#a1c9d6;font-size:12px;line-height:1.5}
+.mv-attributes-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.mv-attribute-card{display:grid;gap:8px;min-width:0;padding:12px;border:1px solid #356a80;background:#0a2b3d;border-radius:10px}
+.mv-attribute-label{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:4px 8px;color:#d2f2fb;font-size:12px;font-weight:700}
+.mv-attribute-label small{color:#88bfce;font-size:10px;letter-spacing:.5px}
+.mv-attribute-card input{display:block;width:100%;min-width:0;height:46px;box-sizing:border-box;margin:0;padding:7px 9px;background:#082132;border:1px solid #468ca4;border-radius:8px;text-align:center;color:#effaff;font-size:20px;font-weight:700}
+.mv-attribute-modifier{color:#98dfea;font-size:11px;font-weight:650;text-align:center}
+.mv-attributes-footer{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px;margin-top:14px}
+.mv-attributes-footer label{display:grid;gap:6px;flex:1 1 180px;color:#acd9e6;font-size:12px;font-weight:700}
+.mv-attributes-footer select{min-height:44px;min-width:0;width:100%;box-sizing:border-box;margin:0;padding:8px 12px;background:#082435;border:1px solid #438ba4;border-radius:8px;color:#ebfaff;font-size:16px}
+.mv-attributes-footer button{min-height:44px;padding:10px 17px;border-radius:8px;border:1px solid #64d9ec;background:#0c4b62;color:#effcff;font-size:13px;font-weight:700;cursor:pointer}
+.mv-attributes-footer button:disabled{opacity:.6;cursor:not-allowed}
+.mv-attributes-form .mv-storage-error{margin-top:12px;padding:10px;border:1px solid #bd766c;background:#4d252a;border-radius:8px;color:#ffd1c7;font-size:12px}
+.mv-attributes-readonly{display:grid;gap:8px}.mv-attributes-readonly>div{display:flex;justify-content:space-between;color:#bee4ef}.mv-attributes-readonly p{font-size:12px;color:#a6c5cf}
+@media(max-width:500px){.mv-attributes-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.mv-attribute-card{padding:10px}.mv-attributes-footer button{flex:1 1 100%}}
+@media(max-width:320px){.mv-attributes-grid{grid-template-columns:1fr}}
