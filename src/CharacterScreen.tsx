@@ -18,6 +18,7 @@ type CarryProfile = {ruleset_code:string;capacity_mode:string;strength:number|nu
 type CharacterAttribute = {attribute_code:string;attribute_label:string;score:number|null;modifier:number|null;is_editable:boolean};
 type DerivedAttribute = {attribute_code:string;attribute_label:string;base_score:number|null;equipment_bonus:number|string;effective_score:number|string|null;effective_modifier:number|null};
 type EffectSource = {attribute_code:string;item_id:string;item_name:string;effect_id:string;operation:string;effect_value:number|string|null;stacking_group:string|null;effect_status:'applied'|'suppressed'|'condition_unmet'|'unsupported';status_reason:string};
+type EquipRequirement = {attribute_code:string;required_score:number;current_score:number|null;is_met:boolean};
 type ItemDetails = {item_id:string; category:string; description:string; condition:string; identified:boolean; properties:Record<string,unknown>; effects:{attribute:string;operation:string;value:unknown}[]};
 type Props = {
   db:SupabaseClient;
@@ -86,6 +87,8 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [expandedItem,setExpandedItem]=useState<string|null>(null);
   const [itemDetails,setItemDetails]=useState<ItemDetails|null>(null);
   const [detailsError,setDetailsError]=useState('');
+  const [equipRequirements,setEquipRequirements]=useState<EquipRequirement[]>([]);
+  const [requirementsError,setRequirementsError]=useState('');
   const [storageActionError,setStorageActionError]=useState('');
   const [detailsLoading,setDetailsLoading]=useState(false);
   const modalCloseRef=useRef<HTMLButtonElement>(null);
@@ -163,14 +166,21 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
 
   useEffect(()=>{
     let cancelled=false;
-    setItemDetails(null);setDetailsError('');
+    setItemDetails(null);setDetailsError('');setEquipRequirements([]);setRequirementsError('');
     if(!expandedItem){setDetailsLoading(false);return;}
     setDetailsLoading(true);
     async function loadDetails(itemId:string){
       try{
-        const {data,error}=await db.rpc('get_character_item_details',{p_character:character,p_item:itemId});
-        if(error)throw error;
-        if(!cancelled)setItemDetails(data as ItemDetails);
+        const [details,requirements]=await Promise.all([
+          db.rpc('get_character_item_details',{p_character:character,p_item:itemId}),
+          db.rpc('list_character_item_equip_requirements',{p_character:character,p_item:itemId})
+        ]);
+        if(details.error)throw details.error;
+        if(!cancelled){
+          setItemDetails(details.data as ItemDetails);
+          if(requirements.error)setRequirementsError(inventoryErrorMessage(requirements.error));
+          else setEquipRequirements((requirements.data||[]) as EquipRequirement[]);
+        }
       }catch(e){
         if(!cancelled)setDetailsError(e instanceof Error?e.message:String(e));
       }finally{
@@ -557,7 +567,22 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
                   </select>
                 </div>}
             </>}
-            {!loading&&!equippedByItem.has(selectedItem.item_id)&&selectedItem.eligible&&(validSlots[selectedItem.item_id]||[]).length===0&&<span className="mv-modal-action-note">No eligible equipment slots. Check slot compatibility, minimum base attributes, and equipped-item conflicts.</span>}
+            {!detailsLoading&&equipRequirements.length>0&&<div className="mv-item-requirements">
+              <h4>Equipment Requirements</h4>
+              {equipRequirements.map(rule=><div className="mv-item-requirement-row" key={rule.attribute_code}>
+                <span>{rule.attribute_code}: Base {rule.current_score??'unset'} / Required {rule.required_score}</span>
+                <strong className={rule.is_met?'mv-requirement-met':'mv-requirement-unmet'}>{rule.is_met?'Met':'Not met'}</strong>
+              </div>)}
+              <small>These requirements use base ability scores, without equipment bonuses.</small>
+            </div>}
+            {requirementsError&&<p className="mv-storage-error" role="alert">Cannot load equipment requirements: {requirementsError}</p>}
+            {!loading&&!equippedByItem.has(selectedItem.item_id)&&selectedItem.eligible&&(validSlots[selectedItem.item_id]||[]).length===0&&
+              <div className="mv-modal-action-note">
+                <strong>Cannot equip this item.</strong>
+                {equipRequirements.some(rule=>!rule.is_met)?
+                  <p>{equipRequirements.filter(rule=>!rule.is_met).map(rule=>`Requires base ${rule.attribute_code} ${rule.required_score} (current ${rule.current_score??'unset'})`).join('; ')}.</p>:
+                  <p>No eligible equipment slot. Check slot compatibility and conflicts with currently equipped items.</p>}
+              </div>}
             {storageActionError&&<p className="mv-storage-error" role="alert">{storageActionError}</p>}
           </div>
           <div className="mv-modal-footer"><button type="button" className="mv-modal-done" onClick={closeDetails}>Close</button></div>
