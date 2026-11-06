@@ -7,6 +7,7 @@ import {inventoryErrorMessage} from './inventoryErrors';
 import CharacterScreen,{type InventoryTab} from './CharacterScreen';
 import EffectEditor from './EffectEditor';
 import EffectEditorBoundary from './EffectEditorBoundary';
+import RequirementEditor from './RequirementEditor';
 import ConnectionChecks from './ConnectionChecks';
 import Trading from './Trading';
 import './style.css';
@@ -81,7 +82,7 @@ function App(){
     try{
       const [people,catalog,equipment,account,membership,recipientQuery,campaignOwner]=await Promise.all([
         db.from('characters').select('id,name,member_id').eq('campaign_id',id),
-        db.from('item_definitions').select('id,name,category,code,source_info').eq('campaign_id',id),
+        db.from('item_definitions').select('id,name,category,code,source_info,default_properties').eq('campaign_id',id),
         db.from('equipment_slot_definitions').select('id,label').eq('campaign_id',id),
         db.auth.getUser(),
         db.from('campaign_members').select('id,user_id,role,status').eq('campaign_id',id),
@@ -292,6 +293,9 @@ function App(){
               <button type="submit" disabled={busy}>Create Catalog Item</button>
             </form>
           </section>
+          <RequirementEditor db={db!} campaign={campaign} definitions={defs}
+            attributes={effectAttributes}
+            onChanged={async()=>{await loadCampaign(campaign)}}/>
           <EffectEditorBoundary campaign={campaign}>
             <EffectEditor db={db!} campaign={campaign} definitions={defs}
               attributes={effectAttributes} operations={effectOperations}
