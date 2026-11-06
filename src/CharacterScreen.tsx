@@ -20,6 +20,7 @@ type DerivedAttribute = {attribute_code:string;attribute_label:string;base_score
 type EffectSource = {attribute_code:string;item_id:string;item_name:string;effect_id:string;operation:string;effect_value:number|string|null;stacking_group:string|null;effect_status:'applied'|'suppressed'|'condition_unmet'|'unsupported';status_reason:string};
 type EquipRequirement = {attribute_code:string;required_score:number;current_score:number|string|null;projected_score:number|string|null;slot_label:string;is_met:boolean};
 type EquipPreview = {slot_id:string;slot_label:string;can_equip:boolean;reason:string;replaced_items:string[]};
+type UnequipDependency = {dependent_item:string;attribute_code:string;required_score:number;current_score:number|string;projected_score:number|string};
 type ItemDetails = {item_id:string; category:string; description:string; condition:string; identified:boolean; properties:Record<string,unknown>; effects:{attribute:string;operation:string;value:unknown}[]};
 type Props = {
   db:SupabaseClient;
@@ -92,10 +93,28 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [requirementsError,setRequirementsError]=useState('');
   const [equipPreview,setEquipPreview]=useState<EquipPreview[]>([]);
   const [equipPreviewError,setEquipPreviewError]=useState('');
+  const [unequipCheckPending,setUnequipCheckPending]=useState(false);
+  const [unequipWarning,setUnequipWarning]=useState<{assignmentId:string;itemName:string;dependencies:UnequipDependency[]}|null>(null);
+  const [unequipCheckError,setUnequipCheckError]=useState('');
   const [storageActionError,setStorageActionError]=useState('');
   const [detailsLoading,setDetailsLoading]=useState(false);
   const modalCloseRef=useRef<HTMLButtonElement>(null);
   const previousFocusRef=useRef<HTMLElement|null>(null);
+  async function requestUnequip(row:Equipped){
+    if(busy||loading||unequipCheckPending)return;
+    setUnequipCheckPending(true);setUnequipCheckError('');setUnequipWarning(null);
+    try{
+      const {data,error:rpcError}=await db.rpc('preview_character_unequip_dependencies',{
+        p_character:character,p_assignment:row.id
+      });
+      if(rpcError)throw rpcError;
+      const dependencies=(data||[]) as UnequipDependency[];
+      if(dependencies.length)setUnequipWarning({assignmentId:row.id,itemName:row.name,dependencies});
+      else onUnequip(row.id);
+    }catch(e){setUnequipCheckError(inventoryErrorMessage(e))}
+    finally{setUnequipCheckPending(false)}
+  }
+  useEffect(()=>{setUnequipWarning(null);setUnequipCheckError('')},[character,inventoryVersion]);
   useEffect(()=>{
     let cancelled=false;
     async function load(){
@@ -434,7 +453,25 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       <section className="mv-panel" aria-labelledby="mv-equipped-title">
         <h3 id="mv-equipped-title"><Sword size={20}/> Equipped Items</h3>
         {loading?<p className="mv-empty">Loading equipment…</p>:equipped.length===0?<p className="mv-empty">No equipped items yet. Equip an item from Inventory to see it here.</p>:
-          <div className="mv-rows">{equipped.map(row=><div className="mv-equipment-row" key={row.id}><Shield size={18}/><span>{row.slot}</span><strong>{row.name}</strong><button type="button" className="mv-unequip-button" disabled={busy||loading} onClick={()=>onUnequip(row.id)} aria-label={`Unequip ${row.name} from ${row.slot}`}>Unequip</button></div>)}</div>}
+          <div className="mv-rows">{equipped.map(row=><div className="mv-equipment-row" key={row.id}><Shield size={18}/><span>{row.slot}</span><strong>{row.name}</strong><button type="button" className="mv-unequip-button" disabled={busy||loading||unequipCheckPending} onClick={()=>{void requestUnequip(row)}} aria-label={`Unequip ${row.name} from ${row.slot}`}>{unequipCheckPending?'Checking…':'Unequip'}</button></div>)}</div>}
+        {unequipCheckError&&<p className="mv-storage-error" role="alert">Unable to check equipment dependencies: {unequipCheckError}. No equipment was changed.</p>}
+        {unequipWarning&&<div className="mv-unequip-warning" role="alertdialog" aria-label="Equipment dependency warning" aria-describedby="mv-unequip-warning-desc">
+          <h4>Equipment Dependency Warning</h4>
+          <p id="mv-unequip-warning-desc">Removing <strong>{unequipWarning.itemName}</strong> would leave the following equipped items below their requirements:</p>
+          {unequipWarning.dependencies.map((dependency,i)=><div className="mv-unequip-dependency" key={i}>
+            <strong>{dependency.dependent_item}</strong>
+            <span>{dependency.attribute_code}: {numberText(dependency.current_score,2)} → {numberText(dependency.projected_score,2)} (requires {dependency.required_score})</span>
+          </div>)}
+          <p>Continuing removes only {unequipWarning.itemName}. The other items remain equipped but no longer meet their requirements.</p>
+          <div className="mv-unequip-warning-actions">
+            <button type="button" onClick={()=>setUnequipWarning(null)} disabled={busy}>Cancel</button>
+            <button type="button" className="mv-unequip-warning-confirm" onClick={()=>{
+              const pending=unequipWarning;
+              setUnequipWarning(null);
+              if(pending&&equipped.some(item=>item.id===pending.assignmentId))onUnequip(pending.assignmentId);
+            }} disabled={busy}>Unequip Anyway</button>
+          </div>
+        </div>}
       </section>
       <section className="mv-panel" aria-labelledby="mv-bonuses-title">
         <h3 id="mv-bonuses-title"><Sparkles size={20}/> Resolved Equipment Effects</h3>
