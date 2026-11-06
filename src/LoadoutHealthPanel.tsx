@@ -35,6 +35,21 @@ export default function LoadoutHealthPanel({db,character,characterName,inventory
   const cancelRepairRef=useRef<HTMLButtonElement>(null);
   const [copyStatus,setCopyStatus]=useState('');
   useEffect(()=>{
+    if(!repair)return;
+    const frame=window.requestAnimationFrame(()=>cancelRepairRef.current?.focus());
+    const onKey=(event:KeyboardEvent)=>{
+      if(event.key==='Escape'){event.preventDefault();setRepair(null)}
+      if(event.key==='Tab'){
+        const controls=cancelRepairRef.current?.closest('.nx-loadout-repair-modal')?.querySelectorAll<HTMLButtonElement>('button:not([disabled])');
+        if(!controls?.length)return;
+        if(event.shiftKey&&document.activeElement===controls[0]){event.preventDefault();controls[controls.length-1].focus()}
+        else if(!event.shiftKey&&document.activeElement===controls[controls.length-1]){event.preventDefault();controls[0].focus()}
+      }
+    };
+    document.addEventListener('keydown',onKey);
+    return()=>{window.cancelAnimationFrame(frame);document.removeEventListener('keydown',onKey)};
+  },[repair]);
+  useEffect(()=>{
     let cancelled=false;
     async function load(){
       setLoading(true);setError('');setRepair(null);setCopyStatus('');
