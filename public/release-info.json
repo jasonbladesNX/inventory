@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "m6.15-modal-unequip-warning-invalid-loadout-fix",
+  "release": "m6.20-loadout-health-five-milestone-bundle",
   "date": "2026-11-06",
-  "note": "Real modal confirmation for unequip dependency changes; persistent invalid equipment requirements notice; authorized read-only database status check"
+  "note": "Milestones 6.16–6.20: loadout health, equipment dependency map, forbidden-category audit, guided repair, report and refresh. Combined browser acceptance pending."
 }
