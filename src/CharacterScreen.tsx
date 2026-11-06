@@ -21,6 +21,7 @@ type EffectSource = {attribute_code:string;item_id:string;item_name:string;effec
 type EquipRequirement = {attribute_code:string;required_score:number;current_score:number|string|null;projected_score:number|string|null;slot_label:string;is_met:boolean};
 type EquipPreview = {slot_id:string;slot_label:string;can_equip:boolean;reason:string;replaced_items:string[]};
 type UnequipDependency = {dependent_item:string;attribute_code:string;required_score:number;current_score:number|string;projected_score:number|string};
+type InvalidEquipment = {assignment_id:string;item_name:string;attribute_code:string;required_score:number;current_score:number|string|null};
 type ItemDetails = {item_id:string; category:string; description:string; condition:string; identified:boolean; properties:Record<string,unknown>; effects:{attribute:string;operation:string;value:unknown}[]};
 type Props = {
   db:SupabaseClient;
@@ -96,6 +97,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [unequipCheckPending,setUnequipCheckPending]=useState(false);
   const [unequipWarning,setUnequipWarning]=useState<{assignmentId:string;itemName:string;dependencies:UnequipDependency[]}|null>(null);
   const [unequipCheckError,setUnequipCheckError]=useState('');
+  const [invalidEquipment,setInvalidEquipment]=useState<InvalidEquipment[]>([]);
+  const [invalidEquipmentError,setInvalidEquipmentError]=useState('');
+  const unequipCancelRef=useRef<HTMLButtonElement>(null);
   const [storageActionError,setStorageActionError]=useState('');
   const [detailsLoading,setDetailsLoading]=useState(false);
   const modalCloseRef=useRef<HTMLButtonElement>(null);
@@ -116,11 +120,28 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   }
   useEffect(()=>{setUnequipWarning(null);setUnequipCheckError('')},[character,inventoryVersion]);
   useEffect(()=>{
+    if(!unequipWarning)return;
+    const focusRequest=window.requestAnimationFrame(()=>unequipCancelRef.current?.focus());
+    const keydown=(event:KeyboardEvent)=>{
+      if(event.key==='Escape'){event.preventDefault();setUnequipWarning(null)}
+      if(event.key==='Tab'){
+        const parent=unequipCancelRef.current?.closest('.mv-unequip-modal');
+        const buttons=parent?.querySelectorAll<HTMLButtonElement>('button:not([disabled])');
+        if(!buttons?.length)return;
+        const first=buttons[0],last=buttons[buttons.length-1];
+        if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}
+        else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}
+      }
+    };
+    document.addEventListener('keydown',keydown);
+    return()=>{window.cancelAnimationFrame(focusRequest);document.removeEventListener('keydown',keydown)};
+  },[unequipWarning]);
+  useEffect(()=>{
     let cancelled=false;
     async function load(){
-      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setStorage({});setContainerUsage({});setWeightSummary(null);setCarryProfile(null);setAttributes([]);setDerivedAttributes({});setEffectSources([]);setEffectSourcesError('');
+      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setStorage({});setContainerUsage({});setWeightSummary(null);setCarryProfile(null);setAttributes([]);setDerivedAttributes({});setEffectSources([]);setEffectSourcesError('');setInvalidEquipment([]);setInvalidEquipmentError('');
       try{
-        const [assignments,currency,compatibility,categories,storageRows,usageRows,weightRows,carryRows,attributeRows,derivedRows,sourceRows]=await Promise.all([
+        const [assignments,currency,compatibility,categories,storageRows,usageRows,weightRows,carryRows,attributeRows,derivedRows,sourceRows,invalidRows]=await Promise.all([
           db.rpc('list_character_equipped_instances',{p_character:character}),
           db.rpc('list_my_trade_currency',{p_character:character}),
           db.rpc('list_character_valid_equipment_slots',{p_character:character}),
@@ -132,6 +153,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           db.rpc('list_character_attributes',{p_character:character}),
           db.rpc('list_character_derived_attributes',{p_character:character}),
           db.rpc('list_character_effect_sources',{p_character:character}),
+          db.rpc('list_character_invalid_equipment',{p_character:character}),
         ]);
         if(assignments.error)throw assignments.error;
         if(currency.error)throw currency.error;
@@ -174,6 +196,8 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         const newAttrs=(attributeRows.data||[]) as CharacterAttribute[];
         setAttributes(newAttrs);
         setDerivedAttributes(Object.fromEntries(((derivedRows.data||[]) as DerivedAttribute[]).map(row=>[row.attribute_code,row])));
+        if(invalidRows.error){setInvalidEquipmentError(inventoryErrorMessage(invalidRows.error));setInvalidEquipment([])}
+        else{setInvalidEquipment((invalidRows.data||[]) as InvalidEquipment[]);setInvalidEquipmentError('')}
         if(sourceRows.error){setEffectSources([]);setEffectSourcesError(inventoryErrorMessage(sourceRows.error))}
         else{setEffectSources((sourceRows.data||[]) as EffectSource[]);setEffectSourcesError('')}
         setDraftScores(Object.fromEntries(newAttrs.map(a=>[a.attribute_code,a.score==null?'':String(a.score)])));
@@ -449,28 +473,48 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     {tab==='character'&&<div className="mv-panels">
       {attributePanel}
       {attributeModal}
+    {unequipWarning&&createPortal(
+      <div className="mv-modal-backdrop">
+        <section className="mv-item-modal mv-unequip-modal" role="alertdialog" aria-modal="true"
+          aria-labelledby="mv-unequip-title" aria-describedby="mv-unequip-warning-desc">
+          <div className="mv-modal-header">
+            <div className="mv-modal-heading"><Shield size={24} aria-hidden="true"/><div>
+              <span className="mv-modal-eyebrow">Equipment</span>
+              <h3 id="mv-unequip-title">Equipment Dependency Warning</h3>
+            </div></div>
+          </div>
+          <div className="mv-modal-body">
+            <p id="mv-unequip-warning-desc">Removing <strong>{unequipWarning.itemName}</strong> would leave these equipped items below their requirements:</p>
+            {unequipWarning.dependencies.map((dep,i)=><div className="mv-unequip-dependency" key={i}>
+              <strong>{dep.dependent_item}</strong>
+              <span>{dep.attribute_code}: {numberText(dep.current_score,2)} → {numberText(dep.projected_score,2)} (requires {dep.required_score})</span>
+            </div>)}
+            <p>Only {unequipWarning.itemName} will be removed. Other items will stay equipped but will not meet their requirements.</p>
+          </div>
+          <div className="mv-unequip-warning-actions mv-unequip-modal-actions">
+            <button ref={unequipCancelRef} type="button" disabled={busy} onClick={()=>setUnequipWarning(null)}>Cancel</button>
+            <button type="button" className="mv-unequip-warning-confirm" disabled={busy}
+              onClick={()=>{
+                const pending=unequipWarning;
+                setUnequipWarning(null);
+                if(pending&&equipped.some(item=>item.id===pending.assignmentId))onUnequip(pending.assignmentId);
+              }}>Unequip Anyway</button>
+          </div>
+        </section>
+      </div>,document.body)}
       {inventoryWeightPanel}
       <section className="mv-panel" aria-labelledby="mv-equipped-title">
         <h3 id="mv-equipped-title"><Sword size={20}/> Equipped Items</h3>
         {loading?<p className="mv-empty">Loading equipment…</p>:equipped.length===0?<p className="mv-empty">No equipped items yet. Equip an item from Inventory to see it here.</p>:
           <div className="mv-rows">{equipped.map(row=><div className="mv-equipment-row" key={row.id}><Shield size={18}/><span>{row.slot}</span><strong>{row.name}</strong><button type="button" className="mv-unequip-button" disabled={busy||loading||unequipCheckPending} onClick={()=>{void requestUnequip(row)}} aria-label={`Unequip ${row.name} from ${row.slot}`}>{unequipCheckPending?'Checking…':'Unequip'}</button></div>)}</div>}
         {unequipCheckError&&<p className="mv-storage-error" role="alert">Unable to check equipment dependencies: {unequipCheckError}. No equipment was changed.</p>}
-        {unequipWarning&&<div className="mv-unequip-warning" role="region" aria-label="Equipment dependency warning" aria-describedby="mv-unequip-warning-desc">
-          <h4>Equipment Dependency Warning</h4>
-          <p id="mv-unequip-warning-desc">Removing <strong>{unequipWarning.itemName}</strong> would leave the following equipped items below their requirements:</p>
-          {unequipWarning.dependencies.map((dependency,i)=><div className="mv-unequip-dependency" key={i}>
-            <strong>{dependency.dependent_item}</strong>
-            <span>{dependency.attribute_code}: {numberText(dependency.current_score,2)} → {numberText(dependency.projected_score,2)} (requires {dependency.required_score})</span>
-          </div>)}
-          <p>Continuing removes only {unequipWarning.itemName}. The other items remain equipped but no longer meet their requirements.</p>
-          <div className="mv-unequip-warning-actions">
-            <button type="button" onClick={()=>setUnequipWarning(null)} disabled={busy}>Cancel</button>
-            <button type="button" className="mv-unequip-warning-confirm" onClick={()=>{
-              const pending=unequipWarning;
-              setUnequipWarning(null);
-              if(pending&&equipped.some(item=>item.id===pending.assignmentId))onUnequip(pending.assignmentId);
-            }} disabled={busy}>Unequip Anyway</button>
-          </div>
+        {invalidEquipmentError&&<p className="mv-storage-error" role="alert">Unable to check equipment requirements: {invalidEquipmentError}</p>}
+        {invalidEquipment.length>0&&<div className="mv-invalid-loadout" role="status">
+          <h4>Equipment Requirements Not Met</h4>
+          {invalidEquipment.map(row=><p key={row.assignment_id+':'+row.attribute_code}>
+            <strong>{row.item_name}</strong> requires {row.attribute_code} {row.required_score}; current {row.attribute_code} {row.current_score??'unset'}.
+          </p>)}
+          <small>These items remain equipped until you change equipment or attributes.</small>
         </div>}
       </section>
       <section className="mv-panel" aria-labelledby="mv-bonuses-title">
