@@ -557,7 +557,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
                   </select>
                 </div>}
             </>}
-            {!loading&&!equippedByItem.has(selectedItem.item_id)&&selectedItem.eligible&&(validSlots[selectedItem.item_id]||[]).length===0&&<span className="mv-modal-action-note">No compatible equipment slots.</span>}
+            {!loading&&!equippedByItem.has(selectedItem.item_id)&&selectedItem.eligible&&(validSlots[selectedItem.item_id]||[]).length===0&&<span className="mv-modal-action-note">No eligible equipment slots. Check slot compatibility, minimum base attributes, and equipped-item conflicts.</span>}
             {storageActionError&&<p className="mv-storage-error" role="alert">{storageActionError}</p>}
           </div>
           <div className="mv-modal-footer"><button type="button" className="mv-modal-done" onClick={closeDetails}>Close</button></div>
