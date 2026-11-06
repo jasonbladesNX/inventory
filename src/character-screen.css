@@ -430,3 +430,16 @@
 .mv-unequip-warning-actions button{min-height:43px;padding:9px 14px;border-radius:8px;border:1px solid #b99b73;background:#473b31;color:#ffe9cf;font-size:13px;font-weight:700;cursor:pointer}
 .mv-unequip-warning-actions .mv-unequip-warning-confirm{background:#844a34;border-color:#ffbb8f}
 .mv-unequip-warning-actions button:disabled{opacity:.55;cursor:not-allowed}
+
+/* Dependency confirmation is a true viewport-level modal. */
+.mv-unequip-modal{max-width:550px;width:min(550px,calc(100vw - 28px));box-sizing:border-box}
+.mv-unequip-modal .mv-modal-body{padding:20px}
+.mv-unequip-modal .mv-modal-body>p{font-size:14px;line-height:1.6;color:#d5e7ee}
+.mv-unequip-modal .mv-unequip-dependency{color:#f5d3b0}
+.mv-unequip-modal-actions{justify-content:flex-end;margin:0;padding:16px 20px;border-top:1px solid #805c49;background:#211c1b}
+.mv-unequip-modal-actions button{min-width:112px}
+.mv-invalid-loadout{border:1px solid #cf9061;background:#32251f;border-radius:10px;padding:13px 15px;margin-top:14px;color:#f3d8c0}
+.mv-invalid-loadout h4{font:500 17px Georgia,serif;margin:0 0 7px;color:#ffe1b6}
+.mv-invalid-loadout p{font-size:12px;line-height:1.6;margin:7px 0;color:#ffdcc5}
+.mv-invalid-loadout small{display:block;font-size:11px;line-height:1.5;color:#d9b5a1}
+@media(max-width:460px){.mv-unequip-modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:13px}.mv-unequip-modal-actions button{min-width:0}}
