@@ -1,4 +1,4 @@
-import {useEffect,useState} from 'react';
+import React, {useEffect,useState} from 'react';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {inventoryErrorMessage} from './inventoryErrors';
 import './effect-editor.css';
