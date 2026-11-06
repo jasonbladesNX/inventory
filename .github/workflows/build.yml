@@ -24,6 +24,7 @@ jobs:
       - run: npm run contracts
       - run: npm run check
       - run: npm run test:inventory-errors
+      - run: node scripts/test-effect-editor-render.mjs
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
