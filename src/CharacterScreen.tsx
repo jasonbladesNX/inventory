@@ -455,7 +455,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         {loading?<p className="mv-empty">Loading equipment…</p>:equipped.length===0?<p className="mv-empty">No equipped items yet. Equip an item from Inventory to see it here.</p>:
           <div className="mv-rows">{equipped.map(row=><div className="mv-equipment-row" key={row.id}><Shield size={18}/><span>{row.slot}</span><strong>{row.name}</strong><button type="button" className="mv-unequip-button" disabled={busy||loading||unequipCheckPending} onClick={()=>{void requestUnequip(row)}} aria-label={`Unequip ${row.name} from ${row.slot}`}>{unequipCheckPending?'Checking…':'Unequip'}</button></div>)}</div>}
         {unequipCheckError&&<p className="mv-storage-error" role="alert">Unable to check equipment dependencies: {unequipCheckError}. No equipment was changed.</p>}
-        {unequipWarning&&<div className="mv-unequip-warning" role="alertdialog" aria-label="Equipment dependency warning" aria-describedby="mv-unequip-warning-desc">
+        {unequipWarning&&<div className="mv-unequip-warning" role="region" aria-label="Equipment dependency warning" aria-describedby="mv-unequip-warning-desc">
           <h4>Equipment Dependency Warning</h4>
           <p id="mv-unequip-warning-desc">Removing <strong>{unequipWarning.itemName}</strong> would leave the following equipped items below their requirements:</p>
           {unequipWarning.dependencies.map((dependency,i)=><div className="mv-unequip-dependency" key={i}>
