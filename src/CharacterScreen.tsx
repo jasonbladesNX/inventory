@@ -3,6 +3,7 @@ import {createPortal} from 'react-dom';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {Backpack, CircleDot, Coins, Crown, FlaskConical, Footprints, Gem, PackageOpen, ScrollText, Shield, ShieldCheck, Shirt, ShoppingBag, Sparkles, Sword, UserRound, WandSparkles, Wrench, X} from 'lucide-react';
 import {inventoryErrorMessage} from './inventoryErrors';
+import LoadoutHealthPanel from './LoadoutHealthPanel';
 import './character-screen.css';
 
 export type InventoryTab = 'character' | 'inventory' | 'shop' | 'craft';
@@ -503,6 +504,11 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         </section>
       </div>,document.body)}
       {inventoryWeightPanel}
+      <LoadoutHealthPanel db={db} character={character} characterName={characterName} inventoryVersion={inventoryVersion} busy={busy||loading||unequipCheckPending}
+        onReviewRemoval={assignmentId=>{
+          const row=equipped.find(candidate=>candidate.id===assignmentId);
+          if(row)void requestUnequip(row);
+        }}/>
       <section className="mv-panel" aria-labelledby="mv-equipped-title">
         <h3 id="mv-equipped-title"><Sword size={20}/> Equipped Items</h3>
         {loading?<p className="mv-empty">Loading equipment…</p>:equipped.length===0?<p className="mv-empty">No equipped items yet. Equip an item from Inventory to see it here.</p>:
