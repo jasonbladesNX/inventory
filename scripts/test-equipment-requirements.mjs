@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const app=readFileSync('src/main.tsx','utf8');
+const char=readFileSync('src/CharacterScreen.tsx','utf8');
+const editor=readFileSync('src/RequirementEditor.tsx','utf8');
+const sql=readFileSync('docs/sql/milestone-6-13-equipment-requirements.sql','utf8');
+assert.match(app,/<RequirementEditor db=\{db!\}/);
+assert.match(app,/campaign&&gmAccess&&!campaignBusy&&/);
+assert.match(app,/default_properties/);
+assert.match(editor,/save_campaign_item_equip_requirements/);
+assert.match(editor,/min_attributes/);
+assert.match(editor,/forbidden_equipped_categories/);
+assert.match(char,/No eligible equipment slots/);
+assert.match(sql,/app_private\.equipment_requirement_failure/);
+assert.match(sql,/v_requirement_failure/);
+assert.match(sql,/before any mutations/);
+assert.match(sql,/revoke all on function app_private\.equipment_requirement_failure/);
+console.log('PASS equipment requirement editor, GM visibility, secure equip and valid-slot enforcement');
