@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "m6.14-projected-effective-equipment-requirements",
+  "release": "m6.15-equipment-dependency-warnings",
   "date": "2026-11-06",
-  "note": "Equipment prerequisites use effective attributes after automatic replacement; surviving equipment bonuses count, removed gear bonuses do not"
+  "note": "Read-only dependency preview warns before unequipping a bonus item that supports another equipped item's attribute requirements; explicit Cancel or Unequip Anyway"
 }
