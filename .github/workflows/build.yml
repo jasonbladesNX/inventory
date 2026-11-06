@@ -27,6 +27,7 @@ jobs:
       - run: node scripts/test-effect-editor-render.mjs
       - run: node scripts/test-page-navigation.mjs
       - run: node scripts/test-equipment-requirements.mjs
+      - run: node scripts/test-loadout-health.mjs
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
