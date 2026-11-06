@@ -49,7 +49,7 @@ export default function RequirementEditor({db,campaign,definitions,attributes,on
   };
   return <section className="nx-requirement-panel" aria-labelledby="nx-requirement-heading">
     <h2 id="nx-requirement-heading">Equipment Requirements (GM)</h2>
-    <p>Set prerequisites and equipment conflicts for campaign-created items. Minimum scores use the character's saved base attributes, not equipment-adjusted scores.</p>
+    <p>Set prerequisites and equipment conflicts for campaign-created items. Minimum scores use the projected effective attributes after equipment replacements. Bonuses from items that remain equipped still count.</p>
     {available.length===0?<p>Create a custom catalog item before configuring requirements.</p>:<>
       <label>Catalog item
         <select value={selected} disabled={pending} onChange={e=>selectDefinition(e.target.value)}>
@@ -58,7 +58,7 @@ export default function RequirementEditor({db,campaign,definitions,attributes,on
         </select>
       </label>
       {selected&&<form className="nx-requirement-form" onSubmit={e=>{void save(e)}}>
-        <h3>Minimum base attributes</h3>
+        <h3>Minimum effective attributes</h3>
         <div className="nx-requirement-attributes">
           {codes.map(code=><label key={code}>{code}
             <input type="number" inputMode="numeric" min={0} max={100} step={1} placeholder="None"
