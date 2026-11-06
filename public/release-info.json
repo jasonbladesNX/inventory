@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "m6.14-equip-eligibility-replacement-preview",
+  "release": "m6.14-projected-effective-equipment-requirements",
   "date": "2026-11-06",
-  "note": "Read-only per-slot equip eligibility, requirement explanations, and would-replace equipped items; GM and inventory security unchanged"
+  "note": "Equipment prerequisites use effective attributes after automatic replacement; surviving equipment bonuses count, removed gear bonuses do not"
 }
