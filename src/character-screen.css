@@ -405,3 +405,16 @@
 .mv-item-requirements small{font-size:11px;line-height:1.5;color:#9bc4d2}
 .mv-modal-action-note strong{display:block;margin-bottom:6px}
 .mv-modal-action-note p{margin:3px 0;line-height:1.5}
+
+/* M6.14: read-only equipment eligibility and replacement preview */
+.mv-equip-preview{margin:14px 0 8px;border:1px solid #34738a;border-radius:10px;background:#082b3b;overflow:hidden}
+.mv-equip-preview summary{cursor:pointer;padding:13px;color:#d7f7ff;font-size:14px;font-weight:750;min-height:45px}
+.mv-equip-preview summary small{display:block;margin:4px 0 0 19px;font-size:11px;color:#9ac6d4;font-weight:500}
+.mv-equip-preview .mv-equip-preview-note{margin:0;padding:0 12px 10px;color:#a6d3df;font-size:11px;line-height:1.5}
+.mv-equip-preview-option{margin:0 12px;border-top:1px solid #356276;padding:11px 0}
+.mv-equip-preview-heading{display:flex;align-items:center;justify-content:space-between;gap:9px}
+.mv-equip-preview-heading strong{font-size:13px;color:#dcf4fb}
+.mv-equip-preview-heading span{border:1px solid currentColor;border-radius:999px;padding:3px 7px;font-size:10px;font-weight:750}
+.mv-equip-preview-yes{color:#a2ead1}.mv-equip-preview-no{color:#f0b89f}
+.mv-equip-preview-option p{margin:6px 0 0;color:#b4d5df;font-size:12px;line-height:1.5}
+.mv-equip-preview-option .mv-equip-preview-replace{color:#f3d59f}
