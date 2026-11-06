@@ -577,11 +577,10 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
             </div>}
             {requirementsError&&<p className="mv-storage-error" role="alert">Cannot load equipment requirements: {requirementsError}</p>}
             {!loading&&!equippedByItem.has(selectedItem.item_id)&&selectedItem.eligible&&(validSlots[selectedItem.item_id]||[]).length===0&&
+              !equipRequirements.some(rule=>!rule.is_met)&&
               <div className="mv-modal-action-note">
                 <strong>Cannot equip this item.</strong>
-                {equipRequirements.some(rule=>!rule.is_met)?
-                  <p>{equipRequirements.filter(rule=>!rule.is_met).map(rule=>`Requires base ${rule.attribute_code} ${rule.required_score} (current ${rule.current_score??'unset'})`).join('; ')}.</p>:
-                  <p>No eligible equipment slot. Check slot compatibility and conflicts with currently equipped items.</p>}
+                <p>No eligible equipment slot. Check slot compatibility and conflicts with currently equipped items.</p>
               </div>}
             {storageActionError&&<p className="mv-storage-error" role="alert">{storageActionError}</p>}
           </div>
