@@ -34,4 +34,14 @@ const previewSql=readFileSync('docs/sql/milestone-6-14-equip-preview.sql','utf8'
 assert.match(previewSql,/list_character_valid_equipment_slots/);
 assert.match(previewSql,/equipment_requirement_failure/);
 assert.match(previewSql,/revoke all on function public.preview_character_item_equip/);
-console.log('PASS equipment requirements and read-only equip slot/replacement preview');
+const unequipSql=readFileSync('docs/sql/milestone-6-15-unequip-dependencies.sql','utf8');
+assert.match(unequipSql,/preview_character_unequip_dependencies/);
+assert.match(unequipSql,/list_character_attributes/);
+assert.match(unequipSql,/character_effect_projection/);
+assert.match(unequipSql,/a.id<>p_assignment/);
+assert.match(unequipSql,/revoke all on function public.preview_character_unequip_dependencies/);
+assert.match(char,/preview_character_unequip_dependencies/);
+assert.match(char,/Equipment Dependency Warning/);
+assert.match(char,/Unequip Anyway/);
+assert.match(char,/setUnequipWarning\(null\)/);
+console.log('PASS equipment requirements, equip previews and read-only unequip dependency warnings');
