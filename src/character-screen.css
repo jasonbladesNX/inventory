@@ -418,3 +418,15 @@
 .mv-equip-preview-yes{color:#a2ead1}.mv-equip-preview-no{color:#f0b89f}
 .mv-equip-preview-option p{margin:6px 0 0;color:#b4d5df;font-size:12px;line-height:1.5}
 .mv-equip-preview-option .mv-equip-preview-replace{color:#f3d59f}
+
+/* Milestone 6.15: preview-dependent gear warnings before unequipping. */
+.mv-unequip-warning{margin:14px 0 0;padding:14px;border:1px solid #b58c58;border-radius:10px;background:#2c2420;color:#f2e1cb}
+.mv-unequip-warning h4{margin:0 0 8px;font:500 17px Georgia,serif;color:#ffe4bc}
+.mv-unequip-warning p{font-size:12px;line-height:1.55;color:#e7d2b6;margin:8px 0}
+.mv-unequip-dependency{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap;border-top:1px solid #856c50;padding:10px 0;font-size:12px}
+.mv-unequip-dependency strong{color:#ffedda}
+.mv-unequip-dependency span{color:#f6cfa8}
+.mv-unequip-warning-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+.mv-unequip-warning-actions button{min-height:43px;padding:9px 14px;border-radius:8px;border:1px solid #b99b73;background:#473b31;color:#ffe9cf;font-size:13px;font-weight:700;cursor:pointer}
+.mv-unequip-warning-actions .mv-unequip-warning-confirm{background:#844a34;border-color:#ffbb8f}
+.mv-unequip-warning-actions button:disabled{opacity:.55;cursor:not-allowed}
