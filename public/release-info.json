@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "m6.9-advanced-effect-resolution",
+  "release": "m6.10-gm-equipment-effect-editor",
   "date": "2026-11-05",
-  "note": "Ruleset-configured numeric effects and equipped-category condition"
+  "note": "GM-only campaign-created item effect editor with add/set/multiply/min/max, stacking groups, and equipped-category conditions"
 }
