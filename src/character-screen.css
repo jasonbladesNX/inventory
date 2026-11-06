@@ -395,3 +395,13 @@
 .mv-effect-source-row p{font-size:11px;color:#8fb6c5;line-height:1.45;margin:0}
 .mv-effect-source-total{margin:0;padding:12px 11px;border-top:1px solid #235167;color:#abdce7;font-size:11px;line-height:1.5}
 @media(max-width:440px){.mv-effect-source-group summary{padding:11px 9px}.mv-effect-source-list{padding:0 9px 8px}}
+
+/* Explain unmet equipment requirements inside the inventory details dialog. */
+.mv-item-requirements{margin:10px 0 14px;padding:12px;border:1px solid #356d83;border-radius:9px;background:#092a3b}
+.mv-item-requirements h4{margin:0 0 10px;font:500 15px Georgia,serif;color:#d7f5ff}
+.mv-item-requirement-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;border-top:1px solid #2c566a;padding:10px 0;font-size:13px;color:#c9e5f0}
+.mv-item-requirement-row strong{font-size:11px;border-radius:999px;border:1px solid currentColor;padding:4px 8px}
+.mv-requirement-met{color:#95e8cb}.mv-requirement-unmet{color:#ffbd9d}
+.mv-item-requirements small{font-size:11px;line-height:1.5;color:#9bc4d2}
+.mv-modal-action-note strong{display:block;margin-bottom:6px}
+.mv-modal-action-note p{margin:3px 0;line-height:1.5}
