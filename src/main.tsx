@@ -39,6 +39,8 @@ function App(){
   const[chars,setChars]=useState<Row[]>([]);
   const[recipients,setRecipients]=useState<Row[]>([]);
   const[char,setChar]=useState('');
+  const[grantCharacter,setGrantCharacter]=useState('');
+  const[grantDefinition,setGrantDefinition]=useState('');
   const[items,setItems]=useState<any[]>([]);
   const[defs,setDefs]=useState<any[]>([]);
   const[slots,setSlots]=useState<any[]>([]);
@@ -78,7 +80,7 @@ function App(){
   async function loadCampaign(id:string){
     if(!db)return;
     setCampaignBusy(true);setGmAccess(false);
-    setChar('');setItems([]);setEffects([]);setChars([]);setDefs([]);setSlots([]);
+    setChar('');setGrantCharacter('');setGrantDefinition('');setItems([]);setEffects([]);setChars([]);setDefs([]);setSlots([]);
     try{
       const [people,catalog,equipment,account,membership,recipientQuery,campaignOwner]=await Promise.all([
         db.from('characters').select('id,name,member_id').eq('campaign_id',id),
@@ -106,7 +108,7 @@ function App(){
   async function chooseCampaign(id:string){
     setCampaign(id);
     setMsg('');
-    if(!id){setGmAccess(false);setChars([]);setChar('');setDefs([]);setSlots([]);return}
+    if(!id){setGmAccess(false);setChars([]);setChar('');setGrantCharacter('');setGrantDefinition('');setDefs([]);setSlots([]);return}
     await run(()=>loadCampaign(id));
   }
   async function loadChar(c:string,ch:string){
@@ -319,19 +321,36 @@ function App(){
               <button type="submit" disabled={busy}>Add Slot</button>
             </form>
           </section>
-          {char&&<section className="nx-page-card nx-gm-tools">
+          <section className="nx-page-card nx-gm-tools">
             <h2><Plus size={20}/> Grant Item to Character</h2>
-            <label className="nx-form-field">Catalog item<select id="nx-grant-definition" defaultValue="">
-              <option value="">Choose an item…</option>
-              {defs.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}
-            </select></label>
-            <button type="button" disabled={busy} onClick={()=>void run(async()=>{
-              const definition=(document.getElementById('nx-grant-definition') as HTMLSelectElement)?.value;
-              if(!definition)throw Error('Choose an item');
-              await rpc('add_inventory_item',{p_campaign:campaign,p_character:char,p_definition:definition,p_quantity:1});
-              await loadChar(campaign,char);
-            })}>Add to Inventory</button>
-          </section>}
+            <form className="nx-tool-form" onSubmit={e=>{e.preventDefault();void run(async()=>{
+              const recipient=chars.find(c=>c.id===grantCharacter);
+              const definition=defs.find(d=>d.id===grantDefinition);
+              if(!recipient)throw Error('Choose a recipient character in this campaign.');
+              if(!definition)throw Error('Choose a catalog item.');
+              await rpc('add_inventory_item',{p_campaign:campaign,p_character:recipient.id,p_definition:definition.id,p_quantity:1});
+              if(char===recipient.id)await loadChar(campaign,recipient.id);
+              setMsg(`Added ${definition.name} to ${recipient.name}'s inventory.`);
+              setGrantDefinition('');
+            })}}>
+              <label className="nx-form-field" htmlFor="nx-grant-recipient">Recipient Character
+                <select id="nx-grant-recipient" required value={grantCharacter} disabled={busy||campaignBusy}
+                  onChange={e=>setGrantCharacter(e.target.value)}>
+                  <option value="">Choose a character…</option>
+                  {chars.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </label>
+              <label className="nx-form-field" htmlFor="nx-grant-definition">Catalog Item
+                <select id="nx-grant-definition" required value={grantDefinition} disabled={busy||campaignBusy}
+                  onChange={e=>setGrantDefinition(e.target.value)}>
+                  <option value="">Choose an item…</option>
+                  {defs.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}
+                </select>
+              </label>
+              <button type="submit" disabled={busy||campaignBusy||!grantCharacter||!grantDefinition}>Add to Inventory</button>
+            </form>
+            {chars.length===0&&<p className="nx-small-note">Create a character above before granting items.</p>}
+          </section>
         </>}
       </section>:
       page==='play'&&campaign&&char?<div className="nx-play-page">
