@@ -143,18 +143,27 @@ export default function LoadoutHealthPanel({db,character,characterName,inventory
           <summary>Equipment dependency map ({dependencies.length})</summary>
           {dependencies.map((link,i)=><p key={i}><strong>{link.source_item}</strong> supports <strong>{link.dependent_item}</strong> — {link.attribute_code} {numberLabel(link.current_score)} → {numberLabel(link.projected_score)} if removed; requires {link.required_score}</p>)}
         </details>}
-        {repair&&<div className="nx-loadout-repair-confirm" role="group" aria-label="Guided loadout repair">
-          <strong>Review proposed repair</strong>
-          <p>Unequip <b>{repair.item_name}</b>? This removes only that item. Any additional dependencies will be checked before removal. No other equipment will be changed automatically.</p>
-          <div>
-            <button type="button" onClick={()=>setRepair(null)}>Cancel</button>
-            <button type="button" disabled={busy} onClick={()=>{
-              const assignment=repair.assignment_id;
-              setRepair(null);
-              onReviewRemoval(assignment);
-            }}>Continue to unequip</button>
-          </div>
-        </div>}
+        {repair&&createPortal(
+          <div className="mv-modal-backdrop">
+            <section className="mv-item-modal nx-loadout-repair-modal" role="alertdialog" aria-modal="true" aria-labelledby="nx-loadout-repair-title" aria-describedby="nx-loadout-repair-details">
+              <div className="mv-modal-header"><div className="mv-modal-heading"><ShieldAlert size={24}/><div>
+                <span className="mv-modal-eyebrow">Loadout Health</span>
+                <h3 id="nx-loadout-repair-title">Review proposed repair</h3>
+              </div></div></div>
+              <div className="mv-modal-body">
+                <p id="nx-loadout-repair-details">Unequip <strong>{repair.item_name}</strong>?</p>
+                <p>This removes only that item. Any additional dependencies will be checked before removal. No other equipment will be changed automatically.</p>
+              </div>
+              <div className="nx-loadout-repair-actions">
+                <button type="button" ref={cancelRepairRef} onClick={()=>setRepair(null)}>Cancel</button>
+                <button type="button" disabled={busy} onClick={()=>{
+                  const assignment=repair.assignment_id;
+                  setRepair(null);
+                  onReviewRemoval(assignment);
+                }}>Continue to unequip</button>
+              </div>
+            </section>
+          </div>,document.body)}
       </>}
   </section>;
 }
