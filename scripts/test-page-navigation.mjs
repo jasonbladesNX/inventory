@@ -5,7 +5,8 @@ const styles=readFileSync('src/app-pages.css','utf8');
 for(const route of ["landing","player","gm","create","play"]){
   assert.match(app,new RegExp("page==='"+route+"'"),"missing "+route+" page");
 }
-assert.match(app,/gmAccess&&<EffectEditorBoundary/);
+assert.match(app,/campaign&&gmAccess&&!campaignBusy&&/);
+assert.match(app,/<EffectEditorBoundary campaign=\{campaign\}>/);
 assert.match(app,/page==='gm'\?/);
 assert.match(app,/page==='play'&&campaign&&char/);
 assert.match(app,/list_trade_recipients/);
