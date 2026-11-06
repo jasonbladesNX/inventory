@@ -44,6 +44,8 @@ function App(){
   const[effects,setEffects]=useState<any[]>([]);
   const[campaignName,setCampaignName]=useState('');
   const[characterName,setCharacterName]=useState('');
+  const[slotCode,setSlotCode]=useState('');
+  const[slotLabel,setSlotLabel]=useState('');
   const[itemName,setItemName]=useState('');
   const[itemCategory,setItemCategory]=useState('gear');
   const[twoHanded,setTwoHanded]=useState(false);
@@ -300,13 +302,18 @@ function App(){
           <section className="nx-page-card nx-gm-tools">
             <h2><Shield size={20}/> Equipment Slots</h2>
             <p>{slots.map(s=>s.label).join(' · ')||'No slots configured yet.'}</p>
-            <button type="button" className="nx-secondary-action" disabled={busy} onClick={()=>void run(async()=>{
-              const code=window.prompt('Slot code, e.g. main_hand');
-              if(!code)return;
-              const label=window.prompt('Slot label',code)||code;
-              await rpc('create_campaign_slot',{p_campaign:campaign,p_code:code,p_label:label});
+            <form className="nx-tool-form" onSubmit={e=>{e.preventDefault();void run(async()=>{
+              const code=slotCode.trim();
+              if(!code)throw Error('Enter an equipment slot code.');
+              await rpc('create_campaign_slot',{p_campaign:campaign,p_code:code,p_label:slotLabel.trim()||code});
               await loadCampaign(campaign);
-            })}>Add Slot</button>
+              setSlotCode('');setSlotLabel('');
+            })}}>
+              <h3>Add Equipment Slot</h3>
+              <label>Slot code<input required maxLength={60} placeholder="e.g. main_hand" value={slotCode} onChange={e=>setSlotCode(e.target.value)}/></label>
+              <label>Slot label<input maxLength={80} placeholder="e.g. Main Hand" value={slotLabel} onChange={e=>setSlotLabel(e.target.value)}/></label>
+              <button type="submit" disabled={busy}>Add Slot</button>
+            </form>
           </section>
           {char&&<section className="nx-page-card nx-gm-tools">
             <h2><Plus size={20}/> Grant Item to Character</h2>
