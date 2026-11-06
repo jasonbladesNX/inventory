@@ -18,7 +18,7 @@ type CarryProfile = {ruleset_code:string;capacity_mode:string;strength:number|nu
 type CharacterAttribute = {attribute_code:string;attribute_label:string;score:number|null;modifier:number|null;is_editable:boolean};
 type DerivedAttribute = {attribute_code:string;attribute_label:string;base_score:number|null;equipment_bonus:number|string;effective_score:number|string|null;effective_modifier:number|null};
 type EffectSource = {attribute_code:string;item_id:string;item_name:string;effect_id:string;operation:string;effect_value:number|string|null;stacking_group:string|null;effect_status:'applied'|'suppressed'|'condition_unmet'|'unsupported';status_reason:string};
-type EquipRequirement = {attribute_code:string;required_score:number;current_score:number|null;is_met:boolean};
+type EquipRequirement = {attribute_code:string;required_score:number;current_score:number|string|null;projected_score:number|string|null;slot_label:string;is_met:boolean};
 type EquipPreview = {slot_id:string;slot_label:string;can_equip:boolean;reason:string;replaced_items:string[]};
 type ItemDetails = {item_id:string; category:string; description:string; condition:string; identified:boolean; properties:Record<string,unknown>; effects:{attribute:string;operation:string;value:unknown}[]};
 type Props = {
@@ -174,18 +174,28 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     setDetailsLoading(true);
     async function loadDetails(itemId:string){
       try{
-        const [details,requirements,preview]=await Promise.all([
+        const [details,preview]=await Promise.all([
           db.rpc('get_character_item_details',{p_character:character,p_item:itemId}),
-          db.rpc('list_character_item_equip_requirements',{p_character:character,p_item:itemId}),
           db.rpc('preview_character_item_equip',{p_character:character,p_item:itemId})
         ]);
         if(details.error)throw details.error;
-        if(!cancelled){
-          setItemDetails(details.data as ItemDetails);
+        if(cancelled)return;
+        setItemDetails(details.data as ItemDetails);
+        if(preview.error){setEquipPreviewError(inventoryErrorMessage(preview.error));return;}
+        const options=(preview.data||[]) as EquipPreview[];
+        setEquipPreview(options);
+        const candidates=options.filter(o=>!o.reason.toLowerCase().includes('category')&&!o.reason.toLowerCase().includes('incompatible'));
+        const chosen=[...candidates].sort((a,b)=>
+          Number(b.can_equip)-Number(a.can_equip) ||
+          Number(b.slot_label==='Main Hand')-Number(a.slot_label==='Main Hand')
+        )[0];
+        if(chosen){
+          const requirements=await db.rpc('preview_character_item_attribute_requirements',{
+            p_character:character,p_item:itemId,p_slot:chosen.slot_id
+          });
+          if(cancelled)return;
           if(requirements.error)setRequirementsError(inventoryErrorMessage(requirements.error));
           else setEquipRequirements((requirements.data||[]) as EquipRequirement[]);
-          if(preview.error)setEquipPreviewError(inventoryErrorMessage(preview.error));
-          else setEquipPreview((preview.data||[]) as EquipPreview[]);
         }
       }catch(e){
         if(!cancelled)setDetailsError(e instanceof Error?e.message:String(e));
@@ -576,10 +586,10 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
             {!detailsLoading&&equipRequirements.length>0&&<div className="mv-item-requirements">
               <h4>Equipment Requirements</h4>
               {equipRequirements.map(rule=><div className="mv-item-requirement-row" key={rule.attribute_code}>
-                <span>{rule.attribute_code}: Base {rule.current_score??'unset'} / Required {rule.required_score}</span>
+                <span>{rule.attribute_code}: Projected {rule.projected_score??'unset'} / Required {rule.required_score}</span>
                 <strong className={rule.is_met?'mv-requirement-met':'mv-requirement-unmet'}>{rule.is_met?'Met':'Not met'}</strong>
               </div>)}
-              <small>These requirements use base ability scores, without equipment bonuses.</small>
+              <small>For {equipRequirements[0]?.slot_label}: currently {equipRequirements.map(rule=>`${rule.attribute_code} ${rule.current_score??'unset'}`).join(', ')}. Projected scores remove bonuses from items that would be replaced.</small>
             </div>}
             {requirementsError&&<p className="mv-storage-error" role="alert">Cannot load equipment requirements: {requirementsError}</p>}
             {!detailsLoading&&equipPreview.length>0&&!equippedByItem.has(selectedItem.item_id)&&<details className="mv-equip-preview">
