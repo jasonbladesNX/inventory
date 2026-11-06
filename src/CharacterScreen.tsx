@@ -19,6 +19,7 @@ type CharacterAttribute = {attribute_code:string;attribute_label:string;score:nu
 type DerivedAttribute = {attribute_code:string;attribute_label:string;base_score:number|null;equipment_bonus:number|string;effective_score:number|string|null;effective_modifier:number|null};
 type EffectSource = {attribute_code:string;item_id:string;item_name:string;effect_id:string;operation:string;effect_value:number|string|null;stacking_group:string|null;effect_status:'applied'|'suppressed'|'condition_unmet'|'unsupported';status_reason:string};
 type EquipRequirement = {attribute_code:string;required_score:number;current_score:number|null;is_met:boolean};
+type EquipPreview = {slot_id:string;slot_label:string;can_equip:boolean;reason:string;replaced_items:string[]};
 type ItemDetails = {item_id:string; category:string; description:string; condition:string; identified:boolean; properties:Record<string,unknown>; effects:{attribute:string;operation:string;value:unknown}[]};
 type Props = {
   db:SupabaseClient;
@@ -89,6 +90,8 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [detailsError,setDetailsError]=useState('');
   const [equipRequirements,setEquipRequirements]=useState<EquipRequirement[]>([]);
   const [requirementsError,setRequirementsError]=useState('');
+  const [equipPreview,setEquipPreview]=useState<EquipPreview[]>([]);
+  const [equipPreviewError,setEquipPreviewError]=useState('');
   const [storageActionError,setStorageActionError]=useState('');
   const [detailsLoading,setDetailsLoading]=useState(false);
   const modalCloseRef=useRef<HTMLButtonElement>(null);
@@ -166,20 +169,23 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
 
   useEffect(()=>{
     let cancelled=false;
-    setItemDetails(null);setDetailsError('');setEquipRequirements([]);setRequirementsError('');
+    setItemDetails(null);setDetailsError('');setEquipRequirements([]);setRequirementsError('');setEquipPreview([]);setEquipPreviewError('');
     if(!expandedItem){setDetailsLoading(false);return;}
     setDetailsLoading(true);
     async function loadDetails(itemId:string){
       try{
-        const [details,requirements]=await Promise.all([
+        const [details,requirements,preview]=await Promise.all([
           db.rpc('get_character_item_details',{p_character:character,p_item:itemId}),
-          db.rpc('list_character_item_equip_requirements',{p_character:character,p_item:itemId})
+          db.rpc('list_character_item_equip_requirements',{p_character:character,p_item:itemId}),
+          db.rpc('preview_character_item_equip',{p_character:character,p_item:itemId})
         ]);
         if(details.error)throw details.error;
         if(!cancelled){
           setItemDetails(details.data as ItemDetails);
           if(requirements.error)setRequirementsError(inventoryErrorMessage(requirements.error));
           else setEquipRequirements((requirements.data||[]) as EquipRequirement[]);
+          if(preview.error)setEquipPreviewError(inventoryErrorMessage(preview.error));
+          else setEquipPreview((preview.data||[]) as EquipPreview[]);
         }
       }catch(e){
         if(!cancelled)setDetailsError(e instanceof Error?e.message:String(e));
@@ -576,6 +582,20 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
               <small>These requirements use base ability scores, without equipment bonuses.</small>
             </div>}
             {requirementsError&&<p className="mv-storage-error" role="alert">Cannot load equipment requirements: {requirementsError}</p>}
+            {!detailsLoading&&equipPreview.length>0&&!equippedByItem.has(selectedItem.item_id)&&<details className="mv-equip-preview">
+              <summary>Equip Preview <small>Check slots and replacements</small></summary>
+              <p className="mv-equip-preview-note">Read-only preview. No equipment will be changed until you select an eligible slot above.</p>
+              {equipPreview.map(option=><div key={option.slot_id} className="mv-equip-preview-option">
+                <div className="mv-equip-preview-heading">
+                  <strong>{option.slot_label}</strong>
+                  <span className={option.can_equip?'mv-equip-preview-yes':'mv-equip-preview-no'}>{option.can_equip?'Eligible':'Blocked'}</span>
+                </div>
+                <p>{option.reason}</p>
+                {option.can_equip&&option.replaced_items.length>0&&<p className="mv-equip-preview-replace">Would unequip: {option.replaced_items.join(', ')}</p>}
+              </div>)}
+            </details>}
+            {equipPreviewError&&<p className="mv-storage-error" role="alert">Equip preview unavailable: {equipPreviewError}</p>}
+
             {!loading&&!equippedByItem.has(selectedItem.item_id)&&selectedItem.eligible&&(validSlots[selectedItem.item_id]||[]).length===0&&
               !equipRequirements.some(rule=>!rule.is_met)&&
               <div className="mv-modal-action-note">
