@@ -1,4 +1,5 @@
-import React,{useEffect,useMemo,useState} from 'react';
+import React,{useEffect,useMemo,useRef,useState} from 'react';
+import {createPortal} from 'react-dom';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {AlertTriangle,CheckCircle2,ChevronDown,ChevronUp,ClipboardCopy,RefreshCw,ShieldAlert,ShieldCheck,Unlink} from 'lucide-react';
 import {inventoryErrorMessage} from './inventoryErrors';
@@ -31,6 +32,7 @@ export default function LoadoutHealthPanel({db,character,characterName,inventory
   const [revision,setRevision]=useState(0);
   const [showAll,setShowAll]=useState(false);
   const [repair,setRepair]=useState<AuditRow|null>(null);
+  const cancelRepairRef=useRef<HTMLButtonElement>(null);
   const [copyStatus,setCopyStatus]=useState('');
   useEffect(()=>{
     let cancelled=false;
