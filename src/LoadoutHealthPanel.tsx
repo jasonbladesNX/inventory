@@ -15,7 +15,7 @@ type DependencyRow={
   attribute_code:string;required_score:number;current_score:number|string;projected_score:number|string;
 };
 type Props={
-  db:SupabaseClient;character:string;inventoryVersion:number;
+  db:SupabaseClient;character:string;characterName:string;inventoryVersion:number;
   busy:boolean;onReviewRemoval:(assignmentId:string)=>void;
 };
 function numberLabel(value:number|string|null):string{
@@ -23,7 +23,7 @@ function numberLabel(value:number|string|null):string{
   const number=Number(value);
   return Number.isFinite(number)?number.toLocaleString(undefined,{maximumFractionDigits:2}):String(value);
 }
-export default function LoadoutHealthPanel({db,character,inventoryVersion,busy,onReviewRemoval}:Props){
+export default function LoadoutHealthPanel({db,character,characterName,inventoryVersion,busy,onReviewRemoval}:Props){
   const [audit,setAudit]=useState<AuditRow[]>([]);
   const [dependencies,setDependencies]=useState<DependencyRow[]>([]);
   const [loading,setLoading]=useState(true);
@@ -60,7 +60,7 @@ export default function LoadoutHealthPanel({db,character,inventoryVersion,busy,o
   const visible=items.filter(rows=>showAll||invalidItems.has(rows[0].assignment_id));
   const dependencySourceIds=new Set(dependencies.map(row=>row.source_assignment_id));
   function reportText(){
-    const lines=['Nexus Multiverse — Equipment Loadout Health','Character: '+character,'Status: '+(invalidItems.size?'Review required':'All recorded requirements met'),''];
+    const lines=['Nexus Multiverse — Equipment Loadout Health','Character: '+characterName,'Status: '+(invalidItems.size?'Review required':'All recorded requirements met'),''];
     for(const rows of items){
       const first=rows[0];
       lines.push(first.item_name+' ('+first.slot_name+')');
