@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "m6.13-deduplicated-equipment-requirements",
+  "release": "m6.14-equip-eligibility-replacement-preview",
   "date": "2026-11-06",
-  "note": "Item Details displays unmet base-score requirements only once; general slot/conflict guidance remains when no attribute prerequisite is unmet"
+  "note": "Read-only per-slot equip eligibility, requirement explanations, and would-replace equipped items; GM and inventory security unchanged"
 }
