@@ -24,3 +24,19 @@
 .nx-effect-error{border:1px solid #c67a70;background:#48262e;color:#ffd2cc}
 .nx-effect-success{border:1px solid #548d85;background:#113d3b;color:#c7f6e4}
 @media(max-width:440px){.nx-effect-panel{padding:11px}.nx-effect-grid{grid-template-columns:1fr}.nx-effect-existing>div{flex-basis:100%}}
+
+/* Milestone 6.11: GM-only, server-calculated effect preview. */
+.nx-effect-preview{margin-top:16px;padding:13px;border:1px solid #41778d;border-radius:10px;background:#071f30;display:grid;gap:10px;min-width:0}
+.nx-effect-preview h4{margin:0}
+.nx-effect-preview>label{display:grid;gap:7px}
+.nx-effect-preview .nx-effect-preview-button{justify-self:start;min-height:44px}
+.nx-effect-preview-results{border:1px solid #337d8b;border-radius:9px;padding:11px;background:#0a3342;min-width:0}
+.nx-effect-preview-results>strong{font-size:13px;color:#baf5e7}
+.nx-effect-preview-row{display:grid;grid-template-columns:minmax(34px,.55fr) minmax(0,1.4fr) auto minmax(0,1.4fr);align-items:center;gap:5px;border-top:1px solid #286478;padding:10px 0;font-size:12px;color:#aedbe6}
+.nx-effect-preview-row:first-of-type{margin-top:9px}
+.nx-effect-preview-row>span:first-child{font-weight:800;color:#8fe0f5}
+.nx-effect-preview-row strong{text-align:right;color:#efffff;font-size:13px;overflow-wrap:anywhere}
+.nx-effect-preview .nx-effect-preview-assumption,.nx-effect-preview .nx-effect-preview-disclaimer,.nx-effect-preview .nx-effect-preview-stale{font-size:11px;line-height:1.5;margin:6px 0;color:#9fcbd8}
+.nx-effect-preview .nx-effect-preview-stale{color:#f4d0a2}
+.nx-effect-preview .nx-effect-preview-disclaimer{margin:1px 0 0}
+@media(max-width:440px){.nx-effect-preview{padding:10px}.nx-effect-preview-row{grid-template-columns:34px minmax(0,1fr) 14px minmax(0,1fr);gap:3px;font-size:11px}}
