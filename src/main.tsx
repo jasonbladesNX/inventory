@@ -77,19 +77,20 @@ function App(){
     setCampaignBusy(true);setGmAccess(false);
     setChar('');setItems([]);setEffects([]);setChars([]);setDefs([]);setSlots([]);
     try{
-      const [people,catalog,equipment,account,membership,recipientQuery]=await Promise.all([
+      const [people,catalog,equipment,account,membership,recipientQuery,campaignOwner]=await Promise.all([
         db.from('characters').select('id,name,member_id').eq('campaign_id',id),
         db.from('item_definitions').select('id,name,category,code,source_info').eq('campaign_id',id),
         db.from('equipment_slot_definitions').select('id,label').eq('campaign_id',id),
         db.auth.getUser(),
         db.from('campaign_members').select('id,user_id,role,status').eq('campaign_id',id),
-        db.rpc('list_trade_recipients',{p_campaign:id})
+        db.rpc('list_trade_recipients',{p_campaign:id}),
+        db.from('campaigns').select('owner_user_id').eq('id',id).single()
       ]);
-      for(const result of [people,catalog,equipment,membership,recipientQuery])if(result.error)throw result.error;
+      for(const result of [people,catalog,equipment,membership,recipientQuery,campaignOwner])if(result.error)throw result.error;
       if(account.error)throw account.error;
       const me=account.data.user?.id;
       const memberships=(membership.data||[]).filter(m=>m.user_id===me&&m.status==='active');
-      const owned=campaigns.some(c=>c.id===id&&c.owner_user_id===me);
+      const owned=campaignOwner.data?.owner_user_id===me;
       const gm=owned||memberships.some(m=>m.role==='gm'||m.role==='owner');
       const allowed=new Set(memberships.map(m=>m.id));
       setGmAccess(gm);
