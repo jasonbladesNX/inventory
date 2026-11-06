@@ -1,0 +1,43 @@
+/* Nexus Multiverse Milestones 6.16–6.20: loadout health and safe guidance. */
+.nx-loadout-health{min-width:0}
+.nx-loadout-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.nx-loadout-heading h3{margin-bottom:0}
+.nx-loadout-health button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;border:1px solid #3b8299;border-radius:8px;background:#0a3a51;color:#d9f8ff;padding:8px 12px;font-size:12px;font-weight:750;cursor:pointer}
+.nx-loadout-health button:disabled{opacity:.5;cursor:not-allowed}
+.nx-loadout-health button:hover:not(:disabled){background:#10546c}
+.nx-loadout-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:15px 0}
+.nx-loadout-metrics>div{display:flex;flex-direction:column;gap:5px;min-width:0;padding:12px;border:1px solid #336f86;border-radius:10px;background:#0a3042}
+.nx-loadout-metrics strong{font:600 26px Georgia,serif;color:#e0faff}
+.nx-loadout-metrics span{font-size:11px;line-height:1.4;color:#9ecbd8}
+.nx-loadout-metrics .nx-loadout-flagged{border-color:#b18a56;background:#302a26}
+.nx-loadout-metrics .nx-loadout-flagged strong{color:#ffe1a3}
+.nx-loadout-warning,.nx-loadout-healthy{display:flex;align-items:flex-start;gap:9px;font-size:12px;line-height:1.55;margin:12px 0;padding:12px;border-radius:9px}
+.nx-loadout-warning{border:1px solid #a47b55;background:#352923;color:#ffdbb8}
+.nx-loadout-healthy{border:1px solid #388b7b;background:#113b3b;color:#acebd6}
+.nx-loadout-warning svg,.nx-loadout-healthy svg{flex:none;margin-top:1px}
+.nx-loadout-controls{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0}
+.nx-loadout-controls .nx-loadout-active{border-color:#6be6ed}
+.nx-loadout-copy{color:#a5e7d1;font-size:12px}
+.nx-loadout-empty{color:#9ac3d1;font-size:12px;line-height:1.55;margin:13px 0}
+.nx-loadout-list{display:grid;gap:9px;margin-top:10px}
+.nx-loadout-entry{border:1px solid #305f73;border-radius:10px;background:#082637;padding:12px;min-width:0}
+.nx-loadout-entry-invalid{border-color:#b18a5a;background:#272820}
+.nx-loadout-item-heading{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.nx-loadout-item-heading>strong{color:#e1f7ff;font-size:13px}
+.nx-loadout-item-heading>span:nth-child(2){margin-right:auto;color:#96bdce;font-size:11px}
+.nx-loadout-status-invalid,.nx-loadout-status-valid{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:750}
+.nx-loadout-status-invalid{color:#ffd1a1}.nx-loadout-status-valid{color:#9ce8ca}
+.nx-loadout-detail-ok,.nx-loadout-detail-bad,.nx-loadout-link{display:flex;align-items:flex-start;gap:7px;font-size:12px;line-height:1.5;margin:9px 0 0}
+.nx-loadout-detail-ok{color:#9bd4c5}.nx-loadout-detail-bad{color:#ffcead}.nx-loadout-link{color:#a8dce8}
+.nx-loadout-detail-ok svg,.nx-loadout-detail-bad svg,.nx-loadout-link svg{flex:none;margin-top:2px}
+.nx-loadout-minor{font-size:11px;color:#8fb7c4;margin:8px 0 0}
+.nx-loadout-entry .nx-loadout-repair{margin-top:11px;border-color:#b88e5b;background:#67412d;color:#ffe9d0}
+.nx-loadout-dependencies{margin-top:13px;border:1px solid #306b7e;border-radius:9px;padding:11px;background:#082a3a}
+.nx-loadout-dependencies summary{cursor:pointer;color:#b8e5ed;font-size:13px;font-weight:750}
+.nx-loadout-dependencies p{font-size:11px;color:#a5cbd5;line-height:1.55;margin:11px 0}
+.nx-loadout-repair-confirm{margin-top:13px;padding:14px;border:1px solid #ba8a55;border-radius:10px;background:#382b26;color:#f4ddc3}
+.nx-loadout-repair-confirm>strong{font:500 17px Georgia,serif}
+.nx-loadout-repair-confirm p{font-size:12px;line-height:1.6}
+.nx-loadout-repair-confirm>div{display:flex;gap:9px;flex-wrap:wrap}
+.nx-loadout-repair-confirm button:last-child{border-color:#f3bf8f;background:#78442f}
+@media(max-width:460px){.nx-loadout-metrics>div{padding:9px 7px}.nx-loadout-metrics strong{font-size:22px}.nx-loadout-metrics span{font-size:10px}.nx-loadout-heading h3{font-size:18px}.nx-loadout-health button{min-height:43px}}
