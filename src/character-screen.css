@@ -373,3 +373,25 @@
 .mv-attribute-summary-item.has-equipment-bonus{border-color:#69c6d8;background:#0d3c4c}
 .mv-attribute-equipment-label{flex:1 0 100%;text-align:center;color:#89e6d1;font-size:10px;font-weight:750;line-height:1.3}
 .mv-attributes-summary-note{margin:12px 0 0;color:#9acbd8;font-size:11px;line-height:1.5}
+
+/* Milestone 6.12: character equipment effect source disclosure. */
+.mv-effect-breakdown{margin-top:16px;border-top:1px solid #285a6c;padding-top:14px}
+.mv-effect-breakdown h4{font-family:Georgia,serif;color:#d6f8ff;font-weight:500;margin:0 0 11px;font-size:15px;letter-spacing:.4px}
+.mv-effect-source-group{border:1px solid #315d71;border-radius:9px;background:#071f2c;margin-top:8px;overflow:hidden}
+.mv-effect-source-group summary{cursor:pointer;list-style-position:inside;display:flex;justify-content:space-between;align-items:center;gap:9px;padding:12px 11px;font-size:13px;color:#b7e8f3;min-height:45px}
+.mv-effect-source-group summary::marker{color:#67d9ed}
+.mv-effect-source-group summary>span{flex:1;font-weight:700}
+.mv-effect-source-group summary small{font-size:11px;color:#8eb9c8;font-weight:500}
+.mv-effect-source-group summary>strong{color:#91edd6;font-size:11px;white-space:nowrap}
+.mv-effect-source-list{padding:0 11px 8px}
+.mv-effect-source-row{border-top:1px solid #235167;padding:11px 0 9px}
+.mv-effect-source-heading{display:flex;align-items:center;justify-content:space-between;gap:7px;flex-wrap:wrap}
+.mv-effect-source-heading strong{font-size:13px;color:#e4faff;overflow-wrap:anywhere}
+.mv-effect-source-status{font-size:10px;font-weight:750;border:1px solid #497184;color:#d7e6eb;border-radius:999px;padding:3px 7px}
+.mv-effect-source-status.status-applied{border-color:#369b8a;color:#a4f2d4}
+.mv-effect-source-status.status-suppressed{border-color:#b58c4c;color:#efd2a5}
+.mv-effect-source-status.status-condition_unmet{border-color:#b58c4c;color:#efd2a5}
+.mv-effect-source-facts{display:flex;flex-wrap:wrap;gap:10px;color:#89d9e7;font-size:11px;margin:7px 0}
+.mv-effect-source-row p{font-size:11px;color:#8fb6c5;line-height:1.45;margin:0}
+.mv-effect-source-total{margin:0;padding:12px 11px;border-top:1px solid #235167;color:#abdce7;font-size:11px;line-height:1.5}
+@media(max-width:440px){.mv-effect-source-group summary{padding:11px 9px}.mv-effect-source-list{padding:0 9px 8px}}
