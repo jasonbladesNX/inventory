@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "m6.13-equipment-requirements-and-conflicts",
+  "release": "m6.13-gm-grant-recipient-selector-fix",
   "date": "2026-11-06",
-  "note": "GM-configurable minimum base attributes and forbidden equipped-category requirements; enforced by atomic equip and compatible-slot RPCs"
+  "note": "GM Grant Item to Character has explicit campaign recipient selection, item selection, and grant confirmation; inventory RPC permissions unchanged"
 }
