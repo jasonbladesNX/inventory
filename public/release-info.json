@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "m6.11-gm-effect-preview-validation",
+  "release": "ui-navigation-landing-player-gm-campaign-setup-v1",
   "date": "2026-11-05",
-  "note": "Read-only GM character-specific equipment effect preview using shared ruleset resolver, before-and-after values, and validation"
+  "note": "Separate landing, player selection, GM management and campaign setup screens; fixed bottom character inventory shop craft navigation"
 }
