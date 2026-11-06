@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "ui-navigation-landing-player-gm-campaign-setup-v1",
+  "release": "m6.12-equipment-effect-source-breakdown",
   "date": "2026-11-05",
-  "note": "Separate landing, player selection, GM management and campaign setup screens; fixed bottom character inventory shop craft navigation"
+  "note": "Read-only per-attribute equipment effect source list with applied/suppressed/condition unmet/unsupported statuses"
 }
