@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "m6.10-gm-effect-editor-crash-fix",
+  "release": "m6.11-gm-effect-preview-validation",
   "date": "2026-11-05",
-  "note": "Explicit React JSX binding and defensive GM editor error boundary; campaign black-screen regression test"
+  "note": "Read-only GM character-specific equipment effect preview using shared ruleset resolver, before-and-after values, and validation"
 }
