@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "m6.12-equipment-effect-source-breakdown",
-  "date": "2026-11-05",
-  "note": "Read-only per-attribute equipment effect source list with applied/suppressed/condition unmet/unsupported statuses"
+  "release": "m6.13-equipment-requirements-and-conflicts",
+  "date": "2026-11-06",
+  "note": "GM-configurable minimum base attributes and forbidden equipped-category requirements; enforced by atomic equip and compatible-slot RPCs"
 }
