@@ -11,7 +11,7 @@ assert.match(editor,/save_campaign_item_equip_requirements/);
 assert.match(editor,/min_attributes/);
 assert.match(editor,/forbidden_equipped_categories/);
 assert.match(char,/Cannot equip this item/);
-assert.match(char,/list_character_item_equip_requirements/);
+assert.match(char,/preview_character_item_attribute_requirements/);
 assert.match(char,/preview_character_item_attribute_requirements/);
 assert.match(char,/Projected/);
 assert.match(editor,/Minimum effective attributes/);
