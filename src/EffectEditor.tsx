@@ -8,7 +8,9 @@ type EffectRow={effect_id:string;item_definition_id:string;item_name:string;attr
 type Props={db:SupabaseClient;campaign:string;definitions:Definition[];attributes:string[];operations:string[];allowEquippedCategory:boolean;onChanged:()=>Promise<void>};
 const categories=['weapon','shield','armor','clothing','jewelry','ring','headgear','footwear','focus','tool','wondrous','gear','container'];
 export default function EffectEditor({db,campaign,definitions,attributes,operations,allowEquippedCategory,onChanged}:Props){
-  const available=definitions.filter(d=>!d.source_info?.import_batch&&!/^srd/i.test(d.code??''));
+  const available=(Array.isArray(definitions)?definitions:[]).filter(d=>d&&typeof d.id==='string'&&typeof d.name==='string'&&!d.source_info?.import_batch&&!/^srd/i.test(typeof d.code==='string'?d.code:''));
+  const enabledAttributes=Array.isArray(attributes)?attributes.filter(code=>typeof code==='string'):[];
+  const enabledOperations=Array.isArray(operations)?operations.filter(op=>typeof op==='string'):[];
   const [selected,setSelected]=useState('');
   const [effects,setEffects]=useState<EffectRow[]>([]);
   const [editing,setEditing]=useState<string|null>(null);
@@ -29,8 +31,15 @@ export default function EffectEditor({db,campaign,definitions,attributes,operati
     let cancelled=false;
     async function load(){
       setLoading(true);
-      const {data,error}=await db.rpc('list_campaign_item_effects',{p_campaign:campaign});
-      if(!cancelled){if(error)setError(inventoryErrorMessage(error));else setEffects((data||[]) as EffectRow[]);setLoading(false)}
+      try{
+        const {data,error}=await db.rpc('list_campaign_item_effects',{p_campaign:campaign});
+        if(error)throw error;
+        if(!cancelled)setEffects(Array.isArray(data)?data as EffectRow[]:[]);
+      }catch(e){
+        if(!cancelled)setError(inventoryErrorMessage(e));
+      }finally{
+        if(!cancelled)setLoading(false);
+      }
     }
     void load();return()=>{cancelled=true};
   },[db,campaign]);
@@ -50,7 +59,7 @@ export default function EffectEditor({db,campaign,definitions,attributes,operati
   const save=async(event:React.FormEvent)=>{
     event.preventDefault();setError('');setNotice('');
     const numeric=Number(amount);
-    if(!selected||!attributes.includes(attribute)||!operations.includes(operation)||!amount.trim()||!Number.isFinite(numeric)){
+    if(!selected||!enabledAttributes.includes(attribute)||!enabledOperations.includes(operation)||!amount.trim()||!Number.isFinite(numeric)){
       setError('Select an item, a permitted attribute and operation, and a valid number.');return;
     }
     setPending(true);
@@ -102,12 +111,12 @@ export default function EffectEditor({db,campaign,definitions,attributes,operati
             <label>Attribute
               <select value={attribute} required onChange={e=>setAttribute(e.target.value)}>
                 <option value="">Choose…</option>
-                {attributes.map(code=><option key={code} value={code}>{code}</option>)}
+                {enabledAttributes.map(code=><option key={code} value={code}>{code}</option>)}
               </select>
             </label>
             <label>Operation
               <select value={operation} required onChange={e=>setOperation(e.target.value)}>
-                {operations.map(op=><option key={op} value={op}>{op}</option>)}
+                {enabledOperations.map(op=><option key={op} value={op}>{op}</option>)}
               </select>
             </label>
             <label>Value
