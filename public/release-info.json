@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "m6.15-equipment-dependency-warnings",
+  "release": "m6.15-modal-unequip-warning-invalid-loadout-fix",
   "date": "2026-11-06",
-  "note": "Read-only dependency preview warns before unequipping a bonus item that supports another equipped item's attribute requirements; explicit Cancel or Unequip Anyway"
+  "note": "Real modal confirmation for unequip dependency changes; persistent invalid equipment requirements notice; authorized read-only database status check"
 }
