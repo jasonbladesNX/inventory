@@ -17,6 +17,7 @@ type WeightSummary = {known_weight_lb:number|string;carried_weight_lb:number|str
 type CarryProfile = {ruleset_code:string;capacity_mode:string;strength:number|null;creature_size:string|null;capacity_lb:number|string|null;drag_lift_push_lb:number|string|null};
 type CharacterAttribute = {attribute_code:string;attribute_label:string;score:number|null;modifier:number|null;is_editable:boolean};
 type DerivedAttribute = {attribute_code:string;attribute_label:string;base_score:number|null;equipment_bonus:number|string;effective_score:number|string|null;effective_modifier:number|null};
+type EffectSource = {attribute_code:string;item_id:string;item_name:string;effect_id:string;operation:string;effect_value:number|string|null;stacking_group:string|null;effect_status:'applied'|'suppressed'|'condition_unmet'|'unsupported';status_reason:string};
 type ItemDetails = {item_id:string; category:string; description:string; condition:string; identified:boolean; properties:Record<string,unknown>; effects:{attribute:string;operation:string;value:unknown}[]};
 type Props = {
   db:SupabaseClient;
@@ -71,6 +72,8 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [carryProfile,setCarryProfile]=useState<CarryProfile|null>(null);
   const [attributes,setAttributes]=useState<CharacterAttribute[]>([]);
   const [derivedAttributes,setDerivedAttributes]=useState<Record<string,DerivedAttribute>>({});
+  const [effectSources,setEffectSources]=useState<EffectSource[]>([]);
+  const [effectSourcesError,setEffectSourcesError]=useState('');
   const [draftScores,setDraftScores]=useState<Record<string,string>>({});
   const [draftSize,setDraftSize]=useState('');
   const [carryError,setCarryError]=useState('');
@@ -90,9 +93,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   useEffect(()=>{
     let cancelled=false;
     async function load(){
-      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setStorage({});setContainerUsage({});setWeightSummary(null);setCarryProfile(null);setAttributes([]);setDerivedAttributes({});
+      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setStorage({});setContainerUsage({});setWeightSummary(null);setCarryProfile(null);setAttributes([]);setDerivedAttributes({});setEffectSources([]);setEffectSourcesError('');
       try{
-        const [assignments,currency,compatibility,categories,storageRows,usageRows,weightRows,carryRows,attributeRows,derivedRows]=await Promise.all([
+        const [assignments,currency,compatibility,categories,storageRows,usageRows,weightRows,carryRows,attributeRows,derivedRows,sourceRows]=await Promise.all([
           db.rpc('list_character_equipped_instances',{p_character:character}),
           db.rpc('list_my_trade_currency',{p_character:character}),
           db.rpc('list_character_valid_equipment_slots',{p_character:character}),
@@ -103,6 +106,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           db.rpc('get_character_carry_capacity',{p_character:character}),
           db.rpc('list_character_attributes',{p_character:character}),
           db.rpc('list_character_derived_attributes',{p_character:character}),
+          db.rpc('list_character_effect_sources',{p_character:character}),
         ]);
         if(assignments.error)throw assignments.error;
         if(currency.error)throw currency.error;
@@ -145,6 +149,8 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         const newAttrs=(attributeRows.data||[]) as CharacterAttribute[];
         setAttributes(newAttrs);
         setDerivedAttributes(Object.fromEntries(((derivedRows.data||[]) as DerivedAttribute[]).map(row=>[row.attribute_code,row])));
+        if(sourceRows.error){setEffectSources([]);setEffectSourcesError(inventoryErrorMessage(sourceRows.error))}
+        else{setEffectSources((sourceRows.data||[]) as EffectSource[]);setEffectSourcesError('')}
         setDraftScores(Object.fromEntries(newAttrs.map(a=>[a.attribute_code,a.score==null?'':String(a.score)])));
         setDraftSize(profile?.creature_size??'');
         setCarryError('');
@@ -409,7 +415,36 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         {Object.values(derivedAttributes).filter(a=>Number(a.equipment_bonus)!==0).length===0?
           <p className="mv-empty">No active resolved equipment adjustments to ability scores.</p>:
           <div className="mv-rows">{Object.values(derivedAttributes).filter(a=>Number(a.equipment_bonus)!==0).map(a=><div key={a.attribute_code} className="mv-bonus-row"><Gem size={17}/><span>{a.attribute_label}</span><strong>{Number(a.equipment_bonus)>0?'+':''}{numberText(a.equipment_bonus,2)}</strong></div>)}</div>}
-        <p className="mv-weight-note">The ruleset controls supported effects. Identified equipment can apply add, set, multiply, minimum floors and maximum ceilings. Currently supported conditions can require an equipped item category; unknown conditions and flags are not applied to ability scores.</p>
+        <div className="mv-effect-breakdown">
+          <h4>Equipment Effect Sources</h4>
+          {effectSourcesError&&<p className="mv-error" role="alert">Unable to load effect details: {effectSourcesError}</p>}
+          {effectSources.length===0&&!effectSourcesError?<p className="mv-empty">No visible effects from identified equipped items.</p>:
+            [...new Set(effectSources.map(source=>source.attribute_code))].map(code=>{
+              const sources=effectSources.filter(source=>source.attribute_code===code);
+              const derived=derivedAttributes[code];
+              return <details key={code} className="mv-effect-source-group">
+                <summary>
+                  <span>{derived?.attribute_label||code} <small>({sources.length} {sources.length===1?'source':'sources'})</small></span>
+                  <strong>{sources.filter(source=>source.effect_status==='applied').length} applied</strong>
+                </summary>
+                <div className="mv-effect-source-list">
+                  {sources.map(source=><div className="mv-effect-source-row" key={source.effect_id+':'+source.item_id}>
+                    <div className="mv-effect-source-heading">
+                      <strong>{source.item_name}</strong>
+                      <span className={'mv-effect-source-status status-'+source.effect_status}>{source.effect_status==='condition_unmet'?'Condition unmet':source.effect_status==='suppressed'?'Suppressed':source.effect_status==='unsupported'?'Unsupported':'Applied'}</span>
+                    </div>
+                    <div className="mv-effect-source-facts">
+                      <span>{source.operation.toUpperCase()} {source.effect_value===null?'—':numberText(source.effect_value,2)}</span>
+                      {source.stacking_group&&<span>Group: {source.stacking_group}</span>}
+                    </div>
+                    <p>{source.status_reason}</p>
+                  </div>)}
+                </div>
+                {derived&&<p className="mv-effect-source-total">Base {derived.base_score??'—'} · Effective {derived.effective_score===null?'—':numberText(derived.effective_score,2)} · Net gear {Number(derived.equipment_bonus)>0?'+':''}{numberText(derived.equipment_bonus,2)}</p>}
+              </details>;
+            })}
+        </div>
+        <p className="mv-weight-note">Only identified, visible equipped-item effects appear here. Stacking, condition eligibility, and final values follow the campaign ruleset. Non-additive effects may change scores without a matching additive total.</p>
       </section>
       <div className="mv-bottom-panels">
         <section className="mv-panel" aria-labelledby="mv-currency-title">
