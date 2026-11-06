@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "m6.13-item-equipment-requirement-explanations",
+  "release": "m6.13-deduplicated-equipment-requirements",
   "date": "2026-11-06",
-  "note": "Item details show the exact unmet base-score equipment prerequisites and current character scores; server-side equipment eligibility unchanged"
+  "note": "Item Details displays unmet base-score requirements only once; general slot/conflict guidance remains when no attribute prerequisite is unmet"
 }
