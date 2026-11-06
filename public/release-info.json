@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "m6.8-equipment-effect-rules-stacking",
+  "release": "m6.9-advanced-effect-resolution",
   "date": "2026-11-05",
-  "note": "Equipment effect resolution: stacking groups, score overrides, unconditional add/set effects; conditional effects deferred"
+  "note": "Ruleset-configured numeric effects and equipped-category condition"
 }
