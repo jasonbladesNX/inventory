@@ -41,3 +41,13 @@
 .nx-loadout-repair-confirm>div{display:flex;gap:9px;flex-wrap:wrap}
 .nx-loadout-repair-confirm button:last-child{border-color:#f3bf8f;background:#78442f}
 @media(max-width:460px){.nx-loadout-metrics>div{padding:9px 7px}.nx-loadout-metrics strong{font-size:22px}.nx-loadout-metrics span{font-size:10px}.nx-loadout-heading h3{font-size:18px}.nx-loadout-health button{min-height:43px}}
+
+/* Keep guided repair visible above all scrolling character content. */
+.nx-loadout-repair-modal{width:min(500px,calc(100vw - 26px));max-width:500px;box-sizing:border-box}
+.nx-loadout-repair-modal .mv-modal-body{padding:17px 20px}
+.nx-loadout-repair-modal .mv-modal-body p{font-size:13px;line-height:1.6;color:#c8e4ed}
+.nx-loadout-repair-actions{display:flex;justify-content:flex-end;gap:9px;padding:15px 19px;border-top:1px solid #396a7f}
+.nx-loadout-repair-actions button{min-height:44px;padding:9px 14px;border-radius:8px;border:1px solid #51869a;background:#0b354c;color:#e9faff;font-size:13px;font-weight:700;cursor:pointer}
+.nx-loadout-repair-actions button:last-child{background:#73432f;border-color:#cb9568}
+.nx-loadout-repair-actions button:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:450px){.nx-loadout-repair-actions{display:grid;grid-template-columns:1fr 1fr;padding:12px}.nx-loadout-repair-actions button{min-width:0}}
