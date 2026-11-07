@@ -5,6 +5,7 @@ import {Backpack, CircleDot, Coins, Crown, FlaskConical, Footprints, Gem, Hand, 
 import {inventoryErrorMessage} from './inventoryErrors';
 import LoadoutHealthPanel from './LoadoutHealthPanel';
 import InventoryWorkbench,{type WorkbenchIndicator} from './InventoryWorkbench';
+import StackManagement from './StackManagement';
 import './character-screen.css';
 
 export type InventoryTab = 'character' | 'inventory' | 'shop' | 'craft';
@@ -39,6 +40,7 @@ type Props = {
   onEquip:(itemId:string,slotId:string)=>void;
   onUnequip:(assignmentId:string)=>void;
   onMoveStorage:(itemId:string,containerItemId:string|null)=>Promise<void>;
+  onInventoryChanged:()=>Promise<void>;
   onSaveAttributes:(scores:Record<string,number>,size:string)=>Promise<void>;
   tab:InventoryTab;
   onTabChange:(tab:InventoryTab)=>void;
@@ -95,7 +97,7 @@ function numberText(value:number|string, digits=0):string {
 }
 function titleCase(code:string):string {return code.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}
 
-export default function CharacterScreen({db,campaign,campaignName,character,characterName,slots,effects,inventoryVersion,items,busy,onEquip,onUnequip,onMoveStorage,onSaveAttributes,tab,onTabChange}:Props){
+export default function CharacterScreen({db,campaign,campaignName,character,characterName,slots,effects,inventoryVersion,items,busy,onEquip,onUnequip,onMoveStorage,onInventoryChanged,onSaveAttributes,tab,onTabChange}:Props){
   const [equipped,setEquipped]=useState<Equipped[]>([]);
   const [wallet,setWallet]=useState<Money[]>([]);
   const [validSlots,setValidSlots]=useState<Record<string,string[]>>({});
@@ -713,6 +715,8 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
             />}
         {slots.length===0&&<p className="mv-empty">No equipment slots have been configured for this campaign yet.</p>}
       </section>
+      <StackManagement db={db} character={character} inventoryVersion={inventoryVersion} items={items} storage={storage}
+        equippedIds={new Set(equipped.map(row=>row.itemId))} busy={busy||loading} onChanged={onInventoryChanged}/>
       <p className="mv-inventory-hint">Trading and connection diagnostics remain available below the inventory panel during testing.</p>
     </div>}
     {tab==='shop'&&<section className="mv-panel mv-placeholder"><ShoppingBag size={30}/><h3>Campaign Shops</h3><p>Shop browsing and purchases are not enabled yet. Merchant transactions will be connected after security testing.</p></section>}
