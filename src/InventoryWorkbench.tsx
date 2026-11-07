@@ -1,5 +1,5 @@
 import React,{useEffect,useMemo,useState} from 'react';
-import {Download,Search,Scale,ShieldAlert,X,Printer,BookmarkPlus,RotateCcw,Layers} from 'lucide-react';
+import {Download,Search,Scale,ShieldAlert,X,Printer,Layers} from 'lucide-react';
 import './inventory-workbench.css';
 
 export type WorkbenchItem={item_id:string;display_name:string;quantity:number|string;eligible:boolean};
@@ -36,7 +36,6 @@ export default function InventoryWorkbench({characterName,items,categories,stora
   const [sort,setSort]=useState('name_asc');
   const [exportMessage,setExportMessage]=useState('');
   const [viewMode,setViewMode]=useState<'location'|'category'|'flat'>('location');
-  const [savedView,setSavedView]=useState<{search:string;category:string;location:string;status:string;sort:string;viewMode:'location'|'category'|'flat'}|null>(null);
   const [reportOpen,setReportOpen]=useState(false);
   useEffect(()=>{if(location!=='all'&&location!=='carried'&&!items.some(item=>item.item_id===location&&storage[item.item_id]?.is_container))setLocation('all')},[items,storage,location]);
   const availableCategories=[...new Set(items.map(item=>categories[item.item_id]??'unknown'))].sort((a,b)=>
@@ -74,10 +73,6 @@ export default function InventoryWorkbench({characterName,items,categories,stora
     return sum+(unit==null?0:num(unit)*num(item.quantity));
   },0);
   const filteredUnknownWeight=matches.filter(item=>indicators[item.item_id]?.unit_weight_lb==null).length;
-  const storedCount=items.filter(item=>Boolean(storage[item.item_id]?.container_item_id)).length;
-  const missingWeights=items.filter(item=>indicators[item.item_id]?.unit_weight_lb==null).length;
-  const totalQuantity=items.reduce((sum,item)=>sum+num(item.quantity),0);
-  const availableContainers=containers.map(item=>({item,info:usage[item.item_id]}));
   function downloadCsv(){
     const columns=['Item','Category','Quantity','Status','Stored in','Condition','Identified','Unit weight (lb)','Favorite'];
     const rows=matches.map(item=>{
@@ -97,17 +92,6 @@ export default function InventoryWorkbench({characterName,items,categories,stora
     setExportMessage('Exported '+rows.length+' visible items to CSV.');
   }
   const clear=()=>{setSearch('');setCategory('all');setLocation('all');setStatus('all');setSort('name_asc');setViewMode('location')};
-  const quickView=(name:'all'|'equipped'|'favorites'|'stored'|'weight')=>{
-    clear();
-    if(name==='weight')setStatus('unknown_weight');
-    else if(name!=='all')setStatus(name);
-  };
-  const saveView=()=>setSavedView({search,category,location,status,sort,viewMode});
-  const restoreView=()=>{
-    if(!savedView)return;
-    setSearch(savedView.search);setCategory(savedView.category);setLocation(savedView.location);
-    setStatus(savedView.status);setSort(savedView.sort);setViewMode(savedView.viewMode);
-  };
   const printableSummary=[
     'Nexus Multiverse Inventory Report',
     'Character: '+characterName,
@@ -130,24 +114,6 @@ export default function InventoryWorkbench({characterName,items,categories,stora
     </section>;
   };
   return <div className="nx-inventory-workbench">
-    <div className="nx-inventory-metrics" aria-label="Inventory overview">
-      <div><strong>{items.length}</strong><span>Item entries</span></div>
-      <div><strong>{totalQuantity.toLocaleString()}</strong><span>Total units</span></div>
-      <div><strong>{storedCount}</strong><span>Stored items</span></div>
-      <div><strong>{favoriteIds.size}</strong><span>Favorites</span></div>
-    </div>
-    <div className="nx-inventory-quickviews" aria-label="Quick inventory views">
-      <button type="button" onClick={()=>quickView('all')}>All</button>
-      <button type="button" onClick={()=>quickView('equipped')}>Equipped</button>
-      <button type="button" onClick={()=>quickView('favorites')}>Favorites</button>
-      <button type="button" onClick={()=>quickView('stored')}>Stored</button>
-      <button type="button" onClick={()=>quickView('weight')}>Unknown weight</button>
-    </div>
-    <div className="nx-inventory-search">
-      <label htmlFor="nx-inventory-search">Search inventory</label>
-      <div><Search size={18} aria-hidden="true"/><input id="nx-inventory-search" type="search" value={search}
-        onChange={e=>setSearch(e.target.value)} placeholder="Search by item name…"/></div>
-    </div>
     <div className="nx-inventory-filters">
       <label>Item type
         <select value={category} onChange={e=>setCategory(e.target.value)}>
@@ -183,6 +149,12 @@ export default function InventoryWorkbench({characterName,items,categories,stora
         </select>
       </label>
     </div>
+    <div className="nx-inventory-top-controls">
+    <div className="nx-inventory-search">
+      <label htmlFor="nx-inventory-search">Search inventory</label>
+      <div><Search size={17} aria-hidden="true"/><input id="nx-inventory-search" type="search" value={search}
+        onChange={e=>setSearch(e.target.value)} placeholder="Item name…"/></div>
+    </div>
     <div className="nx-inventory-group-toolbar">
       <label htmlFor="nx-workbench-grouping"><Layers size={16} aria-hidden="true"/> Group results</label>
       <select id="nx-workbench-grouping" value={viewMode} onChange={e=>setViewMode(e.target.value as 'location'|'category'|'flat')}>
@@ -190,6 +162,7 @@ export default function InventoryWorkbench({characterName,items,categories,stora
         <option value="category">By item type</option>
         <option value="flat">One list</option>
       </select>
+    </div>
     </div>
     <div className="nx-inventory-weight-overview" role="status">
       <Scale size={17} aria-hidden="true"/>
@@ -199,35 +172,20 @@ export default function InventoryWorkbench({characterName,items,categories,stora
     <div className="nx-inventory-toolbar">
       <span>{matches.length} of {items.length} item entries shown</span>
       <button type="button" onClick={clear}><X size={15}/> Reset filters</button>
-      <button type="button" onClick={downloadCsv} disabled={busy||matches.length===0}><Download size={15}/> Export visible CSV</button>
-      <button type="button" onClick={saveView}><BookmarkPlus size={15}/> Save view</button>
-      <button type="button" onClick={restoreView} disabled={!savedView}><RotateCcw size={15}/> Restore view</button>
       <button type="button" onClick={()=>setReportOpen(v=>!v)}><Printer size={15}/> {reportOpen?'Close report':'Report'}</button>
     </div>
     {exportMessage&&<p className="nx-inventory-feedback" role="status">{exportMessage}</p>}
-    {savedView&&<p className="nx-inventory-feedback" role="status">View saved for this session. Use Restore view to reapply its filters and grouping.</p>}
     {reportOpen&&<section className="nx-inventory-print-report" aria-label="Inventory report">
       <div className="nx-inventory-report-header">
         <strong>Inventory report</strong>
-        <button type="button" onClick={()=>window.print()}><Printer size={15}/> Print report</button>
+        <div className="nx-inventory-report-actions">
+          <button type="button" onClick={downloadCsv} disabled={busy||matches.length===0}><Download size={15}/> Export CSV</button>
+          <button type="button" onClick={()=>window.print()}><Printer size={15}/> Print report</button>
+        </div>
       </div>
       <pre>{printableSummary}</pre>
       <p>Snapshot of currently visible items. Unknown weights are excluded from the known-weight subtotal.</p>
     </section>}
-    {availableContainers.length>0&&<details className="nx-container-utilization">
-      <summary><Scale size={17}/> Container utilization ({availableContainers.length})</summary>
-      {availableContainers.map(({item,info})=>{
-        const used=num(info?.used_weight_lb),capacity=info?.capacity_weight_lb==null?null:num(info.capacity_weight_lb);
-        const pct=capacity&&capacity>0?100*used/capacity:null;
-        const caution=Number(info?.unknown_weight_count??0)>0||(pct!==null&&pct>=90);
-        return <div key={item.item_id} className={'nx-container-health'+(caution?' is-warning':'')}>
-          <div><strong>{item.display_name}</strong><span>{used.toLocaleString()} / {capacity===null?'unknown':capacity.toLocaleString()} lb</span></div>
-          {pct!==null&&<div role="progressbar" aria-label={'Capacity used in '+item.display_name} aria-valuemin={0} aria-valuemax={capacity??0} aria-valuenow={Math.min(used,capacity??0)}><span style={{width:Math.min(pct,100)+'%'}}/></div>}
-          {caution&&<small><ShieldAlert size={14}/> {Number(info?.unknown_weight_count??0)>0?'Contains items with unknown weight.':'Container is at least 90% full.'}</small>}
-        </div>;
-      })}
-      {missingWeights>0&&<p className="nx-container-weight-note">{missingWeights} item entries lack a known unit weight. Weight-based sorting and estimates may be incomplete.</p>}
-    </details>}
     {matches.length===0?<p className="mv-empty nx-inventory-no-match">No items match these filters.</p>:
       viewMode==='flat'?showList(matches,'All matching items'):
       viewMode==='category'?availableCategories.map(code=>
