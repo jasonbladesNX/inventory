@@ -25,6 +25,9 @@ type EquipRequirement = {attribute_code:string;required_score:number;current_sco
 type EquipPreview = {slot_id:string;slot_label:string;can_equip:boolean;reason:string;replaced_items:string[]};
 type UnequipDependency = {dependent_item:string;attribute_code:string;required_score:number;current_score:number|string;projected_score:number|string};
 type InvalidEquipment = {assignment_id:string;item_name:string;attribute_code:string;required_score:number;current_score:number|string|null};
+type PotionHotbarSlot = {slot:number;definition_id:string|null;name:string|null};
+type PotionHotbarOption = {definition_id:string;name:string;quantity:number;item_id:string};
+type PotionHotbar = {slots:PotionHotbarSlot[];options:PotionHotbarOption[]};
 type ItemDetails = {item_id:string; category:string; description:string; condition:string; identified:boolean; can_consume:boolean; properties:Record<string,unknown>; effects:{attribute:string;operation:string;value:unknown}[]};
 type Props = {
   db:SupabaseClient;
@@ -100,6 +103,10 @@ function titleCase(code:string):string {return code.replace(/_/g,' ').replace(/\
 export default function CharacterScreen({db,campaign,campaignName,character,characterName,slots,effects,inventoryVersion,items,busy,onEquip,onUnequip,onMoveStorage,onInventoryChanged,onSaveAttributes,tab,onTabChange}:Props){
   const [equipped,setEquipped]=useState<Equipped[]>([]);
   const [wallet,setWallet]=useState<Money[]>([]);
+  const [potionHotbar,setPotionHotbar]=useState<PotionHotbar>({slots:[],options:[]});
+  const [potionSlotBusy,setPotionSlotBusy]=useState<number|null>(null);
+  const [potionUseBusy,setPotionUseBusy]=useState<number|null>(null);
+  const [potionError,setPotionError]=useState('');
   const [validSlots,setValidSlots]=useState<Record<string,string[]>>({});
   const [itemCategories,setItemCategories]=useState<Record<string,string>>({});
   const [inventoryIndicators,setInventoryIndicators]=useState<Record<string,WorkbenchIndicator>>({});
@@ -207,9 +214,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   useEffect(()=>{
     let cancelled=false;
     async function load(){
-      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setInventoryIndicators({});setUsableItemIds(new Set());setFavoriteIds(new Set());setStorage({});setContainerUsage({});setWeightSummary(null);setCarryProfile(null);setHitPoints(null);setAttributes([]);setDerivedAttributes({});setEffectSources([]);setEffectSourcesError('');setInvalidEquipment([]);setInvalidEquipmentError('');
+      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setInventoryIndicators({});setUsableItemIds(new Set());setFavoriteIds(new Set());setStorage({});setContainerUsage({});setWeightSummary(null);setCarryProfile(null);setHitPoints(null);setPotionHotbar({slots:[],options:[]});setPotionError('');setAttributes([]);setDerivedAttributes({});setEffectSources([]);setEffectSourcesError('');setInvalidEquipment([]);setInvalidEquipmentError('');
       try{
-        const [assignments,currency,compatibility,categories,storageRows,usageRows,weightRows,carryRows,attributeRows,derivedRows,sourceRows,invalidRows,favoriteRows,indicatorRows,usableRows,hpRows]=await Promise.all([
+        const [assignments,currency,compatibility,categories,storageRows,usageRows,weightRows,carryRows,attributeRows,derivedRows,sourceRows,invalidRows,favoriteRows,indicatorRows,usableRows,hpRows,potionRows]=await Promise.all([
           db.rpc('list_character_equipped_instances',{p_character:character}),
           db.rpc('list_my_trade_currency',{p_character:character}),
           db.rpc('list_character_valid_equipment_slots',{p_character:character}),
@@ -226,6 +233,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           db.rpc('list_character_inventory_indicators',{p_character:character}),
           db.rpc('list_character_usable_items',{p_character:character}),
           db.rpc('get_character_hit_points',{p_character:character}),
+           db.rpc('get_character_potion_hotbar',{p_character:character}),
         ]);
         if(assignments.error)throw assignments.error;
         if(currency.error)throw currency.error;
@@ -241,6 +249,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         if(indicatorRows.error)throw indicatorRows.error;
         if(usableRows.error)throw usableRows.error;
         if(hpRows.error)throw hpRows.error;
+         if(potionRows.error)throw potionRows.error;
         if(cancelled)return;
         const slotLookup=new Map(slots.map(s=>[s.id,s.label]));
         setEquipped((assignments.data||[]).map(row=>({
@@ -265,6 +274,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         for(const row of indicatorRows.data||[])indicators[row.item_id]=row as WorkbenchIndicator;
         setInventoryIndicators(indicators);
         setUsableItemIds(new Set((usableRows.data||[]).map((row:{item_id:string})=>row.item_id)));
+         setPotionHotbar((potionRows.data??{slots:[],options:[]}) as PotionHotbar);
         const hp=(hpRows.data??{configured:false}) as {configured:boolean;current?:number;max?:number};
         setHitPoints(hp);
         if(!hpEditing){
@@ -547,6 +557,32 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       setFavoriteIds(prev=>{const value=new Set(prev);if(next)value.add(itemId);else value.delete(itemId);return value});
     }catch(e){setFavoriteError(inventoryErrorMessage(e))}
     finally{setFavoriteBusy(null)}
+  };
+  const assignPotionSlot=async(slot:number,definitionId:string)=>{
+    if(busy||loading||potionSlotBusy!==null||potionUseBusy!==null)return;
+    setPotionSlotBusy(slot);setPotionError('');
+    try{
+      const {data,error:rpcError}=await db.rpc('set_character_potion_hotbar_slot',{
+        p_character:character,p_slot:slot,p_definition:definitionId||null
+      });
+      if(rpcError)throw rpcError;
+      setPotionHotbar(data as PotionHotbar);
+    }catch(e){setPotionError(inventoryErrorMessage(e))}
+    finally{setPotionSlotBusy(null)}
+  };
+  const usePotionSlot=async(slot:number)=>{
+    const assignment=potionHotbar.slots.find(row=>row.slot===slot);
+    const option=potionHotbar.options.find(row=>row.definition_id===assignment?.definition_id);
+    if(!option||Number(option.quantity)<1||busy||loading||potionSlotBusy!==null||potionUseBusy!==null)return;
+    setPotionUseBusy(slot);setPotionError('');
+    try{
+      const {error:rpcError}=await db.rpc('use_character_inventory_item',{
+        p_character:character,p_item:option.item_id,p_quantity:1
+      });
+      if(rpcError)throw rpcError;
+      await onInventoryChanged();
+    }catch(e){setPotionError(inventoryErrorMessage(e))}
+    finally{setPotionUseBusy(null)}
   };
   const quickUseItem=async(itemId:string)=>{
     if(busy||loading||quickUseBusy||!usableItemIds.has(itemId))return;
@@ -859,41 +895,36 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           <small>These items remain equipped until you change equipment or attributes.</small>
         </div>}
       </section>
-      <section className="mv-panel" aria-labelledby="mv-bonuses-title">
-        <h3 id="mv-bonuses-title"><Sparkles size={20}/> Resolved Equipment Effects</h3>
-        {Object.values(derivedAttributes).filter(a=>Number(a.equipment_bonus)!==0).length===0?
-          <p className="mv-empty">No active resolved equipment adjustments to ability scores.</p>:
-          <div className="mv-rows">{Object.values(derivedAttributes).filter(a=>Number(a.equipment_bonus)!==0).map(a=><div key={a.attribute_code} className="mv-bonus-row"><Gem size={17}/><span>{a.attribute_label}</span><strong>{Number(a.equipment_bonus)>0?'+':''}{numberText(a.equipment_bonus,2)}</strong></div>)}</div>}
-        <div className="mv-effect-breakdown">
-          <h4>Equipment Effect Sources</h4>
-          {effectSourcesError&&<p className="mv-error" role="alert">Unable to load effect details: {effectSourcesError}</p>}
-          {effectSources.length===0&&!effectSourcesError?<p className="mv-empty">No visible effects from identified equipped items.</p>:
-            [...new Set(effectSources.map(source=>source.attribute_code))].map(code=>{
-              const sources=effectSources.filter(source=>source.attribute_code===code);
-              const derived=derivedAttributes[code];
-              return <details key={code} className="mv-effect-source-group">
-                <summary>
-                  <span>{derived?.attribute_label||code} <small>({sources.length} {sources.length===1?'source':'sources'})</small></span>
-                  <strong>{sources.filter(source=>source.effect_status==='applied').length} applied</strong>
-                </summary>
-                <div className="mv-effect-source-list">
-                  {sources.map(source=><div className="mv-effect-source-row" key={source.effect_id+':'+source.item_id}>
-                    <div className="mv-effect-source-heading">
-                      <strong>{source.item_name}</strong>
-                      <span className={'mv-effect-source-status status-'+source.effect_status}>{source.effect_status==='condition_unmet'?'Condition unmet':source.effect_status==='suppressed'?'Suppressed':source.effect_status==='unsupported'?'Unsupported':'Applied'}</span>
-                    </div>
-                    <div className="mv-effect-source-facts">
-                      <span>{source.operation.toUpperCase()} {source.effect_value===null?'—':numberText(source.effect_value,2)}</span>
-                      {source.stacking_group&&<span>Group: {source.stacking_group}</span>}
-                    </div>
-                    <p>{source.status_reason}</p>
-                  </div>)}
-                </div>
-                {derived&&<p className="mv-effect-source-total">Base {derived.base_score??'—'} · Effective {derived.effective_score===null?'—':numberText(derived.effective_score,2)} · Net gear {Number(derived.equipment_bonus)>0?'+':''}{numberText(derived.equipment_bonus,2)}</p>}
-              </details>;
-            })}
+      <section className="mv-panel mv-potions-panel" aria-labelledby="mv-potions-title">
+        <h3 id="mv-potions-title"><FlaskConical size={20}/> Potions</h3>
+        <p className="mv-potions-description">Assign up to four potion types for quick use. Each use consumes one potion from inventory.</p>
+        <div className="mv-potion-slots">
+          {[1,2,3,4].map(slot=>{
+            const assignment=potionHotbar.slots.find(row=>row.slot===slot);
+            const option=potionHotbar.options.find(row=>row.definition_id===assignment?.definition_id);
+            const count=option?.quantity??0;
+            return <div className="mv-potion-slot" key={slot}>
+              <label htmlFor={`mv-potion-slot-${slot}`}>Slot {slot}</label>
+              <select id={`mv-potion-slot-${slot}`} value={assignment?.definition_id??''}
+                disabled={loading||busy||potionSlotBusy!==null||potionUseBusy!==null}
+                onChange={event=>void assignPotionSlot(slot,event.target.value)}>
+                <option value="">Empty slot</option>
+                {assignment?.definition_id&&!option&&<option value={assignment.definition_id}>{assignment.name??'Unavailable potion'} (0 remaining)</option>}
+                {potionHotbar.options.map(candidate=><option key={candidate.definition_id} value={candidate.definition_id}>
+                  {candidate.name} ({candidate.quantity} available)
+                </option>)}
+              </select>
+              <div className="mv-potion-slot-actions">
+                <span>{assignment?.definition_id?`${count} available`:'Not assigned'}</span>
+                <button type="button" disabled={!option||Number(count)<1||loading||busy||potionSlotBusy!==null||potionUseBusy!==null}
+                  aria-label={`Use one potion from slot ${slot}`}
+                  onClick={()=>void usePotionSlot(slot)}>{potionUseBusy===slot?'Using…':'Use'}</button>
+              </div>
+            </div>;
+          })}
         </div>
-        <p className="mv-weight-note">Only identified, visible equipped-item effects appear here. Stacking, condition eligibility, and final values follow the campaign ruleset. Non-additive effects may change scores without a matching additive total.</p>
+        {!loading&&potionHotbar.options.length===0&&<p className="mv-empty">No usable potions in inventory. Add a potion to assign it here.</p>}
+        {potionError&&<p className="mv-storage-error" role="alert">Potion action failed: {potionError}</p>}
       </section>
       <div className="mv-bottom-panels">
         <section className="mv-panel" aria-labelledby="mv-currency-title">
