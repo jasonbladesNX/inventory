@@ -26,6 +26,7 @@ jobs:
       - run: npm run test:inventory-errors
       - run: node scripts/test-effect-editor-render.mjs
       - run: node scripts/test-page-navigation.mjs
+      - run: node scripts/test-player-login-character-list.mjs
       - run: node scripts/test-equipment-requirements.mjs
       - run: node scripts/test-loadout-health.mjs
       - run: node scripts/test-inventory-ui-refinements.mjs
