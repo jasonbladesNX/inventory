@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const sql=readFileSync('docs/sql/automatic-stack-non-equippable-only.sql','utf8');
+const explicitSafety=readFileSync('docs/sql/guard-explicit-equippable-gear-from-stacking.sql','utf8');
+assert.match(explicitSafety,/default_properties->>'equippable'/,'explicitly equippable supplies must not stack');
+assert.match(explicitSafety,/default_properties->>'unique'/,'explicitly unique items must not stack');
+assert.match(explicitSafety,/slot.campaign_id=d.campaign_id/,'preserve campaign equipment slot matching');
 const item=readFileSync('src/CharacterScreen.tsx','utf8');
 const manager=readFileSync('src/StackManagement.tsx','utf8');
 for(const [pattern,label] of [
