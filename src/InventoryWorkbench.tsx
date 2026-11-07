@@ -137,7 +137,7 @@ export default function InventoryWorkbench({characterName,items,categories,stora
         <select value={status} onChange={e=>setStatus(e.target.value)}>
           <option value="all">All statuses</option>
           <option value="equipped">Equipped only</option>
-          <option value="unequipped">Available to equip</option>
+          <option value="unequipped">Loose, not equipped</option>
           <option value="stored">Inside containers</option>
           <option value="favorites">Favorites only</option>
           <option value="unknown_weight">Missing weight</option>
