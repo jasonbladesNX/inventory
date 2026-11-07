@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const ui=readFileSync('src/CharacterScreen.tsx','utf8');
 const css=readFileSync('src/character-screen.css','utf8');
+const workbench=readFileSync('src/InventoryWorkbench.tsx','utf8');
 const contracts=[
   [/function equipmentSlotIcon\(/,'distinct slot icons'],
   [/main_hand:Sword,off_hand:Hand,armor:ShieldCheck/,'slot-specific icon mapping'],
@@ -16,16 +17,19 @@ const contracts=[
   [/openDetails\(item.item_id,event\)/,'blocked and multiple-slot item details'],
   [/isContainer\?/,'containers kept to view contents'],
   [/Stored in \{storage\[item.item_id\].location_name\}/,'stored-in tag'],
-  [/mv-slot-category-filter/,'inventory category selector'],
-  [/visibleCarried/,'filter carried items'],
-  [/visibleStored/,'filter stored items'],
+  [/InventoryWorkbench/,'inventory workbench integration'],
+  [/favoriteIds/,'saved favorites state'],
+  [/inventoryIndicators/,'authorized condition and weight feed'],
   [/mv-carry-capacity-help/,'collapsible carrying capacity information'],
   [/onClick=\{\(\)=>\{const row=equippedByItem.get\(selectedItem.item_id\)/,'detail Unequip uses dependency check']
 ];
 for(const [pattern,label] of contracts) assert.match(ui,pattern,String(label));
 assert.match(css,/\.mv-loadout-dialog-body/);
 assert.match(css,/\.mv-stored-tag/);
-assert.match(css,/\.mv-inventory-slot-filter/);
+assert.match(workbench,/Item type/);
+assert.match(workbench,/Where/);
+assert.match(workbench,/setLocation/);
+assert.match(workbench,/status==='favorites'/);
 assert.match(css,/\.mv-inventory-quick-action/);
 assert.doesNotMatch(ui,/window\.prompt\(/);
 console.log('PASS 7 requested UI changes, secure equip and unequip handoff, loadout modal and storage filtering');
