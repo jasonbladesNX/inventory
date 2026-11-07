@@ -579,7 +579,6 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         <div className="mv-container-meter" role="progressbar" aria-label="Known weight against carrying capacity" aria-valuemin={0} aria-valuemax={carryLimit} aria-valuenow={Math.min(knownTotal,carryLimit)}>
           <span style={{width:`${carryPercent}%`}}/>
         </div>
-        <p className="mv-carry-capacity-status">{knownTotal>carryLimit?'Known weight exceeds carrying capacity.':`At least ${numberText(Math.max(0,carryLimit-knownTotal),2)} lb of capacity remains based on known weights.`}</p>
       </>}
       <details className="mv-carry-capacity-help">
         <summary>Carrying capacity details</summary>
