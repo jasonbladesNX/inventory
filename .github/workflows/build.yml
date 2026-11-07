@@ -32,6 +32,7 @@ jobs:
       - run: node scripts/test-inventory-workbench.mjs
       - run: node scripts/test-inventory-milestones-6-31-to-6-35.mjs
       - run: node scripts/test-stack-management.mjs
+      - run: node scripts/test-automatic-stacking.mjs
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
