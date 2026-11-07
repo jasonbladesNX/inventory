@@ -725,7 +725,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         const bonus=Number(derived?.equipment_bonus??0);
         const effective=derived?.effective_score??row.score;
         const modifier=derived?.effective_modifier??row.modifier;
-        return <div key={row.attribute_code} className={'mv-attribute-summary-item'+(bonus!==0?' has-equipment-bonus':'')}
+        return <div key={row.attribute_code} className="mv-attribute-summary-item"
           title={bonus!==0?`Base ${row.score??'not set'}; equipment ${bonus>0?'+':''}${numberText(bonus,2)}`:`Base ${row.score??'not set'}`}>
           <span>{row.attribute_code}:</span>
           <strong>{effective===null?'—':numberText(effective,2)}</strong>
@@ -776,30 +776,26 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   );
   const inventoryWeightPanel=weightSummary&&<section className="mv-weight-summary" aria-label="Inventory weight overview">
     <div className="mv-weight-summary-heading"><Backpack size={17} aria-hidden="true"/><strong>Inventory Weight</strong><span>Known weights only</span></div>
-    <div className="mv-weight-breakdown">
-      <div><span>Total</span><strong>{numberText(weightSummary.known_weight_lb,2)} lb</strong></div>
-      <div><span>Loose &amp; equipped</span><strong>{numberText(weightSummary.carried_weight_lb,2)} lb</strong></div>
-      <div><span>Inside containers</span><strong>{numberText(weightSummary.stored_weight_lb,2)} lb</strong></div>
-    </div>
     {canShowCarryCapacity&&<div className="mv-carry-capacity">
       <div className="mv-carry-capacity-heading"><strong>D&amp;D 5e Carrying Capacity</strong>{carryLimit!==null&&<span>{numberText(weightSummary.known_weight_lb,2)} / {numberText(carryLimit,2)} lb</span>}</div>
-      {carryLimit!==null&&carryLimit>0&&<>
-        <div className="mv-container-meter" role="progressbar" aria-label="Known weight against carrying capacity" aria-valuemin={0} aria-valuemax={carryLimit} aria-valuenow={Math.min(knownTotal,carryLimit)}>
-          <span style={{width:`${carryPercent}%`}}/>
-        </div>
-      </>}
-      <details className="mv-carry-capacity-help">
-        <summary>Carrying capacity details</summary>
-        {carryLimit!==null&&<p className="mv-carry-capacity-note">Push, drag, or lift: up to {numberText(carryProfile.drag_lift_push_lb??0,2)} lb.</p>}
-        {carryLimit===null&&<p className="mv-carry-capacity-note">Set Strength and creature size to calculate capacity. No score has been assumed.</p>}
-        <p className="mv-carry-capacity-note">Edit Strength and creature size in Character Attributes to change this capacity.</p>
-        {Number(weightSummary.unknown_item_count)>0&&<p className="mv-weight-unknown"><PackageOpen size={15} aria-hidden="true"/> {weightSummary.unknown_item_count} {Number(weightSummary.unknown_item_count)===1?'item has':'items have'} no recorded weight. The actual total may be higher.</p>}
-        <p className="mv-weight-note">Stored items count toward total carried weight while you carry their containers. Missing weights make the remaining-capacity estimate incomplete.</p>
-      </details>
+      {carryLimit!==null&&carryLimit>0&&<div className="mv-container-meter" role="progressbar" aria-label="Known weight against carrying capacity" aria-valuemin={0} aria-valuemax={carryLimit} aria-valuenow={Math.min(knownTotal,carryLimit)}>
+        <span style={{width:`${carryPercent}%`}}/>
+      </div>}
     </div>}
-    {!canShowCarryCapacity&&carryProfile&&<p className="mv-weight-note">This campaign's ruleset has no carrying-capacity formula configured yet.</p>}
-    {!canShowCarryCapacity&&Number(weightSummary.unknown_item_count)>0&&<p className="mv-weight-unknown"><PackageOpen size={15} aria-hidden="true"/> {weightSummary.unknown_item_count} {Number(weightSummary.unknown_item_count)===1?'item has':'items have'} no recorded weight. The actual total may be higher.</p>}
-    {!canShowCarryCapacity&&<p className="mv-weight-note">Stored items count toward total carried weight while you carry their containers. Missing weights make the remaining-capacity estimate incomplete.</p>}
+    <details className="mv-carry-capacity-help">
+      <summary>Carrying capacity details</summary>
+      <div className="mv-weight-breakdown">
+        <div><span>Total</span><strong>{numberText(weightSummary.known_weight_lb,2)} lb</strong></div>
+        <div><span>Loose &amp; equipped</span><strong>{numberText(weightSummary.carried_weight_lb,2)} lb</strong></div>
+        <div><span>Inside containers</span><strong>{numberText(weightSummary.stored_weight_lb,2)} lb</strong></div>
+      </div>
+      {canShowCarryCapacity&&carryLimit!==null&&<p className="mv-carry-capacity-note">Push, drag, or lift: up to {numberText(carryProfile.drag_lift_push_lb??0,2)} lb.</p>}
+      {canShowCarryCapacity&&carryLimit===null&&<p className="mv-carry-capacity-note">Set Strength and creature size to calculate capacity. No score has been assumed.</p>}
+      {canShowCarryCapacity&&<p className="mv-carry-capacity-note">Edit Strength and creature size in Character Attributes to change this capacity.</p>}
+      {!canShowCarryCapacity&&carryProfile&&<p className="mv-weight-note">This campaign's ruleset has no carrying-capacity formula configured yet.</p>}
+      {Number(weightSummary.unknown_item_count)>0&&<p className="mv-weight-unknown"><PackageOpen size={15} aria-hidden="true"/> {weightSummary.unknown_item_count} {Number(weightSummary.unknown_item_count)===1?'item has':'items have'} no recorded weight. The actual total may be higher.</p>}
+      <p className="mv-weight-note">Stored items count toward total carried weight while you carry their containers. Missing weights make the remaining-capacity estimate incomplete.</p>
+    </details>
   </section>;
   const walletOrder=(code:string)=>({PP:0,GP:1,EP:2,SP:3,CP:4}[code.toUpperCase()]??5);
   return <div className="multiverse">
