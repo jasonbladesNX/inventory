@@ -11,7 +11,7 @@ type Props={
   categories:Record<string,string>;storage:Record<string,WorkbenchStorage>;
   usage:Record<string,WorkbenchUsage>;indicators:Record<string,WorkbenchIndicator>;
   equippedIds:Set<string>;favoriteIds:Set<string>;busy:boolean;
-  renderItem:(item:WorkbenchItem)=>React.ReactNode;
+  renderItem:(item:WorkbenchItem,onBrowseContainer:(id:string)=>void)=>React.ReactNode;
   onOpenDetails:(itemId:string,event:React.MouseEvent<HTMLButtonElement>)=>void;
 };
 const categoryLabels:Record<string,string>={
@@ -100,7 +100,7 @@ export default function InventoryWorkbench({characterName,items,categories,stora
     return <section className="mv-inventory-group" aria-label={label} key={label}>
       <div className="mv-inventory-group-heading"><h4>{label}</h4><span>{list.length} items</span></div>
       <div className="mv-inventory-items">{list.map(item=><div className="nx-workbench-row" key={item.item_id}>
-        {renderItem(item)}
+        {renderItem(item,setLocation)}
         <label className="nx-compare-label"><input type="checkbox" aria-label={'Compare '+item.display_name}
           checked={compare.includes(item.item_id)} onChange={e=>toggleCompare(item.item_id,e.target.checked)}/>
           Compare</label>
