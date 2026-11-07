@@ -15,6 +15,7 @@ const contracts=[
   [/knownFilteredWeight/, '6.33 filtered weight'],
   [/filteredUnknownWeight/, 'unknown weight caution'],
   [/nx-inventory-print-report/, '6.34 printable report'],
+  [/reportOpen&&createPortal/, 'report opens a modal'],
   [/window\.print\(\)/, 'explicit user print'],
   [/printableSummary/, 'report generated from filtered authorized items'],
   [/renderItem\(item,setLocation\)/, 'existing view contents navigation'],
