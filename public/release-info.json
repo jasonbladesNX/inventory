@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "ui-inventory-compact-no-comparison-pouch-container",
+  "release": "m6.31-6.35-inventory-views-report-bundle",
   "date": "2026-11-06",
-  "note": "Removed item comparison; compact horizontal equipped/condition/quantity layout; standard SRD Pouch now correctly categorized as a usable container; existing inventory security and transactions preserved"
+  "note": "Inventory quick views, grouping by category/location, filtered known-weight summary, printable snapshot and saved session view; one combined browser acceptance pending"
 }
