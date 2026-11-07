@@ -520,3 +520,8 @@
 .mv-trash-confirm-actions button{min-height:43px;padding:9px 12px;border:1px solid #bb906e;border-radius:8px;background:#32271e;color:#f9ddc8;font-size:12px;font-weight:750;cursor:pointer}
 .mv-trash-confirm-actions button.mv-trash-confirm-button{background:#8b3e30;border-color:#ed9c81;color:#ffebe0}
 .mv-trash-confirm-actions button:disabled{opacity:.5;cursor:not-allowed}
+
+/* One-click consumable use stays distinct from the equipment quick action. */
+.nx-workbench-row .nx-inventory-use-button{background:#184c48;border-color:#4aada0;color:#e4fff4;margin-left:0}
+.nx-workbench-row .nx-inventory-use-button:hover:not(:disabled),.nx-workbench-row .nx-inventory-use-button:focus-visible{background:#24685f}
+@media(max-width:470px){.nx-workbench-row .nx-inventory-use-button{margin-left:0}}
