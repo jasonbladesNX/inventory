@@ -26,4 +26,9 @@ for(const [pattern,label] of [
  [/hitPoints\.current/,'HP display'],
  [/use_character_inventory_item/,'existing one-click consume flow']
 ])assert.match(ui,pattern,label);
+const historyFix=readFileSync('docs/sql/fix-healing-activity-operator-precedence.sql','utf8');
+const historyUi=readFileSync('src/StackManagement.tsx','utf8');
+assert.match(historyFix,/\|\|\(t\.details->>'heal_rolled'\)\|\|/,'healing history JSON text extraction is grouped');
+assert.match(historyUi,/Unable to load inventory activity:/,'activity query errors must be visible');
+assert.match(historyUi,/setHistoryError\(inventoryErrorMessage\(result.error\)\)/,'activity API errors are not shown as empty history');
 console.log('PASS HP tracker, healing potion, atomic consumption contract and activity');
