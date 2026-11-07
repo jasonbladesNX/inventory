@@ -49,7 +49,7 @@ try{
  const markup=renderToStaticMarkup(React.createElement(Component,{db:{rpc:async()=>({data:[],error:null})},
   character:'char',inventoryVersion:0,items:[{item_id:'a',display_name:'Arrow',quantity:20,eligible:true}],
   storage:{},categories:{a:'gear'},equippedIds:new Set(),busy:false,onChanged:async()=>{}}));
- assert.match(markup,/Item quantities & storage/);
+ assert.match(markup,/Item quantities &amp; storage/);
  assert.match(markup,/Inventory activity/);
  assert.doesNotMatch(markup,/Permanently discard/);
  assert.doesNotMatch(markup,/Consolidate stacks/);
