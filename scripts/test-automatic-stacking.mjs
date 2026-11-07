@@ -22,6 +22,11 @@ for(const [pattern,label] of [
  [/v_action in \('split','merge','move_quantity'\)/,'stack-operation equipment guard'],
  [/character_id',p_character/,'character-scoped movement history']
 ])assert.match(sql,pattern,label);
+assert.match(item,/chooseStorageMove\(selectedItem\.item_id,target\)/,'Put in dropdown must request quantity');
+assert.match(item,/chooseStorageMove\(selectedItem\.item_id,null\)/,'Take out must request quantity');
+assert.match(item,/Quantity to move/,'stack move quantity prompt');
+assert.match(item,/p_action:'move_quantity'/,'partial stack moves use transactional RPC');
+assert.match(item,/quantity===Number\(item.quantity\)/,'whole stack move retains existing handler');
 assert.match(item,/Split stack…/);
 assert.match(item,/splitSelectedStack/);
 assert.match(item,/p_action:'split'/);
