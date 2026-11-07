@@ -38,6 +38,8 @@ assert.match(css,/nx-inventory-filters/);
 assert.doesNotMatch(ui,/toggleCompare|compareItems|nx-compare-label|Item comparison/);
 assert.doesNotMatch(css,/nx-inventory-compare|nx-compare-label/);
 assert.match(parent,/<InventoryWorkbench/);
+assert.match(ui,/Export CSV/);
+assert.match(ui,/reportOpen&&<section/);
 assert.doesNotMatch(ui,/nx-inventory-metrics|nx-container-utilization/);
 assert.doesNotMatch(ui,/\.from\('item_instances'\)\.update/);
 assert.doesNotMatch(ui,/\.rpc\('equip_inventory_item'/);
@@ -54,7 +56,7 @@ try{
     renderItem:(row)=>React.createElement('span',null,row.display_name),
     onOpenDetails:()=>{}
   }));
-  for(const label of ['Search inventory','Item type','Where','Show','Sort','Test Blade','Export visible CSV']){
+  for(const label of ['Search inventory','Item type','Where','Show','Sort','Test Blade','Report']){
     assert.ok(markup.includes(label),'missing workbench markup: '+label);
   }
 }finally{
