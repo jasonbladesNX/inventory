@@ -738,7 +738,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
             />}
         {slots.length===0&&<p className="mv-empty">No equipment slots have been configured for this campaign yet.</p>}
       </section>
-      <StackManagement db={db} character={character} inventoryVersion={inventoryVersion} items={items} storage={storage}
+      <StackManagement db={db} character={character} inventoryVersion={inventoryVersion} items={items} storage={storage} categories={itemCategories}
         equippedIds={new Set(equipped.map(row=>row.itemId))} busy={busy||loading} onChanged={onInventoryChanged}/>
       <p className="mv-inventory-hint">Trading and connection diagnostics remain available below the inventory panel during testing.</p>
     </div>}
