@@ -525,3 +525,14 @@
 .nx-workbench-row .nx-inventory-use-button{background:#184c48;border-color:#4aada0;color:#e4fff4;margin-left:0}
 .nx-workbench-row .nx-inventory-use-button:hover:not(:disabled),.nx-workbench-row .nx-inventory-use-button:focus-visible{background:#24685f}
 @media(max-width:470px){.nx-workbench-row .nx-inventory-use-button{margin-left:0}}
+
+/* Character hit points and editable health state. */
+.mv-hp-panel .mv-equipped-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.mv-hp-summary{display:grid;gap:9px;color:#c9e9f2}
+.mv-hp-summary>strong{font-size:21px;color:#e8fcff;font-variant-numeric:tabular-nums}
+.mv-hp-summary p{margin:0;font-size:12px;line-height:1.5;color:#adcbd7}
+.mv-hp-summary .mv-container-meter{max-width:100%;height:9px}
+.mv-hp-form{display:flex;gap:12px;flex-wrap:wrap;align-items:end}
+.mv-hp-form label{display:grid;gap:5px;flex:1 1 120px;font-size:12px;color:#bfe3ed}
+.mv-hp-form input{width:100%;min-width:0;min-height:42px;box-sizing:border-box;border:1px solid #428da2;border-radius:7px;padding:7px 10px;background:#071f2d;color:#effbff;font-size:16px}
+.mv-hp-form .mv-storage-error,.mv-hp-form .mv-trash-confirm-actions{flex-basis:100%}
