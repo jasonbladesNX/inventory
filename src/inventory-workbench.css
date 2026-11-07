@@ -32,3 +32,24 @@
 .nx-container-health small{display:flex;align-items:center;gap:7px;font-size:11px;color:#f5cc9e}
 .nx-container-weight-note{font-size:11px;line-height:1.5;color:#accdd8}
 @media(max-width:520px){.nx-inventory-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.nx-inventory-filters{grid-template-columns:1fr}}
+
+/* Milestones 6.31–6.35: quick views, grouping, filtered weight and printable report. */
+.nx-inventory-quickviews{display:flex;gap:7px;flex-wrap:wrap}
+.nx-inventory-quickviews button,.nx-inventory-report-header button{min-height:40px;padding:8px 11px;border:1px solid #4095ac;border-radius:8px;background:#0d4054;color:#d8f7ff;font-size:12px;font-weight:700;cursor:pointer}
+.nx-inventory-group-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#092b3b;border:1px solid #34788e;border-radius:9px;padding:10px 12px}
+.nx-inventory-group-toolbar label{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:750;color:#b5e5ef}
+.nx-inventory-group-toolbar select{min-width:170px;max-width:100%;min-height:42px;border:1px solid #4894ab;border-radius:8px;background:#081c2a;color:#e0f9ff;padding:8px 11px;font-size:15px}
+.nx-inventory-weight-overview{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:#b5e3ed;padding:10px 12px;border:1px solid #326c80;border-radius:9px;background:#082738}
+.nx-inventory-weight-warning{color:#ffd5a1}
+.nx-inventory-print-report{border:1px solid #4b95aa;background:#092c3d;padding:14px;border-radius:10px;min-width:0}
+.nx-inventory-report-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.nx-inventory-report-header strong{color:#e4faff;font-family:Georgia,serif;font-size:17px}
+.nx-inventory-print-report pre{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.7 ui-monospace,monospace;color:#d2ebf4;background:#061c29;padding:12px;border-radius:7px}
+.nx-inventory-print-report p{font-size:11px;color:#a9cfd9}
+@media print{
+  body:has(.nx-inventory-print-report) *{visibility:hidden!important}
+  body:has(.nx-inventory-print-report) .nx-inventory-print-report,body:has(.nx-inventory-print-report) .nx-inventory-print-report *{visibility:visible!important}
+  .nx-inventory-print-report{position:absolute;left:0;top:0;width:100%;box-sizing:border-box;border:0;background:white!important;color:black!important}
+  .nx-inventory-print-report pre,.nx-inventory-print-report p,.nx-inventory-print-report strong{color:black!important;background:white!important}
+  .nx-inventory-report-header button{display:none!important}
+}
