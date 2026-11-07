@@ -157,6 +157,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [useQuantity,setUseQuantity]=useState('1');
   const [useBusy,setUseBusy]=useState(false);
   const [useError,setUseError]=useState('');
+  const [usableItemIds,setUsableItemIds]=useState<Set<string>>(new Set());
+  const [quickUseBusy,setQuickUseBusy]=useState<string|null>(null);
+  const [quickUseError,setQuickUseError]=useState('');
   const [detailsLoading,setDetailsLoading]=useState(false);
   const modalCloseRef=useRef<HTMLButtonElement>(null);
   const previousFocusRef=useRef<HTMLElement|null>(null);
@@ -195,9 +198,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   useEffect(()=>{
     let cancelled=false;
     async function load(){
-      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setInventoryIndicators({});setFavoriteIds(new Set());setStorage({});setContainerUsage({});setWeightSummary(null);setCarryProfile(null);setAttributes([]);setDerivedAttributes({});setEffectSources([]);setEffectSourcesError('');setInvalidEquipment([]);setInvalidEquipmentError('');
+      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setInventoryIndicators({});setUsableItemIds(new Set());setFavoriteIds(new Set());setStorage({});setContainerUsage({});setWeightSummary(null);setCarryProfile(null);setAttributes([]);setDerivedAttributes({});setEffectSources([]);setEffectSourcesError('');setInvalidEquipment([]);setInvalidEquipmentError('');
       try{
-        const [assignments,currency,compatibility,categories,storageRows,usageRows,weightRows,carryRows,attributeRows,derivedRows,sourceRows,invalidRows,favoriteRows,indicatorRows]=await Promise.all([
+        const [assignments,currency,compatibility,categories,storageRows,usageRows,weightRows,carryRows,attributeRows,derivedRows,sourceRows,invalidRows,favoriteRows,indicatorRows,usableRows]=await Promise.all([
           db.rpc('list_character_equipped_instances',{p_character:character}),
           db.rpc('list_my_trade_currency',{p_character:character}),
           db.rpc('list_character_valid_equipment_slots',{p_character:character}),
@@ -212,6 +215,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           db.rpc('list_character_invalid_equipment',{p_character:character}),
           db.rpc('list_my_character_item_favorites',{p_character:character}),
           db.rpc('list_character_inventory_indicators',{p_character:character}),
+          db.rpc('list_character_usable_items',{p_character:character}),
         ]);
         if(assignments.error)throw assignments.error;
         if(currency.error)throw currency.error;
@@ -225,6 +229,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         if(derivedRows.error)throw derivedRows.error;
         if(favoriteRows.error)throw favoriteRows.error;
         if(indicatorRows.error)throw indicatorRows.error;
+        if(usableRows.error)throw usableRows.error;
         if(cancelled)return;
         const slotLookup=new Map(slots.map(s=>[s.id,s.label]));
         setEquipped((assignments.data||[]).map(row=>({
@@ -248,6 +253,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         const indicators:Record<string,WorkbenchIndicator>={};
         for(const row of indicatorRows.data||[])indicators[row.item_id]=row as WorkbenchIndicator;
         setInventoryIndicators(indicators);
+        setUsableItemIds(new Set((usableRows.data||[]).map((row:{item_id:string})=>row.item_id)));
         const storageByItem:Record<string,StorageEntry>={};
         for(const row of storageRows.data||[])storageByItem[row.item_id]=row as StorageEntry;
         setStorage(storageByItem);
@@ -525,6 +531,18 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     }catch(e){setFavoriteError(inventoryErrorMessage(e))}
     finally{setFavoriteBusy(null)}
   };
+  const quickUseItem=async(itemId:string)=>{
+    if(busy||loading||quickUseBusy||!usableItemIds.has(itemId))return;
+    setQuickUseBusy(itemId);setQuickUseError('');
+    try{
+      const {error:rpcError}=await db.rpc('use_character_inventory_item',{
+        p_character:character,p_item:itemId,p_quantity:1
+      });
+      if(rpcError)throw rpcError;
+      await onInventoryChanged();
+    }catch(e){setQuickUseError(inventoryErrorMessage(e))}
+    finally{setQuickUseBusy(null)}
+  };
   const renderInventoryCard=(item:InventoryItem,onBrowseContainer:(id:string)=>void)=>{
     const equippedRow=equippedByItem.get(item.item_id);
     const storedIn=storage[item.item_id]?.container_item_id;
@@ -571,6 +589,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         disabled={busy||favoriteBusy!==null} onClick={()=>{void toggleFavorite(item.item_id)}}>
         <span aria-hidden="true">{favoriteIds.has(item.item_id)?'★':'☆'}</span>
       </button>
+      {usableItemIds.has(item.item_id)&&!equippedRow&&<button type="button" className="mv-inventory-quick-action nx-inventory-use-button"
+        disabled={busy||loading||quickUseBusy!==null}
+        aria-label={`Use one ${item.display_name}`} onClick={()=>void quickUseItem(item.item_id)}>{quickUseBusy===item.item_id?'Using…':'Use'}</button>}
       {isContainer?
         <button type="button" className="mv-browse-container" onClick={()=>onBrowseContainer(item.item_id)} aria-label={`View contents of ${item.display_name}`}>View contents</button>:
         <button type="button" className="mv-inventory-quick-action"
@@ -814,6 +835,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
             />}
         {slots.length===0&&<p className="mv-empty">No equipment slots have been configured for this campaign yet.</p>}
       </section>
+      {quickUseError&&<p className="mv-storage-error" role="alert">Unable to use item: {quickUseError}</p>}
       <StackManagement db={db} character={character} inventoryVersion={inventoryVersion} items={items} storage={storage} categories={itemCategories}
         equippedIds={new Set(equipped.map(row=>row.itemId))} busy={busy||loading} onChanged={onInventoryChanged}/>
       <p className="mv-inventory-hint">Trading and connection diagnostics remain available below the inventory panel during testing.</p>
