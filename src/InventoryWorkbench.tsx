@@ -63,7 +63,7 @@ export default function InventoryWorkbench({characterName,items,categories,stora
       case 'name_desc':return b.display_name.localeCompare(a.display_name);
       case 'quantity_desc':return num(b.quantity)-num(a.quantity)||a.display_name.localeCompare(b.display_name);
       case 'quantity_asc':return num(a.quantity)-num(b.quantity)||a.display_name.localeCompare(b.display_name);
-      case 'weight_desc':return (weight(a)==null?Number.NEGATIVE_INFINITY:num(weight(a)))-(weight(b)==null?Number.NEGATIVE_INFINITY:num(weight(b)))||a.display_name.localeCompare(b.display_name);
+      case 'weight_desc':return (weight(b)==null?Number.NEGATIVE_INFINITY:num(weight(b)))-(weight(a)==null?Number.NEGATIVE_INFINITY:num(weight(a)))||a.display_name.localeCompare(b.display_name);
       case 'weight_asc':return aw-bw||a.display_name.localeCompare(b.display_name);
       default:return a.display_name.localeCompare(b.display_name);
     }
