@@ -25,7 +25,7 @@ type EquipRequirement = {attribute_code:string;required_score:number;current_sco
 type EquipPreview = {slot_id:string;slot_label:string;can_equip:boolean;reason:string;replaced_items:string[]};
 type UnequipDependency = {dependent_item:string;attribute_code:string;required_score:number;current_score:number|string;projected_score:number|string};
 type InvalidEquipment = {assignment_id:string;item_name:string;attribute_code:string;required_score:number;current_score:number|string|null};
-type ItemDetails = {item_id:string; category:string; description:string; condition:string; identified:boolean; properties:Record<string,unknown>; effects:{attribute:string;operation:string;value:unknown}[]};
+type ItemDetails = {item_id:string; category:string; description:string; condition:string; identified:boolean; can_consume:boolean; properties:Record<string,unknown>; effects:{attribute:string;operation:string;value:unknown}[]};
 type Props = {
   db:SupabaseClient;
   campaign:string;
@@ -153,6 +153,10 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [trashQuantity,setTrashQuantity]=useState('1');
   const [trashBusy,setTrashBusy]=useState(false);
   const [trashError,setTrashError]=useState('');
+  const [useItemId,setUseItemId]=useState<string|null>(null);
+  const [useQuantity,setUseQuantity]=useState('1');
+  const [useBusy,setUseBusy]=useState(false);
+  const [useError,setUseError]=useState('');
   const [detailsLoading,setDetailsLoading]=useState(false);
   const modalCloseRef=useRef<HTMLButtonElement>(null);
   const previousFocusRef=useRef<HTMLElement|null>(null);
@@ -426,6 +430,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const closeDetails=()=>{
     setSplitItemId(null);setSplitError('');setSplitQuantity('1');
     setTrashItemId(null);setTrashError('');setTrashQuantity('1');
+    setUseItemId(null);setUseQuantity('1');setUseError('');
     setPendingStorageMove(null);setStorageActionError('');setStorageMoveQuantity('1');
     setExpandedItem(null);
     previousFocusRef.current?.focus();
@@ -433,6 +438,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const openDetails=(itemId:string,event:React.MouseEvent<HTMLButtonElement>)=>{
     setSplitItemId(null);setSplitError('');setSplitQuantity('1');
     setTrashItemId(null);setTrashError('');setTrashQuantity('1');
+    setUseItemId(null);setUseQuantity('1');setUseError('');
     setPendingStorageMove(null);setStorageActionError('');setStorageMoveQuantity('1');
     previousFocusRef.current=event.currentTarget;
     setExpandedItem(itemId);
@@ -451,6 +457,21 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       closeDetails();await onInventoryChanged();
     }catch(e){setSplitError(inventoryErrorMessage(e))}
     finally{setSplitBusy(false)}
+  };
+  const confirmItemUse=async()=>{
+    const item=items.find(row=>row.item_id===useItemId);
+    const amount=Number(useQuantity);
+    if(!item||useBusy||busy||!itemDetails?.can_consume||itemDetails.item_id!==item.item_id||
+       !Number.isSafeInteger(amount)||amount<1||amount>Number(item.quantity))return;
+    setUseBusy(true);setUseError('');
+    try{
+      const {error:rpcError}=await db.rpc('use_character_inventory_item',{
+        p_character:character,p_item:item.item_id,p_quantity:amount
+      });
+      if(rpcError)throw rpcError;
+      closeDetails();await onInventoryChanged();
+    }catch(e){setUseError(inventoryErrorMessage(e))}
+    finally{setUseBusy(false)}
   };
   const confirmItemTrash=async()=>{
     const item=items.find(row=>row.item_id===trashItemId);
@@ -872,6 +893,24 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
                     {slots.filter(slot=>(validSlots[selectedItem.item_id]||[]).includes(slot.id)).map(slot=><option key={slot.id} value={slot.id}>{slot.label}</option>)}
                   </select>
                 </div>:null}
+            {!detailsLoading&&itemDetails?.item_id===selectedItem.item_id&&itemDetails.can_consume&&!equippedByItem.has(selectedItem.item_id)&&
+              <div className="mv-modal-action-field">
+                <button type="button" className="mv-modal-action-button" disabled={busy||useBusy}
+                  onClick={()=>{setUseItemId(selectedItem.item_id);setUseQuantity('1');setUseError('');setTrashItemId(null);setPendingStorageMove(null)}}>Use / Consume…</button>
+                {useItemId===selectedItem.item_id&&<div className="mv-trash-confirm" role="group" aria-label="Confirm item use">
+                  <strong>Use {selectedItem.display_name}</strong>
+                  <p>Deducts the selected quantity from inventory and records it in activity. In-game effects are not automatically applied.</p>
+                  <label htmlFor="mv-use-quantity">Quantity to use (of {numberText(selectedItem.quantity)})</label>
+                  <input id="mv-use-quantity" type="number" min="1" max={Number(selectedItem.quantity)} step="1"
+                    value={useQuantity} disabled={useBusy} onChange={e=>setUseQuantity(e.target.value)}/>
+                  {useError&&<p className="mv-storage-error" role="alert">{useError}</p>}
+                  <div className="mv-trash-confirm-actions">
+                    <button type="button" disabled={useBusy} onClick={()=>{setUseItemId(null);setUseError('')}}>Cancel</button>
+                    <button type="button" disabled={busy||useBusy||!Number.isSafeInteger(Number(useQuantity))||Number(useQuantity)<1||Number(useQuantity)>Number(selectedItem.quantity)}
+                      onClick={()=>void confirmItemUse()}>{useBusy?'Using…':`Confirm use · ${useQuantity}`}</button>
+                  </div>
+                </div>}
+              </div>}
             {!loading&&!equippedByItem.has(selectedItem.item_id)&&storage[selectedItem.item_id]&&!storage[selectedItem.item_id].is_container&&
               ['gear','consumable','ammunition','material','component','misc','supplies'].includes(itemCategories[selectedItem.item_id]??'')&&
               Number(selectedItem.quantity)>1&&<div className="mv-modal-action-field">
