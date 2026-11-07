@@ -1,8 +1,4 @@
 .nx-inventory-workbench{display:grid;gap:14px;min-width:0}
-.nx-inventory-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
-.nx-inventory-metrics>div{display:flex;flex-direction:column;gap:5px;padding:10px;border:1px solid #316d81;border-radius:9px;background:#0b2e3e;min-width:0}
-.nx-inventory-metrics strong{font:600 23px Georgia,serif;color:#d9faff}
-.nx-inventory-metrics span{font-size:11px;line-height:1.35;color:#a7cbd7}
 .nx-inventory-search{display:grid;gap:6px}
 .nx-inventory-search>label,.nx-inventory-filters label{font-size:12px;font-weight:700;color:#b7e6f0}
 .nx-inventory-search>div{display:flex;align-items:center;gap:10px;padding:0 11px;border:1px solid #3c879d;border-radius:9px;background:#082738;color:#a0e8f4}
@@ -20,22 +16,9 @@
 .nx-inventory-workbench .mv-inventory-group{margin-top:0;min-width:0}
 .nx-workbench-row{display:grid;grid-template-columns:minmax(0,1fr);gap:4px;min-width:0}
 .nx-workbench-row>.mv-inventory-item{min-width:0}
-.nx-container-utilization{background:#082b3d;border:1px solid #336e83;border-radius:10px;padding:12px}
-.nx-container-utilization summary{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:750;color:#baf2fb;cursor:pointer}
-.nx-container-health{display:grid;gap:7px;margin:12px 0 0;padding:11px;background:#092536;border:1px solid #2d6279;border-radius:9px}
-.nx-container-health.is-warning{border-color:#b58e59}
-.nx-container-health>div:first-child{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px}
-.nx-container-health strong{font-size:12px;color:#e5faff}
-.nx-container-health span{font-size:11px;color:#accdd8}
-.nx-container-health>div[role=progressbar]{height:7px;background:#071b25;border:1px solid #2d6279;border-radius:999px;overflow:hidden}
-.nx-container-health>div[role=progressbar]>span{display:block;height:100%;background:#53c5dc;border-radius:999px}
-.nx-container-health small{display:flex;align-items:center;gap:7px;font-size:11px;color:#f5cc9e}
-.nx-container-weight-note{font-size:11px;line-height:1.5;color:#accdd8}
-@media(max-width:520px){.nx-inventory-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.nx-inventory-filters{grid-template-columns:1fr}}
+
 
 /* Milestones 6.31–6.35: quick views, grouping, filtered weight and printable report. */
-.nx-inventory-quickviews{display:flex;gap:7px;flex-wrap:wrap}
-.nx-inventory-quickviews button,.nx-inventory-report-header button{min-height:40px;padding:8px 11px;border:1px solid #4095ac;border-radius:8px;background:#0d4054;color:#d8f7ff;font-size:12px;font-weight:700;cursor:pointer}
 .nx-inventory-group-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#092b3b;border:1px solid #34788e;border-radius:9px;padding:10px 12px}
 .nx-inventory-group-toolbar label{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:750;color:#b5e5ef}
 .nx-inventory-group-toolbar select{min-width:170px;max-width:100%;min-height:42px;border:1px solid #4894ab;border-radius:8px;background:#081c2a;color:#e0f9ff;padding:8px 11px;font-size:15px}
@@ -43,6 +26,8 @@
 .nx-inventory-weight-warning{color:#ffd5a1}
 .nx-inventory-print-report{border:1px solid #4b95aa;background:#092c3d;padding:14px;border-radius:10px;min-width:0}
 .nx-inventory-report-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.nx-inventory-report-actions{display:flex;gap:8px;flex-wrap:wrap}
+.nx-inventory-report-actions button{min-height:40px;padding:8px 11px;border:1px solid #4095ac;border-radius:8px;background:#0d4054;color:#d8f7ff;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .nx-inventory-report-header strong{color:#e4faff;font-family:Georgia,serif;font-size:17px}
 .nx-inventory-print-report pre{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.7 ui-monospace,monospace;color:#d2ebf4;background:#061c29;padding:12px;border-radius:7px}
 .nx-inventory-print-report p{font-size:11px;color:#a9cfd9}
@@ -53,3 +38,20 @@
   .nx-inventory-print-report pre,.nx-inventory-print-report p,.nx-inventory-print-report strong{color:black!important;background:white!important}
   .nx-inventory-report-header button{display:none!important}
 }
+
+/* Compact inventory control matrix — two selectors on narrow phones, four on wide screens. */
+.nx-inventory-workbench{gap:10px}
+.nx-inventory-top-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:end;gap:9px}
+.nx-inventory-search{min-width:0}
+.nx-inventory-search>div{min-height:38px;gap:7px;padding:0 9px}
+.nx-inventory-search input{padding:8px 0;font-size:14px;min-width:0}
+.nx-inventory-filters{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.nx-inventory-filters label{font-size:11px;min-width:0}
+.nx-inventory-filters select{min-height:38px;font-size:13px;padding:6px 7px;min-width:0}
+.nx-inventory-group-toolbar{min-width:0;display:grid;gap:6px;align-items:stretch;padding:0;border:0;background:transparent}
+.nx-inventory-group-toolbar label{font-size:11px}
+.nx-inventory-group-toolbar select{min-width:0;width:100%;min-height:38px;padding:6px 8px;font-size:13px}
+.nx-inventory-toolbar button{min-height:36px}
+@media(max-width:650px){.nx-inventory-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:350px){.nx-inventory-top-controls{grid-template-columns:1fr}}
+@media print{.nx-inventory-report-actions{display:none!important}}
