@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "ui-equipment-inventory-seven-refinements",
+  "release": "m6.21-6.30-inventory-workbench-bundle",
   "date": "2026-11-06",
-  "note": "Unique slot/item icons, Loadout Health popup, direct inventory equip/unequip, stored-in badges, type filtering and collapsible carry guidance; no database changes"
+  "note": "Milestones 6.21–6.30: searchable sortable filtered inventory, saved per-user favorites, condition and weight, container utilization, side-by-side comparison, overview and safe CSV export; combined browser acceptance pending"
 }
