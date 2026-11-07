@@ -449,7 +449,19 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           {inventoryIndicators[item.item_id]?.unit_weight_lb!=null&&<span className="nx-inventory-unit-weight">{numberText(inventoryIndicators[item.item_id].unit_weight_lb??0,2)} lb each</span>}
           {inventoryIndicators[item.item_id]&&!inventoryIndicators[item.item_id].identified&&<span className="nx-inventory-unidentified">Unidentified</span>}
         </div>
-        {containerUsage[item.item_id]&&<span className="mv-container-card-summary"><Backpack size={13} aria-hidden="true"/> {containerUsage[item.item_id].item_count} {Number(containerUsage[item.item_id].item_count)===1?'item':'items'} · {numberText(containerUsage[item.item_id].used_weight_lb,2)} / {containerUsage[item.item_id].capacity_weight_lb===null?'?':numberText(containerUsage[item.item_id].capacity_weight_lb,2)} lb</span>}
+        {isContainer&&containerUsage[item.item_id]&&<div className="nx-card-container-usage">
+          <span className="mv-container-card-summary"><Backpack size={13} aria-hidden="true"/> {containerUsage[item.item_id].item_count} {Number(containerUsage[item.item_id].item_count)===1?'item':'items'} · {numberText(containerUsage[item.item_id].used_weight_lb,2)} / {containerUsage[item.item_id].capacity_weight_lb===null?'unknown':numberText(containerUsage[item.item_id].capacity_weight_lb,2)} lb</span>
+          {containerUsage[item.item_id].capacity_weight_lb!==null&&Number(containerUsage[item.item_id].capacity_weight_lb)>0&&
+            <div className="nx-card-container-meter" role="progressbar" aria-label={`Capacity used in ${item.display_name}`}
+              aria-valuemin={0} aria-valuemax={Number(containerUsage[item.item_id].capacity_weight_lb)}
+              aria-valuenow={Math.min(Number(containerUsage[item.item_id].used_weight_lb),Number(containerUsage[item.item_id].capacity_weight_lb))}>
+              <span style={{width:`${Math.min(100,100*Number(containerUsage[item.item_id].used_weight_lb)/Number(containerUsage[item.item_id].capacity_weight_lb))}%`}}/>
+            </div>}
+          {(Number(containerUsage[item.item_id].unknown_weight_count)>0||(
+            containerUsage[item.item_id].capacity_weight_lb!==null&&Number(containerUsage[item.item_id].capacity_weight_lb)>0&&
+            Number(containerUsage[item.item_id].used_weight_lb)/Number(containerUsage[item.item_id].capacity_weight_lb)>=0.9))&&
+            <span className="nx-card-container-warning">{Number(containerUsage[item.item_id].unknown_weight_count)>0?'Includes items of unknown weight':'Container at least 90% full'}</span>}
+        </div>}
         {storedIn&&<span className="mv-storage-status mv-stored-tag"><Backpack size={13} aria-hidden="true"/> Stored in {storage[item.item_id].location_name}</span>}
       </div>
       <button type="button" className={'nx-favorite-button'+(favoriteIds.has(item.item_id)?' is-favorite':'')}
