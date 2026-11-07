@@ -19,7 +19,7 @@ const checks=[
   [/status==='favorites'/,ui,'6.25 favorites-only filter'],
   [/list_character_inventory_indicators/,parent,'6.26 authorized condition and weight'],
   [/nx-container-utilization/,ui,'6.27 container fullness indicators'],
-  [/toggleCompare/,ui,'6.28 two-item comparison'],
+  [/nx-inventory-inline-meta/,parent,'compact horizontal item status and quantity'],
   [/nx-inventory-metrics/,ui,'6.29 summary totals'],
   [/downloadCsv/,ui,'6.30 filtered CSV export'],
   [/csvCell/,ui,'spreadsheet formula injection avoidance'],
@@ -35,6 +35,8 @@ const checks=[
 ];
 for(const [pattern,source,name] of checks)assert.match(source,pattern,String(name));
 assert.match(css,/nx-inventory-filters/);
+assert.doesNotMatch(ui,/toggleCompare|compareItems|nx-compare-label|Item comparison/);
+assert.doesNotMatch(css,/nx-inventory-compare|nx-compare-label/);
 assert.match(parent,/<InventoryWorkbench/);
 assert.doesNotMatch(ui,/\.from\('item_instances'\)\.update/);
 assert.doesNotMatch(ui,/\.rpc\('equip_inventory_item'/);
@@ -51,10 +53,10 @@ try{
     renderItem:(row)=>React.createElement('span',null,row.display_name),
     onOpenDetails:()=>{}
   }));
-  for(const label of ['Search inventory','Item type','Where','Show','Sort','Test Blade','Export visible CSV','Compare']){
+  for(const label of ['Search inventory','Item type','Where','Show','Sort','Test Blade','Export visible CSV']){
     assert.ok(markup.includes(label),'missing workbench markup: '+label);
   }
 }finally{
   await unlink(out).catch(()=>{});
 }
-console.log('PASS ten inventory workbench milestones, security contracts and SSR smoke');
+console.log('PASS inventory workbench, comparison removal, compact metadata and security contracts');
