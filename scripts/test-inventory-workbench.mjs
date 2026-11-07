@@ -39,7 +39,7 @@ assert.doesNotMatch(ui,/toggleCompare|compareItems|nx-compare-label|Item compari
 assert.doesNotMatch(css,/nx-inventory-compare|nx-compare-label/);
 assert.match(parent,/<InventoryWorkbench/);
 assert.match(ui,/Export CSV/);
-assert.match(ui,/reportOpen&&<section/);
+assert.match(ui,/reportOpen&&createPortal/);
 assert.doesNotMatch(ui,/nx-inventory-metrics|nx-container-utilization/);
 assert.doesNotMatch(ui,/\.from\('item_instances'\)\.update/);
 assert.doesNotMatch(ui,/\.rpc\('equip_inventory_item'/);
