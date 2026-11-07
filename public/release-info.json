@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "m6.20-loadout-health-five-milestone-bundle",
+  "release": "ui-equipment-inventory-seven-refinements",
   "date": "2026-11-06",
-  "note": "Milestones 6.16–6.20: loadout health, equipment dependency map, forbidden-category audit, guided repair, report and refresh. Combined browser acceptance pending."
+  "note": "Unique slot/item icons, Loadout Health popup, direct inventory equip/unequip, stored-in badges, type filtering and collapsible carry guidance; no database changes"
 }
