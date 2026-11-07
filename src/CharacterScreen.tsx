@@ -424,7 +424,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     }catch(e){setFavoriteError(inventoryErrorMessage(e))}
     finally{setFavoriteBusy(null)}
   };
-  const renderInventoryCard=(item:InventoryItem)=>{
+  const renderInventoryCard=(item:InventoryItem,onBrowseContainer:(id:string)=>void)=>{
     const equippedRow=equippedByItem.get(item.item_id);
     const storedIn=storage[item.item_id]?.container_item_id;
     const isContainer=Boolean(storage[item.item_id]?.is_container);
@@ -458,7 +458,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         <span aria-hidden="true">{favoriteIds.has(item.item_id)?'★':'☆'}</span>
       </button>
       {isContainer?
-        <button type="button" className="mv-browse-container" onClick={()=>setInventoryLocation(item.item_id)} aria-label={`View contents of ${item.display_name}`}>View contents</button>:
+        <button type="button" className="mv-browse-container" onClick={()=>onBrowseContainer(item.item_id)} aria-label={`View contents of ${item.display_name}`}>View contents</button>:
         <button type="button" className="mv-inventory-quick-action"
           disabled={busy||loading||unequipCheckPending}
           aria-haspopup={!equippedRow&&(storedIn||allowed.length!==1)?'dialog':undefined}
