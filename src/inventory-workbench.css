@@ -20,8 +20,6 @@
 .nx-inventory-workbench .mv-inventory-group{margin-top:0;min-width:0}
 .nx-workbench-row{display:grid;grid-template-columns:minmax(0,1fr);gap:4px;min-width:0}
 .nx-workbench-row>.mv-inventory-item{min-width:0}
-.nx-compare-label{display:inline-flex;align-items:center;justify-self:end;gap:7px;color:#9ccbd7;font-size:11px;font-weight:650;cursor:pointer;padding:0 8px 6px}
-.nx-compare-label input{width:17px;height:17px;accent-color:#5bd7ec}
 .nx-container-utilization{background:#082b3d;border:1px solid #336e83;border-radius:10px;padding:12px}
 .nx-container-utilization summary{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:750;color:#baf2fb;cursor:pointer}
 .nx-container-health{display:grid;gap:7px;margin:12px 0 0;padding:11px;background:#092536;border:1px solid #2d6279;border-radius:9px}
@@ -33,14 +31,4 @@
 .nx-container-health>div[role=progressbar]>span{display:block;height:100%;background:#53c5dc;border-radius:999px}
 .nx-container-health small{display:flex;align-items:center;gap:7px;font-size:11px;color:#f5cc9e}
 .nx-container-weight-note{font-size:11px;line-height:1.5;color:#accdd8}
-.nx-inventory-compare{border:1px solid #398da3;border-radius:10px;padding:13px;background:#0b3042}
-.nx-inventory-compare-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px}
-.nx-inventory-compare-head h4{display:flex;align-items:center;gap:8px;font:500 16px Georgia,serif;color:#e1faff;margin:0}
-.nx-inventory-compare-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-.nx-inventory-compare-grid>div{background:#082535;padding:12px;border:1px solid #326b80;border-radius:9px;min-width:0}
-.nx-inventory-compare-grid strong{font-family:Georgia,serif;color:#dcf7ff;overflow-wrap:anywhere}
-.nx-inventory-compare-grid dl{display:grid;grid-template-columns:minmax(70px,1fr) minmax(70px,1.3fr);gap:7px;margin:12px 0}
-.nx-inventory-compare-grid dt{font-size:11px;color:#9bc4d3}
-.nx-inventory-compare-grid dd{font-size:11px;color:#d7eef4;margin:0;overflow-wrap:anywhere}
-.nx-inventory-compare>p{font-size:11px;color:#a4cbd7}
-@media(max-width:520px){.nx-inventory-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.nx-inventory-filters{grid-template-columns:1fr}.nx-inventory-compare-grid{grid-template-columns:1fr}}
+@media(max-width:520px){.nx-inventory-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.nx-inventory-filters{grid-template-columns:1fr}}
