@@ -142,6 +142,10 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [invalidEquipmentError,setInvalidEquipmentError]=useState('');
   const unequipCancelRef=useRef<HTMLButtonElement>(null);
   const [storageActionError,setStorageActionError]=useState('');
+  const [splitItemId,setSplitItemId]=useState<string|null>(null);
+  const [splitQuantity,setSplitQuantity]=useState('1');
+  const [splitBusy,setSplitBusy]=useState(false);
+  const [splitError,setSplitError]=useState('');
   const [trashItemId,setTrashItemId]=useState<string|null>(null);
   const [trashQuantity,setTrashQuantity]=useState('1');
   const [trashBusy,setTrashBusy]=useState(false);
@@ -388,14 +392,31 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     try{await onMoveStorage(itemId,destination)}catch(e){setStorageActionError(inventoryErrorMessage(e))}
   };
   const closeDetails=()=>{
+    setSplitItemId(null);setSplitError('');setSplitQuantity('1');
     setTrashItemId(null);setTrashError('');setTrashQuantity('1');
     setExpandedItem(null);
     previousFocusRef.current?.focus();
   };
   const openDetails=(itemId:string,event:React.MouseEvent<HTMLButtonElement>)=>{
+    setSplitItemId(null);setSplitError('');setSplitQuantity('1');
     setTrashItemId(null);setTrashError('');setTrashQuantity('1');
     previousFocusRef.current=event.currentTarget;
     setExpandedItem(itemId);
+  };
+  const splitSelectedStack=async()=>{
+    const item=items.find(row=>row.item_id===splitItemId);
+    const qty=Number(splitQuantity);
+    if(!item||busy||splitBusy||!Number.isSafeInteger(qty)||qty<1||qty>=Number(item.quantity))return;
+    setSplitBusy(true);setSplitError('');
+    try{
+      const {error:rpcError}=await db.rpc('manage_character_item_stack',{
+        p_character:character,p_item:item.item_id,p_action:'split',p_quantity:qty,
+        p_target_item:null,p_container_item:null
+      });
+      if(rpcError)throw rpcError;
+      closeDetails();await onInventoryChanged();
+    }catch(e){setSplitError(inventoryErrorMessage(e))}
+    finally{setSplitBusy(false)}
   };
   const confirmItemTrash=async()=>{
     const item=items.find(row=>row.item_id===trashItemId);
@@ -817,6 +838,25 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
                     {slots.filter(slot=>(validSlots[selectedItem.item_id]||[]).includes(slot.id)).map(slot=><option key={slot.id} value={slot.id}>{slot.label}</option>)}
                   </select>
                 </div>:null}
+            {!loading&&!equippedByItem.has(selectedItem.item_id)&&storage[selectedItem.item_id]&&!storage[selectedItem.item_id].is_container&&
+              ['gear','consumable','ammunition','material','component','misc','supplies'].includes(itemCategories[selectedItem.item_id]??'')&&
+              Number(selectedItem.quantity)>1&&<div className="mv-modal-action-field">
+                <button type="button" className="mv-modal-action-button" disabled={busy||splitBusy}
+                  onClick={()=>{setSplitItemId(selectedItem.item_id);setSplitQuantity('1');setSplitError('')}}>Split stack…</button>
+                {splitItemId===selectedItem.item_id&&<div className="mv-stack-split-confirm">
+                  <label htmlFor="mv-detail-split-quantity">Quantity to split</label>
+                  <input id="mv-detail-split-quantity" type="number" min="1" max={Number(selectedItem.quantity)-1}
+                    step="1" value={splitQuantity} onChange={e=>setSplitQuantity(e.target.value)}/>
+                  <p>Creates a separate stack. Compatible stacks combine automatically when items are acquired or moved into the same location.</p>
+                  {splitError&&<p className="mv-storage-error" role="alert">{splitError}</p>}
+                  <div className="mv-trash-confirm-actions">
+                    <button type="button" onClick={()=>setSplitItemId(null)}>Cancel</button>
+                    <button type="button" disabled={splitBusy||!Number.isSafeInteger(Number(splitQuantity))||
+                      Number(splitQuantity)<1||Number(splitQuantity)>=Number(selectedItem.quantity)}
+                      onClick={()=>void splitSelectedStack()}>{splitBusy?'Splitting…':'Confirm split'}</button>
+                  </div>
+                </div>}
+              </div>}
             {!loading&&!equippedByItem.has(selectedItem.item_id)&&storage[selectedItem.item_id]&&!storage[selectedItem.item_id].is_container&&<>
               {storage[selectedItem.item_id].container_item_id&&
                 <button type="button" className="mv-modal-action-button" disabled={busy} onClick={()=>{void moveStorage(selectedItem.item_id,null)}}>Take out</button>}
