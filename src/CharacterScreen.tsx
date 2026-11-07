@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import type {SupabaseClient} from '@supabase/supabase-js';
-import {Backpack, CircleDot, Coins, Crown, FlaskConical, Footprints, Gem, Hand, HeartPulse, PackageOpen, ScrollText, Shield, ShieldCheck, Shirt, ShoppingBag, Sparkles, Sword, UserRound, WandSparkles, Wrench, X} from 'lucide-react';
+import {Backpack, CircleDot, Coins, Crown, FlaskConical, Footprints, Gem, Hand, HeartPulse, PackageOpen, ScrollText, Shield, ShieldCheck, Shirt, ShoppingBag, Sparkles, Sword, Trash2, UserRound, WandSparkles, Wrench, X} from 'lucide-react';
 import {inventoryErrorMessage} from './inventoryErrors';
 import LoadoutHealthPanel from './LoadoutHealthPanel';
 import InventoryWorkbench,{type WorkbenchIndicator} from './InventoryWorkbench';
@@ -142,6 +142,10 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [invalidEquipmentError,setInvalidEquipmentError]=useState('');
   const unequipCancelRef=useRef<HTMLButtonElement>(null);
   const [storageActionError,setStorageActionError]=useState('');
+  const [trashItemId,setTrashItemId]=useState<string|null>(null);
+  const [trashQuantity,setTrashQuantity]=useState('1');
+  const [trashBusy,setTrashBusy]=useState(false);
+  const [trashError,setTrashError]=useState('');
   const [detailsLoading,setDetailsLoading]=useState(false);
   const modalCloseRef=useRef<HTMLButtonElement>(null);
   const previousFocusRef=useRef<HTMLElement|null>(null);
@@ -384,12 +388,31 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     try{await onMoveStorage(itemId,destination)}catch(e){setStorageActionError(inventoryErrorMessage(e))}
   };
   const closeDetails=()=>{
+    setTrashItemId(null);setTrashError('');setTrashQuantity('1');
     setExpandedItem(null);
     previousFocusRef.current?.focus();
   };
   const openDetails=(itemId:string,event:React.MouseEvent<HTMLButtonElement>)=>{
+    setTrashItemId(null);setTrashError('');setTrashQuantity('1');
     previousFocusRef.current=event.currentTarget;
     setExpandedItem(itemId);
+  };
+  const confirmItemTrash=async()=>{
+    const item=items.find(row=>row.item_id===trashItemId);
+    const amount=Number(trashQuantity);
+    if(!item||busy||trashBusy||storage[item.item_id]?.is_container||equipped.some(row=>row.itemId===item.item_id)||
+       !Number.isSafeInteger(amount)||amount<1||amount>Number(item.quantity))return;
+    setTrashBusy(true);setTrashError('');
+    try{
+      const {error:rpcError}=await db.rpc('manage_character_item_stack',{
+        p_character:character,p_item:item.item_id,p_action:'discard',p_quantity:amount,
+        p_target_item:null,p_container_item:null
+      });
+      if(rpcError)throw rpcError;
+      closeDetails();
+      await onInventoryChanged();
+    }catch(e){setTrashError(inventoryErrorMessage(e))}
+    finally{setTrashBusy(false)}
   };
   const renderItemIcon=(itemId:string,size:number)=>{
     const category=itemCategories[itemId]??'unknown';
@@ -797,15 +820,35 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
             {!loading&&!equippedByItem.has(selectedItem.item_id)&&storage[selectedItem.item_id]&&!storage[selectedItem.item_id].is_container&&<>
               {storage[selectedItem.item_id].container_item_id&&
                 <button type="button" className="mv-modal-action-button" disabled={busy} onClick={()=>{void moveStorage(selectedItem.item_id,null)}}>Take out</button>}
-              {storageContainers.some(container=>container.item_id!==selectedItem.item_id&&container.item_id!==storage[selectedItem.item_id]?.container_item_id)&&
-                <div className="mv-modal-action-field">
-                  <label htmlFor="mv-detail-storage">{storage[selectedItem.item_id]?.container_item_id?'Move to…':'Put in…'}</label>
-                  <select id="mv-detail-storage" aria-label={`Put ${selectedItem.display_name} in a container`} value="" disabled={busy}
-                    onChange={event=>{if(event.target.value)void moveStorage(selectedItem.item_id,event.target.value)}}>
-                    <option value="">Choose container…</option>
-                    {storageContainers.filter(container=>container.item_id!==selectedItem.item_id&&container.item_id!==storage[selectedItem.item_id]?.container_item_id).map(container=><option key={container.item_id} value={container.item_id}>{container.display_name}</option>)}
-                  </select>
+              <div className="mv-modal-action-field">
+                <label htmlFor="mv-detail-storage">{storage[selectedItem.item_id]?.container_item_id?'Move to…':'Put in…'}</label>
+                <select id="mv-detail-storage" aria-label={`Move or discard ${selectedItem.display_name}`} value=""
+                  disabled={busy||trashBusy}
+                  onChange={event=>{
+                    const target=event.target.value;
+                    if(target==='__trash__'){
+                      setTrashItemId(selectedItem.item_id);setTrashQuantity(String(selectedItem.quantity));setTrashError('');
+                    }else if(target)void moveStorage(selectedItem.item_id,target);
+                  }}>
+                  <option value="">Choose destination…</option>
+                  {storageContainers.filter(container=>container.item_id!==selectedItem.item_id&&container.item_id!==storage[selectedItem.item_id]?.container_item_id).map(container=><option key={container.item_id} value={container.item_id}>{container.display_name}</option>)}
+                  <option value="__trash__">Trash / Discard…</option>
+                </select>
+                {trashItemId===selectedItem.item_id&&<div className="mv-trash-confirm" role="group" aria-label="Confirm item disposal">
+                  <div className="mv-trash-confirm-heading"><Trash2 size={17} aria-hidden="true"/><strong>Discard {selectedItem.display_name}?</strong></div>
+                  <p>This permanently removes the selected quantity. It cannot be undone.</p>
+                  <label htmlFor="mv-trash-quantity">Quantity to discard</label>
+                  <input id="mv-trash-quantity" type="number" min="1" step="1" max={Number(selectedItem.quantity)}
+                    value={trashQuantity} disabled={trashBusy} onChange={event=>setTrashQuantity(event.target.value)}/>
+                  {trashError&&<p className="mv-storage-error" role="alert">{trashError}</p>}
+                  <div className="mv-trash-confirm-actions">
+                    <button type="button" disabled={trashBusy} onClick={()=>{setTrashItemId(null);setTrashError('')}}>Cancel</button>
+                    <button type="button" className="mv-trash-confirm-button"
+                      disabled={busy||trashBusy||!Number.isSafeInteger(Number(trashQuantity))||Number(trashQuantity)<1||Number(trashQuantity)>Number(selectedItem.quantity)}
+                      onClick={()=>void confirmItemTrash()}>{trashBusy?'Discarding…':`Confirm trash · ${trashQuantity}`}</button>
+                  </div>
                 </div>}
+              </div>
             </>}
             {!detailsLoading&&equipRequirements.length>0&&<div className="mv-item-requirements">
               <h4>Equipment Requirements</h4>
