@@ -531,14 +531,19 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           <span style={{width:`${carryPercent}%`}}/>
         </div>
         <p className="mv-carry-capacity-status">{knownTotal>carryLimit?'Known weight exceeds carrying capacity.':`At least ${numberText(Math.max(0,carryLimit-knownTotal),2)} lb of capacity remains based on known weights.`}</p>
-        <p className="mv-carry-capacity-note">Push, drag, or lift: up to {numberText(carryProfile.drag_lift_push_lb??0,2)} lb.</p>
       </>}
-      {carryLimit===null&&<p className="mv-carry-capacity-note">Set Strength and creature size to calculate capacity. No score has been assumed.</p>}
-      <p className="mv-carry-capacity-note">Edit Strength and creature size in Character Attributes to change this capacity.</p>
+      <details className="mv-carry-capacity-help">
+        <summary>Carrying capacity details</summary>
+        {carryLimit!==null&&<p className="mv-carry-capacity-note">Push, drag, or lift: up to {numberText(carryProfile.drag_lift_push_lb??0,2)} lb.</p>}
+        {carryLimit===null&&<p className="mv-carry-capacity-note">Set Strength and creature size to calculate capacity. No score has been assumed.</p>}
+        <p className="mv-carry-capacity-note">Edit Strength and creature size in Character Attributes to change this capacity.</p>
+        {Number(weightSummary.unknown_item_count)>0&&<p className="mv-weight-unknown"><PackageOpen size={15} aria-hidden="true"/> {weightSummary.unknown_item_count} {Number(weightSummary.unknown_item_count)===1?'item has':'items have'} no recorded weight. The actual total may be higher.</p>}
+        <p className="mv-weight-note">Stored items count toward total carried weight while you carry their containers. Missing weights make the remaining-capacity estimate incomplete.</p>
+      </details>
     </div>}
     {!canShowCarryCapacity&&carryProfile&&<p className="mv-weight-note">This campaign's ruleset has no carrying-capacity formula configured yet.</p>}
-    {Number(weightSummary.unknown_item_count)>0&&<p className="mv-weight-unknown"><PackageOpen size={15} aria-hidden="true"/> {weightSummary.unknown_item_count} {Number(weightSummary.unknown_item_count)===1?'item has':'items have'} no recorded weight. The actual total may be higher.</p>}
-    <p className="mv-weight-note">Stored items count toward total carried weight while you carry their containers. Missing weights make the remaining-capacity estimate incomplete.</p>
+    {!canShowCarryCapacity&&Number(weightSummary.unknown_item_count)>0&&<p className="mv-weight-unknown"><PackageOpen size={15} aria-hidden="true"/> {weightSummary.unknown_item_count} {Number(weightSummary.unknown_item_count)===1?'item has':'items have'} no recorded weight. The actual total may be higher.</p>}
+    {!canShowCarryCapacity&&<p className="mv-weight-note">Stored items count toward total carried weight while you carry their containers. Missing weights make the remaining-capacity estimate incomplete.</p>
   </section>;
   const walletOrder=(code:string)=>({PP:0,GP:1,EP:2,SP:3,CP:4}[code.toUpperCase()]??5);
   return <div className="multiverse">
@@ -581,15 +586,16 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         </section>
       </div>,document.body)}
       {inventoryWeightPanel}
-      <LoadoutHealthPanel db={db} character={character} characterName={characterName} inventoryVersion={inventoryVersion} busy={busy||loading||unequipCheckPending}
-        onReviewRemoval={assignmentId=>{
-          const row=equipped.find(candidate=>candidate.id===assignmentId);
-          if(row)void requestUnequip(row);
-        }}/>
       <section className="mv-panel" aria-labelledby="mv-equipped-title">
-        <h3 id="mv-equipped-title"><Sword size={20}/> Equipped Items</h3>
+        <div className="mv-equipped-heading">
+          <h3 id="mv-equipped-title"><Sword size={20}/> Equipped Items</h3>
+          <button type="button" className="mv-loadout-launch" ref={loadoutTriggerRef}
+            aria-label="Open loadout health" aria-haspopup="dialog" onClick={()=>setLoadoutOpen(true)}>
+            <HeartPulse size={21} aria-hidden="true"/><span>Loadout Health</span>
+          </button>
+        </div>
         {loading?<p className="mv-empty">Loading equipment…</p>:equipped.length===0?<p className="mv-empty">No equipped items yet. Equip an item from Inventory to see it here.</p>:
-          <div className="mv-rows">{equipped.map(row=><div className="mv-equipment-row" key={row.id}><Shield size={18}/><span>{row.slot}</span><strong>{row.name}</strong><button type="button" className="mv-unequip-button" disabled={busy||loading||unequipCheckPending} onClick={()=>{void requestUnequip(row)}} aria-label={`Unequip ${row.name} from ${row.slot}`}>{unequipCheckPending?'Checking…':'Unequip'}</button></div>)}</div>}
+          <div className="mv-rows">{equipped.map(row=>{const SlotIcon=equipmentSlotIcon(row.slot);return <div className="mv-equipment-row" key={row.id}><SlotIcon size={18} aria-hidden="true"/><span>{row.slot}</span><strong>{row.name}</strong><button type="button" className="mv-unequip-button" disabled={busy||loading||unequipCheckPending} onClick={()=>{void requestUnequip(row)}} aria-label={`Unequip ${row.name} from ${row.slot}`}>{unequipCheckPending?'Checking…':'Unequip'}</button></div>})}</div>
         {unequipCheckError&&<p className="mv-storage-error" role="alert">Unable to check equipment dependencies: {unequipCheckError}. No equipment was changed.</p>}
         {invalidEquipmentError&&<p className="mv-storage-error" role="alert">Unable to check equipment requirements: {invalidEquipmentError}</p>}
         {invalidEquipment.length>0&&<div className="mv-invalid-loadout" role="status">
@@ -658,23 +664,30 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
               <Backpack size={15} aria-hidden="true"/> {container.display_name} <span>{contents.length}</span>
             </button>)}
           </nav>
+          <div className="mv-inventory-slot-filter">
+            <label htmlFor="mv-slot-category-filter">Filter by equipment type</label>
+            <select id="mv-slot-category-filter" value={inventorySlotFilter} onChange={event=>setInventorySlotFilter(event.target.value)}>
+              <option value="all">All item types</option>
+              {categoryOptions.map(code=><option key={code} value={code}>{categoryFilterLabels[code]??titleCase(code)}</option>)}
+            </select>
+          </div>
           {currentLocation==='all'?<>
             <section className="mv-inventory-group" aria-label="Carried items">
-              <div className="mv-inventory-group-heading"><h4>Carried &amp; Equipped</h4><span>{carriedItems.length} items</span></div>
-              <div className="mv-inventory-items">{carriedItems.map(renderInventoryCard)}</div>
+              <div className="mv-inventory-group-heading"><h4>Carried &amp; Equipped</h4><span>{visibleCarried.length} items</span></div>
+              <div className="mv-inventory-items">{visibleCarried.length?visibleCarried.map(renderInventoryCard):<p className="mv-empty">No carried items match this filter.</p>}</div>
             </section>
             {containerGroups.filter(({contents})=>contents.length>0).map(({container,contents})=><section className="mv-inventory-group" key={container.item_id} aria-label={`Inside ${container.display_name}`}>
               <div className="mv-inventory-group-heading"><h4><Backpack size={16} aria-hidden="true"/> Inside {container.display_name}</h4><button type="button" className="mv-group-browse" onClick={()=>setInventoryLocation(container.item_id)}>Browse · {contents.length}</button></div>
               <div className="mv-inventory-items">{contents.map(renderInventoryCard)}</div>
             </section>)}
           </>:currentLocation==='carried'?<section className="mv-inventory-group">
-            <div className="mv-inventory-group-heading"><h4>Carried &amp; Equipped</h4><span>{carriedItems.length} items</span></div>
-            <div className="mv-inventory-items">{carriedItems.map(renderInventoryCard)}</div>
+            <div className="mv-inventory-group-heading"><h4>Carried &amp; Equipped</h4><span>{visibleCarried.length} items</span></div>
+            <div className="mv-inventory-items">{visibleCarried.length?visibleCarried.map(renderInventoryCard):<p className="mv-empty">No carried items match this filter.</p>}</div>
           </section>:containerGroups.filter(({container})=>container.item_id===currentLocation).map(({container,contents})=><section className="mv-inventory-group" key={container.item_id}>
             <div className="mv-inventory-group-heading"><h4><Backpack size={17} aria-hidden="true"/> {container.display_name} Contents</h4><button type="button" className="mv-group-browse" onClick={()=>setInventoryLocation('all')}>All items</button></div>
             {containerUsage[container.item_id]&&<div className="mv-location-capacity">{numberText(containerUsage[container.item_id].used_weight_lb,2)} / {containerUsage[container.item_id].capacity_weight_lb===null?'?':numberText(containerUsage[container.item_id].capacity_weight_lb,2)} lb used</div>}
             <button type="button" className="mv-container-detail-link" onClick={event=>openDetails(container.item_id,event)}>Open {container.display_name} details</button>
-            {contents.length===0?<p className="mv-empty">This container is empty.</p>:<div className="mv-inventory-items">{contents.map(renderInventoryCard)}</div>}
+            {contents.length===0?<p className="mv-empty">No items in this container match the selected filter.</p>:<div className="mv-inventory-items">{contents.map(renderInventoryCard)}</div>}
           </section>)}
         </>}
         {slots.length===0&&<p className="mv-empty">No equipment slots have been configured for this campaign yet.</p>}
@@ -683,6 +696,28 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     </div>}
     {tab==='shop'&&<section className="mv-panel mv-placeholder"><ShoppingBag size={30}/><h3>Campaign Shops</h3><p>Shop browsing and purchases are not enabled yet. Merchant transactions will be connected after security testing.</p></section>}
     {tab==='craft'&&<section className="mv-panel mv-placeholder"><FlaskConical size={30}/><h3>Crafting</h3><p>Recipes, materials and crafting actions are planned. No materials can be consumed from this preview.</p></section>}
+    {loadoutOpen&&tab==='character'&&createPortal(
+      <div className="mv-modal-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget){setLoadoutOpen(false);loadoutTriggerRef.current?.focus()}}}>
+        <section className="mv-item-modal mv-loadout-dialog" role="dialog" aria-modal="true" aria-labelledby="mv-loadout-dialog-title">
+          <div className="mv-modal-header">
+            <div className="mv-modal-heading"><HeartPulse size={24} aria-hidden="true"/><div>
+              <span className="mv-modal-eyebrow">Character equipment</span>
+              <h3 id="mv-loadout-dialog-title">Loadout Health</h3>
+            </div></div>
+            <button type="button" ref={loadoutCloseRef} className="mv-modal-close"
+              aria-label="Close loadout health" onClick={()=>{setLoadoutOpen(false);loadoutTriggerRef.current?.focus()}}><X size={22}/></button>
+          </div>
+          <div className="mv-loadout-dialog-body">
+            <LoadoutHealthPanel db={db} character={character} characterName={characterName}
+              inventoryVersion={inventoryVersion} busy={busy||loading||unequipCheckPending}
+              onReviewRemoval={assignmentId=>{
+                const row=equipped.find(candidate=>candidate.id===assignmentId);
+                setLoadoutOpen(false);
+                if(row)void requestUnequip(row);
+              }}/>
+          </div>
+        </section>
+      </div>,document.body)}
     {tab==='inventory'&&expandedItem&&selectedItem&&createPortal(
       <div className="mv-modal-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)closeDetails()}}>
         <section role="dialog" aria-modal="true" aria-labelledby="mv-modal-title" aria-describedby="mv-modal-description" className="mv-item-modal">
