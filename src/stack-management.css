@@ -1,0 +1,20 @@
+.nx-stack-panel{margin-top:14px;display:grid;gap:12px}
+.nx-stack-panel details{border:1px solid #337b90;border-radius:10px;background:#082a3b;padding:12px}
+.nx-stack-panel summary{display:flex;align-items:center;gap:8px;cursor:pointer;color:#bcecf6;font-size:14px;font-weight:750;list-style-position:inside}
+.nx-stack-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+.nx-stack-controls label{display:grid;gap:6px;color:#b4dce8;font-size:12px;font-weight:700;min-width:0}
+.nx-stack-controls input[type=number],.nx-stack-controls select{width:100%;box-sizing:border-box;min-width:0;min-height:44px;border:1px solid #498a9e;border-radius:8px;background:#051d2b;color:#e7f9fc;padding:8px 10px;font-size:15px}
+.nx-stack-controls label small{color:#9dc1cc;font-weight:400;line-height:1.5}
+.nx-stack-controls>button{min-height:44px;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 13px;border:1px solid #58c5db;border-radius:8px;background:#0d4c64;color:#dcfaff;font-size:12px;font-weight:750;cursor:pointer}
+.nx-stack-controls>button:disabled{opacity:.5;cursor:not-allowed}
+.nx-stack-danger-confirm{display:flex!important;flex-direction:row;align-items:flex-start;grid-column:1/-1;color:#ffd2b6!important;line-height:1.6}
+.nx-stack-danger-confirm input{width:18px;height:18px;margin-top:2px;accent-color:#c57849;flex:none}
+.nx-stack-error,.nx-stack-success{grid-column:1/-1;font-size:12px;line-height:1.6;margin:0}
+.nx-stack-error{color:#ffbc9e}.nx-stack-success{color:#9fe3cc}
+.nx-stack-history{margin-top:4px}
+.nx-stack-history>p,.nx-stack-history>small{font-size:11px;color:#a3cbd6;line-height:1.6}
+.nx-stack-activity-list{display:grid;gap:8px;margin:13px 0}
+.nx-stack-activity-list>div{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap;border-bottom:1px solid #28546b;padding:8px 3px;font-size:11px;color:#b3d8e2}
+.nx-stack-activity-list strong{font-size:12px;color:#e4f8ff}
+.nx-stack-activity-list time{margin-left:auto;color:#91bac7}
+@media(max-width:530px){.nx-stack-controls{grid-template-columns:1fr}.nx-stack-activity-list time{margin-left:0;width:100%}}
