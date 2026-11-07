@@ -27,4 +27,8 @@ assert.match(css,/nx-player-character-card/,'card styles exist');
 assert.match(css,/nx-password-toggle/,'password toggle styles exist');
 assert.match(ui,/\{campaignSelect\}/,'GM campaign selector remains');
 assert.match(ui,/\{characterSelect\}/,'GM character selector remains');
+assert.doesNotMatch(ui,/nx-player-character-avatar/,'player character icon removed');
+assert.doesNotMatch(ui,/nx-player-character-open/,'Open label and icon removed');
+assert.match(ui,/<strong>\{person.character_name\}<\/strong>/,'character name retained');
+assert.match(ui,/<span>\{person.campaign_name\}<\/span>/,'campaign shown beneath character');
 console.log('PASS player account character list and reversible password visibility UI contracts');
