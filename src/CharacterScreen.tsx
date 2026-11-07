@@ -442,12 +442,13 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       <button type="button" className="mv-item-icon mv-item-icon-button" aria-label={`View details for ${item.display_name}`} aria-haspopup="dialog" onClick={event=>openDetails(item.item_id,event)}>{renderItemIcon(item.item_id,25)}</button>
       <div className="mv-item-info">
         <strong>{item.display_name}</strong>
-        {inventoryIndicators[item.item_id]&&<span className="nx-inventory-condition">Condition: {titleCase(inventoryIndicators[item.item_id].condition_code||'unknown')}
-          {inventoryIndicators[item.item_id].unit_weight_lb!==null&&<> · {numberText(inventoryIndicators[item.item_id].unit_weight_lb??0,2)} lb each</>}
-          {!inventoryIndicators[item.item_id].identified&&' · Unidentified'}
-        </span>}
-        {equippedRow&&<span className="mv-equipped-indicator"><Shield size={13} aria-hidden="true"/> Equipped · {equippedRow.slot}</span>}
-        <span>Quantity: {numberText(item.quantity)}</span>
+        <div className="nx-inventory-inline-meta">
+          {equippedRow&&<span className="mv-equipped-indicator"><Shield size={13} aria-hidden="true"/> Equipped · {equippedRow.slot}</span>}
+          <span className="nx-inventory-quantity">Qty {numberText(item.quantity)}</span>
+          {inventoryIndicators[item.item_id]&&<span className="nx-inventory-condition">Condition: {titleCase(inventoryIndicators[item.item_id].condition_code||'unknown')}</span>}
+          {inventoryIndicators[item.item_id]?.unit_weight_lb!=null&&<span className="nx-inventory-unit-weight">{numberText(inventoryIndicators[item.item_id].unit_weight_lb??0,2)} lb each</span>}
+          {inventoryIndicators[item.item_id]&&!inventoryIndicators[item.item_id].identified&&<span className="nx-inventory-unidentified">Unidentified</span>}
+        </div>
         {containerUsage[item.item_id]&&<span className="mv-container-card-summary"><Backpack size={13} aria-hidden="true"/> {containerUsage[item.item_id].item_count} {Number(containerUsage[item.item_id].item_count)===1?'item':'items'} · {numberText(containerUsage[item.item_id].used_weight_lb,2)} / {containerUsage[item.item_id].capacity_weight_lb===null?'?':numberText(containerUsage[item.item_id].capacity_weight_lb,2)} lb</span>}
         {storedIn&&<span className="mv-storage-status mv-stored-tag"><Backpack size={13} aria-hidden="true"/> Stored in {storage[item.item_id].location_name}</span>}
       </div>
@@ -698,7 +699,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
             storage={storage} usage={containerUsage} indicators={inventoryIndicators}
             equippedIds={new Set(equipped.map(row=>row.itemId))} favoriteIds={favoriteIds}
             busy={busy||loading||favoriteBusy!==null} renderItem={renderInventoryCard}
-            onOpenDetails={openDetails}/>}
+            />}
         {slots.length===0&&<p className="mv-empty">No equipment slots have been configured for this campaign yet.</p>}
       </section>
       <p className="mv-inventory-hint">Trading and connection diagnostics remain available below the inventory panel during testing.</p>
