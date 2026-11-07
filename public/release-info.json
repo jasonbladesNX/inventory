@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "m6.21-6.30-inventory-workbench-bundle",
+  "release": "ui-inventory-compact-no-comparison-pouch-container",
   "date": "2026-11-06",
-  "note": "Milestones 6.21–6.30: searchable sortable filtered inventory, saved per-user favorites, condition and weight, container utilization, side-by-side comparison, overview and safe CSV export; combined browser acceptance pending"
+  "note": "Removed item comparison; compact horizontal equipped/condition/quantity layout; standard SRD Pouch now correctly categorized as a usable container; existing inventory security and transactions preserved"
 }
