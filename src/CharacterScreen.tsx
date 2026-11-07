@@ -121,6 +121,12 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [effectSourcesError,setEffectSourcesError]=useState('');
   const [draftScores,setDraftScores]=useState<Record<string,string>>({});
   const [draftSize,setDraftSize]=useState('');
+  const [hitPoints,setHitPoints]=useState<{configured:boolean;current?:number;max?:number}|null>(null);
+  const [hpCurrent,setHpCurrent]=useState('');
+  const [hpMax,setHpMax]=useState('');
+  const [hpEditing,setHpEditing]=useState(false);
+  const [hpSaving,setHpSaving]=useState(false);
+  const [hpError,setHpError]=useState('');
   const [carryError,setCarryError]=useState('');
   const [attributesSaving,setAttributesSaving]=useState(false);
   const [attributeEditorOpen,setAttributeEditorOpen]=useState(false);
@@ -198,9 +204,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   useEffect(()=>{
     let cancelled=false;
     async function load(){
-      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setInventoryIndicators({});setUsableItemIds(new Set());setFavoriteIds(new Set());setStorage({});setContainerUsage({});setWeightSummary(null);setCarryProfile(null);setAttributes([]);setDerivedAttributes({});setEffectSources([]);setEffectSourcesError('');setInvalidEquipment([]);setInvalidEquipmentError('');
+      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setInventoryIndicators({});setUsableItemIds(new Set());setFavoriteIds(new Set());setStorage({});setContainerUsage({});setWeightSummary(null);setCarryProfile(null);setHitPoints(null);setAttributes([]);setDerivedAttributes({});setEffectSources([]);setEffectSourcesError('');setInvalidEquipment([]);setInvalidEquipmentError('');
       try{
-        const [assignments,currency,compatibility,categories,storageRows,usageRows,weightRows,carryRows,attributeRows,derivedRows,sourceRows,invalidRows,favoriteRows,indicatorRows,usableRows]=await Promise.all([
+        const [assignments,currency,compatibility,categories,storageRows,usageRows,weightRows,carryRows,attributeRows,derivedRows,sourceRows,invalidRows,favoriteRows,indicatorRows,usableRows,hpRows]=await Promise.all([
           db.rpc('list_character_equipped_instances',{p_character:character}),
           db.rpc('list_my_trade_currency',{p_character:character}),
           db.rpc('list_character_valid_equipment_slots',{p_character:character}),
@@ -216,6 +222,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           db.rpc('list_my_character_item_favorites',{p_character:character}),
           db.rpc('list_character_inventory_indicators',{p_character:character}),
           db.rpc('list_character_usable_items',{p_character:character}),
+          db.rpc('get_character_hit_points',{p_character:character}),
         ]);
         if(assignments.error)throw assignments.error;
         if(currency.error)throw currency.error;
@@ -230,6 +237,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         if(favoriteRows.error)throw favoriteRows.error;
         if(indicatorRows.error)throw indicatorRows.error;
         if(usableRows.error)throw usableRows.error;
+        if(hpRows.error)throw hpRows.error;
         if(cancelled)return;
         const slotLookup=new Map(slots.map(s=>[s.id,s.label]));
         setEquipped((assignments.data||[]).map(row=>({
@@ -254,6 +262,12 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         for(const row of indicatorRows.data||[])indicators[row.item_id]=row as WorkbenchIndicator;
         setInventoryIndicators(indicators);
         setUsableItemIds(new Set((usableRows.data||[]).map((row:{item_id:string})=>row.item_id)));
+        const hp=(hpRows.data??{configured:false}) as {configured:boolean;current?:number;max?:number};
+        setHitPoints(hp);
+        if(!hpEditing){
+          setHpCurrent(hp.configured?String(hp.current):'');
+          setHpMax(hp.configured?String(hp.max):'');
+        }
         const storageByItem:Record<string,StorageEntry>={};
         for(const row of storageRows.data||[])storageByItem[row.item_id]=row as StorageEntry;
         setStorage(storageByItem);
@@ -628,6 +642,47 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     setDraftSize(carryProfile?.creature_size??'');
     attributeTriggerRef.current?.focus();
   };
+  const saveHitPoints=async(event:React.FormEvent<HTMLFormElement>)=>{
+    event.preventDefault();
+    const current=Number(hpCurrent),max=Number(hpMax);
+    if(!Number.isSafeInteger(current)||!Number.isSafeInteger(max)||max<1||max>100000||current<0||current>max){
+      setHpError('Enter whole-number HP between 0 and the maximum, with a maximum of at least 1.');return;
+    }
+    setHpSaving(true);setHpError('');
+    try{
+      const {data,error:rpcError}=await db.rpc('set_character_hit_points',{
+        p_character:character,p_current:current,p_max:max
+      });
+      if(rpcError)throw rpcError;
+      setHitPoints(data);setHpEditing(false);
+    }catch(e){setHpError(inventoryErrorMessage(e))}
+    finally{setHpSaving(false)}
+  };
+  const hitPointPanel=<section className="mv-panel mv-hp-panel" aria-labelledby="mv-hp-heading">
+    <div className="mv-equipped-heading">
+      <h3 id="mv-hp-heading"><HeartPulse size={20}/> Hit Points</h3>
+      {!hpEditing&&<button type="button" className="mv-attributes-edit-trigger" disabled={busy||loading}
+        onClick={()=>{setHpCurrent(hitPoints?.configured?String(hitPoints.current):'');setHpMax(hitPoints?.configured?String(hitPoints.max):'');setHpError('');setHpEditing(true)}}>{hitPoints?.configured?'Edit HP':'Set HP'}</button>}
+    </div>
+    {!hpEditing&&<div className="mv-hp-summary">
+      {hitPoints?.configured?<><strong>{hitPoints.current} / {hitPoints.max} HP</strong>
+        <div className="mv-container-meter" role="progressbar" aria-label="Current hit points"
+          aria-valuemin={0} aria-valuemax={hitPoints.max??1} aria-valuenow={hitPoints.current??0}>
+          <span style={{width:`${Math.max(0,Math.min(100,100*(hitPoints.current??0)/(hitPoints.max??1)))}%`}}/>
+        </div></>:<p>Hit points not configured. Set current and maximum HP before using a healing potion.</p>}
+    </div>}
+    {hpEditing&&<form className="mv-hp-form" onSubmit={event=>{void saveHitPoints(event)}}>
+      <label>Current HP <input type="number" min="0" max="100000" step="1" required
+        value={hpCurrent} onChange={event=>setHpCurrent(event.target.value)}/></label>
+      <label>Maximum HP <input type="number" min="1" max="100000" step="1" required
+        value={hpMax} onChange={event=>setHpMax(event.target.value)}/></label>
+      {hpError&&<p className="mv-storage-error" role="alert">{hpError}</p>}
+      <div className="mv-trash-confirm-actions">
+        <button type="button" disabled={hpSaving} onClick={()=>{setHpEditing(false);setHpError('')}}>Cancel</button>
+        <button type="submit" disabled={hpSaving||busy}>{hpSaving?'Saving…':'Save HP'}</button>
+      </div>
+    </form>}
+  </section>;
   const attributePanel=attributes.length>0&&<section className="mv-panel mv-attributes-panel" aria-labelledby="mv-attributes-title">
     <div className="mv-attributes-summary-heading">
       <h3 id="mv-attributes-title"><UserRound size={20}/> Character Attributes</h3>
@@ -724,6 +779,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       <div className="mv-ornament" aria-hidden="true">✦</div>
     </div>
     {tab==='character'&&<div className="mv-panels">
+      {hitPointPanel}
       {attributePanel}
       {attributeModal}
     {unequipWarning&&createPortal(
