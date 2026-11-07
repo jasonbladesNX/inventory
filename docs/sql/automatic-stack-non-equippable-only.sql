@@ -69,6 +69,7 @@ begin
  select (c.settings->>'approval_required')::boolean into allowed from public.campaigns c where c.id=p_campaign;
  if coalesce(allowed,false) then raise exception 'GM approval is enabled; use approval workflow'; end if;
  if not (app_private.is_gm(p_campaign) or exists(select 1 from public.characters ch join public.campaign_members m on m.id=ch.member_id where ch.id=p_character and ch.campaign_id=p_campaign and m.user_id=uid and m.status='active')) then raise exception 'Not authorized'; end if;
+ perform 1 from public.characters c where c.id=p_character and c.campaign_id=p_campaign for update;
  select h.id into hid from public.inventory_holders h where h.campaign_id=p_campaign and h.character_id=p_character;
  if hid is null then raise exception 'Character inventory not found'; end if;
  if not exists(select 1 from public.item_definitions d join public.campaigns c on c.id=p_campaign where d.id=p_definition and (d.campaign_id=p_campaign or (d.campaign_id is null and d.ruleset_version_id=c.ruleset_version_id))) then raise exception 'Invalid item'; end if;
