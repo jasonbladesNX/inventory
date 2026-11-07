@@ -1,4 +1,5 @@
-import React,{useEffect,useMemo,useState} from 'react';
+import React,{useEffect,useMemo,useRef,useState} from 'react';
+import {createPortal} from 'react-dom';
 import {Download,Search,Scale,ShieldAlert,X,Printer,Layers} from 'lucide-react';
 import './inventory-workbench.css';
 
@@ -37,6 +38,22 @@ export default function InventoryWorkbench({characterName,items,categories,stora
   const [exportMessage,setExportMessage]=useState('');
   const [viewMode,setViewMode]=useState<'location'|'category'|'flat'>('location');
   const [reportOpen,setReportOpen]=useState(false);
+  const reportCloseRef=useRef<HTMLButtonElement>(null);
+  useEffect(()=>{
+    if(!reportOpen)return;
+    const frame=window.requestAnimationFrame(()=>reportCloseRef.current?.focus());
+    const onKey=(event:KeyboardEvent)=>{
+      if(event.key==='Escape'){event.preventDefault();setReportOpen(false)}
+      if(event.key==='Tab'){
+        const buttons=reportCloseRef.current?.closest('[role="dialog"]')?.querySelectorAll<HTMLButtonElement>('button:not([disabled])');
+        if(!buttons?.length)return;
+        if(event.shiftKey&&document.activeElement===buttons[0]){event.preventDefault();buttons[buttons.length-1].focus()}
+        else if(!event.shiftKey&&document.activeElement===buttons[buttons.length-1]){event.preventDefault();buttons[0].focus()}
+      }
+    };
+    document.addEventListener('keydown',onKey);
+    return()=>{window.cancelAnimationFrame(frame);document.removeEventListener('keydown',onKey)};
+  },[reportOpen]);
   useEffect(()=>{if(location!=='all'&&location!=='carried'&&!items.some(item=>item.item_id===location&&storage[item.item_id]?.is_container))setLocation('all')},[items,storage,location]);
   const availableCategories=[...new Set(items.map(item=>categories[item.item_id]??'unknown'))].sort((a,b)=>
     (categoryLabels[a]??a).localeCompare(categoryLabels[b]??b));
@@ -174,18 +191,31 @@ export default function InventoryWorkbench({characterName,items,categories,stora
       <button type="button" onClick={clear}><X size={15}/> Reset filters</button>
       <button type="button" onClick={()=>setReportOpen(v=>!v)}><Printer size={15}/> {reportOpen?'Close report':'Report'}</button>
     </div>
-    {exportMessage&&<p className="nx-inventory-feedback" role="status">{exportMessage}</p>}
-    {reportOpen&&<section className="nx-inventory-print-report" aria-label="Inventory report">
-      <div className="nx-inventory-report-header">
-        <strong>Inventory report</strong>
-        <div className="nx-inventory-report-actions">
-          <button type="button" onClick={downloadCsv} disabled={busy||matches.length===0}><Download size={15}/> Export CSV</button>
-          <button type="button" onClick={()=>window.print()}><Printer size={15}/> Print report</button>
+    {reportOpen&&createPortal(<div className="mv-modal-backdrop">
+      <section className="mv-item-modal nx-inventory-report-dialog" role="dialog" aria-modal="true" aria-labelledby="nx-inventory-report-heading">
+        <div className="mv-modal-header">
+          <div className="mv-modal-heading"><Printer size={24} aria-hidden="true"/><div>
+            <span className="mv-modal-eyebrow">Character inventory</span>
+            <h3 id="nx-inventory-report-heading">Inventory report</h3>
+          </div></div>
+          <button type="button" className="mv-modal-close" ref={reportCloseRef} aria-label="Close inventory report" onClick={()=>setReportOpen(false)}><X size={21}/></button>
         </div>
-      </div>
-      <pre>{printableSummary}</pre>
-      <p>Snapshot of currently visible items. Unknown weights are excluded from the known-weight subtotal.</p>
-    </section>}
+        <div className="nx-inventory-report-dialog-body">
+          <div className="nx-inventory-print-report" aria-label="Inventory report">
+            <div className="nx-inventory-report-header">
+              <strong>{characterName}</strong>
+              <div className="nx-inventory-report-actions">
+                <button type="button" onClick={downloadCsv} disabled={busy||matches.length===0}><Download size={15}/> Export CSV</button>
+                <button type="button" onClick={()=>window.print()}><Printer size={15}/> Print report</button>
+              </div>
+            </div>
+            <pre>{printableSummary}</pre>
+            <p>Snapshot of currently visible items. Unknown weights are excluded from the known-weight subtotal.</p>
+            {exportMessage&&<p className="nx-inventory-feedback" role="status">{exportMessage}</p>}
+          </div>
+        </div>
+      </section>
+    </div>,document.body)}
     {matches.length===0?<p className="mv-empty nx-inventory-no-match">No items match these filters.</p>:
       viewMode==='flat'?showList(matches,'All matching items'):
       viewMode==='category'?availableCategories.map(code=>
