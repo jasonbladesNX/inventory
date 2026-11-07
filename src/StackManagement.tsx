@@ -20,6 +20,7 @@ export default function StackManagement({db,character,inventoryVersion,items,sto
  const [error,setError]=useState('');
  const [history,setHistory]=useState<Activity[]>([]);
  const [historyLoading,setHistoryLoading]=useState(false);
+ const [historyError,setHistoryError]=useState('');
  const stackCategories=new Set(['gear','consumable','ammunition','material','component','misc','supplies']);
  const eligibleItems=items.filter(item=>stackCategories.has(categories[item.item_id]??'')&&!storage[item.item_id]?.is_container&&!equippedIds.has(item.item_id));
  const selected=eligibleItems.find(item=>item.item_id===itemId);
@@ -30,9 +31,15 @@ export default function StackManagement({db,character,inventoryVersion,items,sto
  useEffect(()=>{
   let cancelled=false;
   async function load(){
-   setHistoryLoading(true);
-   const result=await db.rpc('list_character_inventory_activity',{p_character:character,p_limit:40});
-   if(!cancelled){if(!result.error)setHistory((result.data||[]) as Activity[]);setHistoryLoading(false)}
+   setHistoryLoading(true);setHistoryError('');
+   try{
+    const result=await db.rpc('list_character_inventory_activity',{p_character:character,p_limit:40});
+    if(!cancelled){
+     if(result.error){setHistory([]);setHistoryError(inventoryErrorMessage(result.error))}
+     else setHistory((result.data||[]) as Activity[]);
+    }
+   }catch(e){if(!cancelled){setHistory([]);setHistoryError(inventoryErrorMessage(e))}}
+   finally{if(!cancelled)setHistoryLoading(false)}
   }
   void load();
   return()=>{cancelled=true};
@@ -101,7 +108,9 @@ export default function StackManagement({db,character,inventoryVersion,items,sto
   </details>
   <details className="nx-stack-history">
    <summary><History size={18}/> Inventory activity {historyLoading?'(loading…)':`(${history.length})`}</summary>
-   {history.length===0?<p>No recorded stack, equipment or container changes yet.</p>:
+   {historyError?<p className="nx-stack-error" role="alert">Unable to load inventory activity: {historyError}</p>:
+    historyLoading?<p>Loading inventory activity…</p>:
+    history.length===0?<p>No recorded stack, equipment or container changes yet.</p>:
     <div className="nx-stack-activity-list">{history.map(row=><div key={row.event_id}>
       <strong>{row.item_name}</strong><span>{row.description}{row.quantity!=null?` · Qty ${row.quantity}`:''}</span>
       <time dateTime={row.occurred_at}>{new Date(row.occurred_at).toLocaleString()}</time>
