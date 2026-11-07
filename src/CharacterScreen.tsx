@@ -127,6 +127,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [hpEditing,setHpEditing]=useState(false);
   const [hpSaving,setHpSaving]=useState(false);
   const [hpError,setHpError]=useState('');
+  const [hpAdjustAmount,setHpAdjustAmount]=useState('1');
+  const [hpAdjustBusy,setHpAdjustBusy]=useState(false);
+  const [hpAdjustFeedback,setHpAdjustFeedback]=useState('');
   const [carryError,setCarryError]=useState('');
   const [attributesSaving,setAttributesSaving]=useState(false);
   const [attributeEditorOpen,setAttributeEditorOpen]=useState(false);
@@ -658,6 +661,21 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     }catch(e){setHpError(inventoryErrorMessage(e))}
     finally{setHpSaving(false)}
   };
+  const adjustHitPoints=async(operation:'damage'|'heal')=>{
+    const amount=Number(hpAdjustAmount);
+    if(!hitPoints?.configured||busy||hpAdjustBusy||!Number.isSafeInteger(amount)||amount<1||amount>100000)return;
+    setHpAdjustBusy(true);setHpError('');setHpAdjustFeedback('');
+    try{
+      const {data,error:rpcError}=await db.rpc('adjust_character_hit_points',{
+        p_character:character,p_operation:operation,p_amount:amount
+      });
+      if(rpcError)throw rpcError;
+      setHitPoints(data as {configured:boolean;current:number;max:number});
+      setHpAdjustFeedback(`${operation==='damage'?'Damage':'Healing'} applied: ${data.applied} HP`);
+      await onInventoryChanged();
+    }catch(e){setHpError(inventoryErrorMessage(e))}
+    finally{setHpAdjustBusy(false)}
+  };
   const hitPointPanel=<section className="mv-panel mv-hp-panel" aria-labelledby="mv-hp-heading">
     <div className="mv-equipped-heading">
       <h3 id="mv-hp-heading"><HeartPulse size={20}/> Hit Points</h3>
@@ -669,7 +687,20 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         <div className="mv-container-meter" role="progressbar" aria-label="Current hit points"
           aria-valuemin={0} aria-valuemax={hitPoints.max??1} aria-valuenow={hitPoints.current??0}>
           <span style={{width:`${Math.max(0,Math.min(100,100*(hitPoints.current??0)/(hitPoints.max??1)))}%`}}/>
-        </div></>:<p>Hit points not configured. Set current and maximum HP before using a healing potion.</p>}
+        </div>
+        <div className="mv-hp-quick-adjust" aria-label="Quick hit point adjustment">
+          <label htmlFor="mv-hp-adjust-amount">Amount
+            <input id="mv-hp-adjust-amount" type="number" min="1" max="100000" step="1" inputMode="numeric"
+              value={hpAdjustAmount} disabled={busy||hpAdjustBusy} onChange={e=>{setHpAdjustAmount(e.target.value);setHpAdjustFeedback('')}}/>
+          </label>
+          <button type="button" className="mv-hp-damage-button" disabled={busy||loading||hpAdjustBusy||!Number.isSafeInteger(Number(hpAdjustAmount))||Number(hpAdjustAmount)<1||Number(hpAdjustAmount)>100000||hitPoints.current===0}
+            onClick={()=>void adjustHitPoints('damage')}>Take damage</button>
+          <button type="button" className="mv-hp-heal-button" disabled={busy||loading||hpAdjustBusy||!Number.isSafeInteger(Number(hpAdjustAmount))||Number(hpAdjustAmount)<1||Number(hpAdjustAmount)>100000||hitPoints.current===hitPoints.max}
+            onClick={()=>void adjustHitPoints('heal')}>Heal HP</button>
+        </div>
+        {hpAdjustFeedback&&<p className="mv-hp-feedback" role="status">{hpAdjustFeedback}</p>}
+        {hpError&&<p className="mv-storage-error" role="alert">{hpError}</p>}
+        </>:<p>Hit points not configured. Set current and maximum HP before using a healing potion.</p>}
     </div>}
     {hpEditing&&<form className="mv-hp-form" onSubmit={event=>{void saveHitPoints(event)}}>
       <label>Current HP <input type="number" min="0" max="100000" step="1" required
