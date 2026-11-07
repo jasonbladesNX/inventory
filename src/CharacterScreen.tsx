@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import type {SupabaseClient} from '@supabase/supabase-js';
-import {Backpack, CircleDot, Coins, Crown, FlaskConical, Footprints, Gem, PackageOpen, ScrollText, Shield, ShieldCheck, Shirt, ShoppingBag, Sparkles, Sword, UserRound, WandSparkles, Wrench, X} from 'lucide-react';
+import {Backpack, CircleDot, Coins, Crown, FlaskConical, Footprints, Gem, Hand, HeartPulse, PackageOpen, ScrollText, Shield, ShieldCheck, Shirt, ShoppingBag, Sparkles, Sword, UserRound, WandSparkles, Wrench, X} from 'lucide-react';
 import {inventoryErrorMessage} from './inventoryErrors';
 import LoadoutHealthPanel from './LoadoutHealthPanel';
 import './character-screen.css';
@@ -51,6 +51,35 @@ const categoryIcons:Record<string,typeof Sword> = {
   gear:Backpack, container:Backpack, unknown:PackageOpen,
 };
 
+// Slot identity drives the equipment-row icon. Item categories use the
+// corresponding icon so a ring, weapon or armor looks consistent in Inventory.
+const slotIcons:Record<string,typeof Sword>={
+  main_hand:Sword,off_hand:Hand,armor:ShieldCheck,body:Shirt,head:Crown,
+  neck:Gem,ring:CircleDot,feet:Footprints,back:Backpack,backpack:Backpack,
+  hands:Hand,waist:CircleDot,shield:Shield,focus:WandSparkles,tool:Wrench,
+  weapon:Sword,clothing:Shirt,jewelry:Gem,headgear:Crown,footwear:Footprints,
+  wondrous:Sparkles,container:Backpack,gear:PackageOpen
+};
+function normalizeSlot(value:string):string{
+  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+}
+function equipmentSlotIcon(label:string){
+  const raw=normalizeSlot(label);
+  if(raw.includes('backpack')||raw.startsWith('back'))return Backpack;
+  if(raw.includes('main_hand'))return Sword;
+  if(raw.includes('off_hand'))return Hand;
+  if(raw.includes('armor'))return ShieldCheck;
+  if(raw.includes('ring'))return CircleDot;
+  if(raw.includes('head'))return Crown;
+  if(raw.includes('neck'))return Gem;
+  if(raw.includes('foot'))return Footprints;
+  return slotIcons[raw]??PackageOpen;
+}
+const categoryFilterLabels:Record<string,string>={
+ weapon:'Weapons',shield:'Shields',armor:'Armor',clothing:'Clothing',headgear:'Headgear',
+ jewelry:'Jewelry',ring:'Rings',footwear:'Footwear',focus:'Focus items',tool:'Tools',
+ wondrous:'Wondrous items',gear:'General gear',container:'Containers',unknown:'Other'
+};
 const navigation: {id:InventoryTab; label:string; Icon:typeof UserRound}[] = [
   {id:'character',label:'Character',Icon:UserRound},
   {id:'inventory',label:'Inventory',Icon:Backpack},
@@ -72,6 +101,10 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [itemCategories,setItemCategories]=useState<Record<string,string>>({});
   const [storage,setStorage]=useState<Record<string,StorageEntry>>({});
   const [inventoryLocation,setInventoryLocation]=useState<string>('all');
+  const [inventorySlotFilter,setInventorySlotFilter]=useState('all');
+  const [loadoutOpen,setLoadoutOpen]=useState(false);
+  const loadoutTriggerRef=useRef<HTMLButtonElement>(null);
+  const loadoutCloseRef=useRef<HTMLButtonElement>(null);
   const [containerUsage,setContainerUsage]=useState<Record<string,ContainerUsage>>({});
   const [weightSummary,setWeightSummary]=useState<WeightSummary|null>(null);
   const [carryProfile,setCarryProfile]=useState<CarryProfile|null>(null);
@@ -275,6 +308,26 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
 
   useEffect(()=>{setStorageActionError('')},[expandedItem,inventoryVersion]);
   useEffect(()=>{setInventoryLocation('all')},[character,campaign]);
+  useEffect(()=>{setInventorySlotFilter('all');setLoadoutOpen(false)},[character,campaign]);
+  useEffect(()=>{
+    if(!loadoutOpen)return;
+    const frame=window.requestAnimationFrame(()=>loadoutCloseRef.current?.focus());
+    const onKey=(event:KeyboardEvent)=>{
+      if(event.key==='Escape'){
+        event.preventDefault();setLoadoutOpen(false);loadoutTriggerRef.current?.focus();
+      }
+      if(event.key==='Tab'){
+        const modal=loadoutCloseRef.current?.closest('[role="dialog"]');
+        const controls=modal?.querySelectorAll<HTMLElement>('button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled)');
+        if(!controls?.length)return;
+        const first=controls[0],last=controls[controls.length-1];
+        if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}
+        else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}
+      }
+    };
+    document.addEventListener('keydown',onKey);
+    return()=>{window.cancelAnimationFrame(frame);document.removeEventListener('keydown',onKey)};
+  },[loadoutOpen]);
   useEffect(()=>{setAttributeEditorOpen(false)},[character,campaign]);
   useEffect(()=>{
     if(!attributeEditorOpen)return;
@@ -324,7 +377,8 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     setExpandedItem(itemId);
   };
   const renderItemIcon=(itemId:string,size:number)=>{
-    const Icon=categoryIcons[itemCategories[itemId]??'unknown']??PackageOpen;
+    const category=itemCategories[itemId]??'unknown';
+    const Icon=slotIcons[category]??categoryIcons[category]??PackageOpen;
     return <Icon size={size} aria-hidden="true"/>;
   };
   const storageContainers=items.filter(item=>storage[item.item_id]?.is_container && !storage[item.item_id]?.container_item_id);
@@ -332,26 +386,49 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const selectedUsage=expandedItem?containerUsage[expandedItem]:undefined;
   const containedItems=expandedItem?items.filter(item=>storage[item.item_id]?.container_item_id===expandedItem):[];
   const equippedByItem=new Map(equipped.map(row=>[row.itemId,row]));
+  const categoryMatches=(item:InventoryItem)=>inventorySlotFilter==='all'||(itemCategories[item.item_id]??'unknown')===inventorySlotFilter;
+  const categoryOptions=[...new Set(items.map(item=>itemCategories[item.item_id]??'unknown'))]
+    .sort((a,b)=>(categoryFilterLabels[a]??titleCase(a)).localeCompare(categoryFilterLabels[b]??titleCase(b)));
   const carriedItems=items.filter(item=>!storage[item.item_id]?.container_item_id);
   const storedItems=items.filter(item=>Boolean(storage[item.item_id]?.container_item_id));
+  const visibleCarried=carriedItems.filter(categoryMatches);
+  const visibleStored=storedItems.filter(categoryMatches);
   const containerGroups=storageContainers.map(container=>({
-    container, contents:storedItems.filter(item=>storage[item.item_id]?.container_item_id===container.item_id)
+    container, contents:visibleStored.filter(item=>storage[item.item_id]?.container_item_id===container.item_id)
   }));
   const locationExists=inventoryLocation==='all'||inventoryLocation==='carried'||storageContainers.some(item=>item.item_id===inventoryLocation);
   const currentLocation=locationExists?inventoryLocation:'all';
-  const renderInventoryCard=(item:InventoryItem)=>(
-    <article className={'mv-inventory-item'+(equippedByItem.has(item.item_id)?' is-equipped':'')} key={item.item_id}>
+  const renderInventoryCard=(item:InventoryItem)=>{
+    const equippedRow=equippedByItem.get(item.item_id);
+    const storedIn=storage[item.item_id]?.container_item_id;
+    const isContainer=Boolean(storage[item.item_id]?.is_container);
+    const allowed=validSlots[item.item_id]??[];
+    const quickAction=(event:React.MouseEvent<HTMLButtonElement>)=>{
+      if(equippedRow){void requestUnequip(equippedRow);return;}
+      if(!storedIn&&item.eligible&&allowed.length===1){
+        onEquip(item.item_id,allowed[0]);return;
+      }
+      // Multiple slots or blocked prerequisites require the full authoritative
+      // slot/requirement explanation. Stored items must be taken out first.
+      openDetails(item.item_id,event);
+    };
+    return <article className={'mv-inventory-item'+(equippedRow?' is-equipped':'')} key={item.item_id}>
       <button type="button" className="mv-item-icon mv-item-icon-button" aria-label={`View details for ${item.display_name}`} aria-haspopup="dialog" onClick={event=>openDetails(item.item_id,event)}>{renderItemIcon(item.item_id,25)}</button>
       <div className="mv-item-info">
         <strong>{item.display_name}</strong>
-        {equippedByItem.has(item.item_id)&&<span className="mv-equipped-indicator"><Shield size={13} aria-hidden="true"/> Equipped · {equippedByItem.get(item.item_id)?.slot}</span>}
+        {equippedRow&&<span className="mv-equipped-indicator"><Shield size={13} aria-hidden="true"/> Equipped · {equippedRow.slot}</span>}
         <span>Quantity: {numberText(item.quantity)}</span>
         {containerUsage[item.item_id]&&<span className="mv-container-card-summary"><Backpack size={13} aria-hidden="true"/> {containerUsage[item.item_id].item_count} {Number(containerUsage[item.item_id].item_count)===1?'item':'items'} · {numberText(containerUsage[item.item_id].used_weight_lb,2)} / {containerUsage[item.item_id].capacity_weight_lb===null?'?':numberText(containerUsage[item.item_id].capacity_weight_lb,2)} lb</span>}
-        {storage[item.item_id]?.container_item_id&&<span className="mv-storage-status"><Backpack size={13} aria-hidden="true"/> Inside {storage[item.item_id].location_name}</span>}
+        {storedIn&&<span className="mv-storage-status mv-stored-tag"><Backpack size={13} aria-hidden="true"/> Stored in {storage[item.item_id].location_name}</span>}
       </div>
-      {storage[item.item_id]?.is_container&&<button type="button" className="mv-browse-container" onClick={()=>setInventoryLocation(item.item_id)} aria-label={`Browse contents of ${item.display_name}`}>View contents</button>}
-    </article>
-  );
+      {isContainer?
+        <button type="button" className="mv-browse-container" onClick={()=>setInventoryLocation(item.item_id)} aria-label={`View contents of ${item.display_name}`}>View contents</button>:
+        <button type="button" className="mv-inventory-quick-action"
+          disabled={busy||loading||unequipCheckPending}
+          aria-haspopup={!equippedRow&&(storedIn||allowed.length!==1)?'dialog':undefined}
+          onClick={quickAction}>{equippedRow?'Unequip':'Equip'}</button>}
+    </article>;
+  };
   const canShowCarryCapacity=carryProfile?.ruleset_code==='dnd5e'&&carryProfile.capacity_mode==='weight';
   const carryLimit=carryProfile?.capacity_lb==null?null:Number(carryProfile.capacity_lb);
   const knownTotal=weightSummary?Number(weightSummary.known_weight_lb):0;
