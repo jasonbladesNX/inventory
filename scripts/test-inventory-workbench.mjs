@@ -18,9 +18,9 @@ const checks=[
   [/set_my_character_item_favorite/,parent,'6.24 saved favorites'],
   [/status==='favorites'/,ui,'6.25 favorites-only filter'],
   [/list_character_inventory_indicators/,parent,'6.26 authorized condition and weight'],
-  [/nx-container-utilization/,ui,'6.27 container fullness indicators'],
+  [/nx-card-container-usage/,parent,'6.27 inline container fullness indicators'],
   [/nx-inventory-inline-meta/,parent,'compact horizontal item status and quantity'],
-  [/nx-inventory-metrics/,ui,'6.29 summary totals'],
+  [/nx-inventory-top-controls/,ui,'compact search and grouping'],
   [/downloadCsv/,ui,'6.30 filtered CSV export'],
   [/csvCell/,ui,'spreadsheet formula injection avoidance'],
   [/renderItem\(item,setLocation\)/,ui,'container browse navigation'],
@@ -38,6 +38,7 @@ assert.match(css,/nx-inventory-filters/);
 assert.doesNotMatch(ui,/toggleCompare|compareItems|nx-compare-label|Item comparison/);
 assert.doesNotMatch(css,/nx-inventory-compare|nx-compare-label/);
 assert.match(parent,/<InventoryWorkbench/);
+assert.doesNotMatch(ui,/nx-inventory-metrics|nx-container-utilization/);
 assert.doesNotMatch(ui,/\.from\('item_instances'\)\.update/);
 assert.doesNotMatch(ui,/\.rpc\('equip_inventory_item'/);
 const out=fileURLToPath(new URL('./.inventory-workbench-smoke.cjs',import.meta.url));
