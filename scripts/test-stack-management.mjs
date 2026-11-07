@@ -22,7 +22,7 @@ for(const [rule,name] of [
  [/revoke all on function public.manage_character_item_stack/,'deny anonymous writes']
 ])assert.match(sql,rule,name);
 for(const [rule,name] of [
- [/Split stack/,'split choice'],[/Consolidate stacks/,'consolidation choice'],
+ [/Split stack/,'split choice'],[/categories\[item.item_id\]/,'stack UI uses category eligibility'],
  [/Move quantity to \/ from container/,'quantity movement choice'],
  [/Permanently discard/,'explicit discard confirmation'],
  [/manage_character_item_stack/,'authorized RPC'],[/list_character_inventory_activity/,'scoped history'],
@@ -35,6 +35,8 @@ assert.match(parent,/Quantity to discard/);
 assert.match(parent,/Confirm trash/);
 assert.match(parent,/confirmItemTrash/);
 assert.match(parent,/p_action:'discard'/);
+assert.match(parent,/Split stack…/);
+assert.match(parent,/p_action:'split'/);
 assert.match(parent,/!Number.isSafeInteger\(Number\(trashQuantity\)\)/);
 
 assert.match(main,/onInventoryChanged=/);
@@ -46,9 +48,10 @@ try{
  const Component=createRequire(import.meta.url)(target).default;
  const markup=renderToStaticMarkup(React.createElement(Component,{db:{rpc:async()=>({data:[],error:null})},
   character:'char',inventoryVersion:0,items:[{item_id:'a',display_name:'Arrow',quantity:20,eligible:true}],
-  storage:{},equippedIds:new Set(),busy:false,onChanged:async()=>{}}));
- assert.match(markup,/Item stack management/);
+  storage:{},categories:{a:'gear'},equippedIds:new Set(),busy:false,onChanged:async()=>{}}));
+ assert.match(markup,/Item quantities & storage/);
  assert.match(markup,/Inventory activity/);
  assert.doesNotMatch(markup,/Permanently discard/);
+ assert.doesNotMatch(markup,/Consolidate stacks/);
 }finally{await unlink(target).catch(()=>{})}
 console.log('PASS inventory quantity milestones 6.36–6.40 and read-only activity contracts');
