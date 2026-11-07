@@ -689,12 +689,12 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           <span style={{width:`${Math.max(0,Math.min(100,100*(hitPoints.current??0)/(hitPoints.max??1)))}%`}}/>
         </div>
         <div className="mv-hp-quick-adjust" aria-label="Quick hit point adjustment">
+          <button type="button" className="mv-hp-damage-button" disabled={busy||loading||hpAdjustBusy||!Number.isSafeInteger(Number(hpAdjustAmount))||Number(hpAdjustAmount)<1||Number(hpAdjustAmount)>100000||hitPoints.current===0}
+            onClick={()=>void adjustHitPoints('damage')}>Take damage</button>
           <label htmlFor="mv-hp-adjust-amount">Amount
             <input id="mv-hp-adjust-amount" type="number" min="1" max="100000" step="1" inputMode="numeric"
               value={hpAdjustAmount} disabled={busy||hpAdjustBusy} onChange={e=>{setHpAdjustAmount(e.target.value);setHpAdjustFeedback('')}}/>
           </label>
-          <button type="button" className="mv-hp-damage-button" disabled={busy||loading||hpAdjustBusy||!Number.isSafeInteger(Number(hpAdjustAmount))||Number(hpAdjustAmount)<1||Number(hpAdjustAmount)>100000||hitPoints.current===0}
-            onClick={()=>void adjustHitPoints('damage')}>Take damage</button>
           <button type="button" className="mv-hp-heal-button" disabled={busy||loading||hpAdjustBusy||!Number.isSafeInteger(Number(hpAdjustAmount))||Number(hpAdjustAmount)<1||Number(hpAdjustAmount)>100000||hitPoints.current===hitPoints.max}
             onClick={()=>void adjustHitPoints('heal')}>Heal HP</button>
         </div>
