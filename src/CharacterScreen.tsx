@@ -760,7 +760,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           </div>}
           <div className="mv-modal-actions" aria-label="Item actions">
             <h4>Actions</h4>
-            {equippedByItem.has(selectedItem.item_id)?<button type="button" className="mv-modal-action-button" disabled={busy||loading} onClick={()=>onUnequip(equippedByItem.get(selectedItem.item_id)!.id)}>Unequip</button>:
+            {equippedByItem.has(selectedItem.item_id)?<button type="button" className="mv-modal-action-button" disabled={busy||loading} onClick={()=>{const row=equippedByItem.get(selectedItem.item_id);if(row){closeDetails();void requestUnequip(row)}}}>Unequip</button>:
               selectedItem.eligible&&!loading&&(validSlots[selectedItem.item_id]||[]).length>0?
                 <div className="mv-modal-action-field">
                   <label htmlFor="mv-detail-equip">Equip to slot</label>
