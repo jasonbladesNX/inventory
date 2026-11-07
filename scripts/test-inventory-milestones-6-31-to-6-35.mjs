@@ -10,8 +10,6 @@ import {fileURLToPath} from 'node:url';
 const ui=readFileSync('src/InventoryWorkbench.tsx','utf8');
 const css=readFileSync('src/inventory-workbench.css','utf8');
 const contracts=[
-  [/nx-inventory-quickviews/, '6.31 quick views'],
-  [/quickView\('favorites'\)/, 'quick favorites'],
   [/nx-workbench-grouping/, '6.32 group by location/type/flat'],
   [/viewMode==='category'/, 'category grouping'],
   [/knownFilteredWeight/, '6.33 filtered weight'],
@@ -19,14 +17,13 @@ const contracts=[
   [/nx-inventory-print-report/, '6.34 printable report'],
   [/window\.print\(\)/, 'explicit user print'],
   [/printableSummary/, 'report generated from filtered authorized items'],
-  [/setSavedView/, '6.35 session saved view'],
-  [/restoreView/, 'restore saved view'],
-  [/Saved for this session|View saved for this session/, 'session lifetime disclosed'],
   [/renderItem\(item,setLocation\)/, 'existing view contents navigation'],
-  [/downloadCsv/, 'existing CSV export'],
+  [/downloadCsv/, 'CSV remains available inside report'],
+  [/nx-inventory-top-controls/, 'search and grouping share a row'],
 ];
 for(const [regex,label] of contracts) assert.match(ui,regex,String(label));
 assert.match(css,/@media print/);
+assert.doesNotMatch(ui,/savedView|quickView|nx-inventory-quickviews|nx-inventory-metrics|nx-container-utilization/);
 assert.doesNotMatch(ui,/toggleCompare|compareItems|nx-compare-label/,'comparison must remain removed');
 assert.doesNotMatch(ui,/\.rpc\('equip_inventory_item'/,'must reuse existing equip handler');
 const out=fileURLToPath(new URL('./.workbench-m635-smoke.cjs',import.meta.url));
@@ -43,7 +40,7 @@ try{
     equippedIds:new Set(),favoriteIds:new Set(),busy:false,
     renderItem:entry=>React.createElement('span',null,entry.display_name)
   }));
-  for(const label of ['Pouch','Group results','Unknown weight','Save view','Restore view','Report','At least 2.00 lb']){
+  for(const label of ['Pouch','Group results','Unknown weight','Report','At least 2.00 lb']){
     assert.ok(markup.includes(label),'missing visible workbench element: '+label);
   }
 }finally{await unlink(out).catch(()=>{})}
