@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "ui-compact-inventory-toolbar-and-container-cards",
+  "release": "m6.40-item-stack-and-activity-bundle",
   "date": "2026-11-06",
-  "note": "Removed quick buttons, saved view controls and summary metrics; CSV and print within report modal; compact search/group and filters; per-container capacity meters on item cards"
+  "note": "Milestones 6.36–6.40: transactional item splitting, consolidation, partial storage moves, guarded discard and character inventory activity; combined browser acceptance pending"
 }
