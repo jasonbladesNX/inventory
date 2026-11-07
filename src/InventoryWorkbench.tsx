@@ -1,5 +1,5 @@
 import React,{useEffect,useMemo,useState} from 'react';
-import {ArrowDownAZ,ArrowDownWideNarrow,Backpack,Check,ClipboardList,Download,Heart,PackageOpen,Search,Scale,ShieldAlert,Star, X} from 'lucide-react';
+import {Download,Search,Scale,ShieldAlert,X} from 'lucide-react';
 import './inventory-workbench.css';
 
 export type WorkbenchItem={item_id:string;display_name:string;quantity:number|string;eligible:boolean};
@@ -12,7 +12,6 @@ type Props={
   usage:Record<string,WorkbenchUsage>;indicators:Record<string,WorkbenchIndicator>;
   equippedIds:Set<string>;favoriteIds:Set<string>;busy:boolean;
   renderItem:(item:WorkbenchItem,onBrowseContainer:(id:string)=>void)=>React.ReactNode;
-  onOpenDetails:(itemId:string,event:React.MouseEvent<HTMLButtonElement>)=>void;
 };
 const categoryLabels:Record<string,string>={
  weapon:'Weapons',shield:'Shields',armor:'Armor',clothing:'Clothing',headgear:'Headgear',
@@ -29,15 +28,13 @@ function csvCell(value:unknown):string{
   if(/^[\s]*[=+@-]/.test(v))v="'"+v;
   return '"'+v.replace(/"/g,'""')+'"';
 }
-export default function InventoryWorkbench({characterName,items,categories,storage,usage,indicators,equippedIds,favoriteIds,busy,renderItem,onOpenDetails}:Props){
+export default function InventoryWorkbench({characterName,items,categories,storage,usage,indicators,equippedIds,favoriteIds,busy,renderItem}:Props){
   const [search,setSearch]=useState('');
   const [category,setCategory]=useState('all');
   const [location,setLocation]=useState('all');
   const [status,setStatus]=useState('all');
   const [sort,setSort]=useState('name_asc');
-  const [compare,setCompare]=useState<string[]>([]);
   const [exportMessage,setExportMessage]=useState('');
-  useEffect(()=>{setCompare(old=>old.filter(id=>items.some(item=>item.item_id===id)))},[items]);
   useEffect(()=>{if(location!=='all'&&location!=='carried'&&!items.some(item=>item.item_id===location&&storage[item.item_id]?.is_container))setLocation('all')},[items,storage,location]);
   const availableCategories=[...new Set(items.map(item=>categories[item.item_id]??'unknown'))].sort((a,b)=>
     (categoryLabels[a]??a).localeCompare(categoryLabels[b]??b));
@@ -71,11 +68,7 @@ export default function InventoryWorkbench({characterName,items,categories,stora
   const storedCount=items.filter(item=>Boolean(storage[item.item_id]?.container_item_id)).length;
   const missingWeights=items.filter(item=>indicators[item.item_id]?.unit_weight_lb==null).length;
   const totalQuantity=items.reduce((sum,item)=>sum+num(item.quantity),0);
-  const compareItems=compare.map(id=>items.find(item=>item.item_id===id)).filter((item):item is WorkbenchItem=>Boolean(item));
   const availableContainers=containers.map(item=>({item,info:usage[item.item_id]}));
-  function toggleCompare(itemId:string,checked:boolean){
-    setCompare(old=>checked?old.includes(itemId)?old:[...old.slice(-1),itemId]:old.filter(id=>id!==itemId));
-  }
   function downloadCsv(){
     const columns=['Item','Category','Quantity','Status','Stored in','Condition','Identified','Unit weight (lb)','Favorite'];
     const rows=matches.map(item=>{
@@ -101,9 +94,6 @@ export default function InventoryWorkbench({characterName,items,categories,stora
       <div className="mv-inventory-group-heading"><h4>{label}</h4><span>{list.length} items</span></div>
       <div className="mv-inventory-items">{list.map(item=><div className="nx-workbench-row" key={item.item_id}>
         {renderItem(item,setLocation)}
-        <label className="nx-compare-label"><input type="checkbox" aria-label={'Compare '+item.display_name}
-          checked={compare.includes(item.item_id)} onChange={e=>toggleCompare(item.item_id,e.target.checked)}/>
-          Compare</label>
       </div>)}</div>
     </section>;
   };
@@ -179,23 +169,5 @@ export default function InventoryWorkbench({characterName,items,categories,stora
         {showList(matches.filter(item=>!storage[item.item_id]?.container_item_id),'Carried & Equipped')}
         {containers.map(container=>showList(matches.filter(item=>storage[item.item_id]?.container_item_id===container.item_id),'Inside '+container.display_name))}
       </>:showList(matches,location==='carried'?'Carried & Equipped':'Container contents')}
-    {compareItems.length>0&&<section className="nx-inventory-compare" aria-labelledby="nx-inventory-compare-title">
-      <div className="nx-inventory-compare-head"><h4 id="nx-inventory-compare-title"><ClipboardList size={17}/> Item comparison ({compareItems.length}/2)</h4>
-        <button type="button" onClick={()=>setCompare([])}>Clear selection</button></div>
-      <div className="nx-inventory-compare-grid">{compareItems.map(item=>{
-        const id=item.item_id,indicator=indicators[id],containerId=storage[id]?.container_item_id;
-        return <div key={id}>
-          <strong>{item.display_name}</strong>
-          <dl><dt>Type</dt><dd>{categoryLabels[categories[id]??'unknown']??categories[id]??'Other'}</dd>
-            <dt>Quantity</dt><dd>{item.quantity}</dd>
-            <dt>Condition</dt><dd>{indicator?.condition_code??'Unknown'}</dd>
-            <dt>Unit weight</dt><dd>{indicator?.unit_weight_lb==null?'Unknown':num(indicator.unit_weight_lb)+' lb'}</dd>
-            <dt>Location</dt><dd>{equippedIds.has(id)?'Equipped':containerId?'Stored in '+storage[id].location_name:'Carried'}</dd>
-          </dl>
-          <button type="button" onClick={e=>onOpenDetails(id,e)}>Item details</button>
-        </div>;
-      })}</div>
-      {compareItems.length===1&&<p>Select one more item to compare side by side.</p>}
-    </section>}
   </div>;
 }
