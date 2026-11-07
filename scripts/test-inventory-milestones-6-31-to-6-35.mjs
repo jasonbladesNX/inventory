@@ -41,7 +41,7 @@ try{
     equippedIds:new Set(),favoriteIds:new Set(),busy:false,
     renderItem:entry=>React.createElement('span',null,entry.display_name)
   }));
-  for(const label of ['Pouch','Group results','Unknown weight','Report','At least 2.00 lb']){
+  for(const label of ['Pouch','Group results','Missing weight','Report','At least 2.00 lb']){
     assert.ok(markup.includes(label),'missing visible workbench element: '+label);
   }
 }finally{await unlink(out).catch(()=>{})}
