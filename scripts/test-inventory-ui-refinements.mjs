@@ -32,4 +32,18 @@ assert.match(workbench,/setLocation/);
 assert.match(workbench,/status==='favorites'/);
 assert.match(css,/\.mv-inventory-quick-action/);
 assert.doesNotMatch(ui,/window\.prompt\(/);
+// Attribute presentation is uniform even when equipment changes an effective score.
+assert.match(ui,/className="mv-attribute-summary-item"/,'uniform attribute-card class');
+assert.doesNotMatch(ui,/has-equipment-bonus/,'no conditional attribute-card highlight');
+assert.doesNotMatch(css,/\.mv-attribute-summary-item\.has-equipment-bonus/,'no highlight override');
+assert.match(ui,/Gear net/,'equipment bonus information preserved');
+// Weight details are hidden until expanded, for D&D and non-D&D rulesets.
+const weightPanel=ui.slice(ui.indexOf('const inventoryWeightPanel='),ui.indexOf('const walletOrder='));
+const detailsStart=weightPanel.indexOf('<details className="mv-carry-capacity-help">');
+const breakdownStart=weightPanel.indexOf('<div className="mv-weight-breakdown">');
+const detailsEnd=weightPanel.indexOf('</details>',detailsStart);
+assert.ok(detailsStart>=0 && breakdownStart>detailsStart && breakdownStart<detailsEnd,'weight cards must be inside capacity details');
+assert.equal((weightPanel.match(/className="mv-weight-breakdown"/g)||[]).length,1,'weight breakdown is only rendered once');
+for(const label of ['Total','Loose &amp; equipped','Inside containers'])assert.ok(weightPanel.includes(label),'weight label retained: '+label);
+assert.match(weightPanel,/Known weight against carrying capacity/,'capacity progress bar retained');
 console.log('PASS 7 requested UI changes, secure equip and unequip handoff, loadout modal and storage filtering');
