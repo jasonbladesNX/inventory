@@ -142,6 +142,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [invalidEquipmentError,setInvalidEquipmentError]=useState('');
   const unequipCancelRef=useRef<HTMLButtonElement>(null);
   const [storageActionError,setStorageActionError]=useState('');
+  const [pendingStorageMove,setPendingStorageMove]=useState<{itemId:string;destination:string|null}|null>(null);
+  const [storageMoveQuantity,setStorageMoveQuantity]=useState('1');
+  const [storageMoveBusy,setStorageMoveBusy]=useState(false);
   const [splitItemId,setSplitItemId]=useState<string|null>(null);
   const [splitQuantity,setSplitQuantity]=useState('1');
   const [splitBusy,setSplitBusy]=useState(false);
@@ -391,15 +394,46 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     }
     try{await onMoveStorage(itemId,destination)}catch(e){setStorageActionError(inventoryErrorMessage(e))}
   };
+  const chooseStorageMove=(itemId:string,destination:string|null)=>{
+    setStorageActionError('');setTrashItemId(null);setSplitItemId(null);
+    const item=items.find(row=>row.item_id===itemId);
+    if(!item)return;
+    if(Number(item.quantity)>1){
+      setPendingStorageMove({itemId,destination});setStorageMoveQuantity(String(item.quantity));
+    }else{setPendingStorageMove(null);void moveStorage(itemId,destination);}
+  };
+  const confirmStorageMove=async()=>{
+    if(!pendingStorageMove||storageMoveBusy||busy)return;
+    const item=items.find(row=>row.item_id===pendingStorageMove.itemId);
+    const quantity=Number(storageMoveQuantity);
+    if(!item||!Number.isSafeInteger(quantity)||quantity<1||quantity>Number(item.quantity))return;
+    setStorageMoveBusy(true);setStorageActionError('');
+    try{
+      if(quantity===Number(item.quantity)){
+        await onMoveStorage(item.item_id,pendingStorageMove.destination);
+      }else{
+        const {error:rpcError}=await db.rpc('manage_character_item_stack',{
+          p_character:character,p_item:item.item_id,p_action:'move_quantity',p_quantity:quantity,
+          p_target_item:null,p_container_item:pendingStorageMove.destination
+        });
+        if(rpcError)throw rpcError;
+        await onInventoryChanged();
+      }
+      setPendingStorageMove(null);closeDetails();
+    }catch(e){setStorageActionError(inventoryErrorMessage(e))}
+    finally{setStorageMoveBusy(false)}
+  };
   const closeDetails=()=>{
     setSplitItemId(null);setSplitError('');setSplitQuantity('1');
     setTrashItemId(null);setTrashError('');setTrashQuantity('1');
+    setPendingStorageMove(null);setStorageActionError('');setStorageMoveQuantity('1');
     setExpandedItem(null);
     previousFocusRef.current?.focus();
   };
   const openDetails=(itemId:string,event:React.MouseEvent<HTMLButtonElement>)=>{
     setSplitItemId(null);setSplitError('');setSplitQuantity('1');
     setTrashItemId(null);setTrashError('');setTrashQuantity('1');
+    setPendingStorageMove(null);setStorageActionError('');setStorageMoveQuantity('1');
     previousFocusRef.current=event.currentTarget;
     setExpandedItem(itemId);
   };
@@ -859,7 +893,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
               </div>}
             {!loading&&!equippedByItem.has(selectedItem.item_id)&&storage[selectedItem.item_id]&&!storage[selectedItem.item_id].is_container&&<>
               {storage[selectedItem.item_id].container_item_id&&
-                <button type="button" className="mv-modal-action-button" disabled={busy} onClick={()=>{void moveStorage(selectedItem.item_id,null)}}>Take out</button>}
+                <button type="button" className="mv-modal-action-button" disabled={busy} onClick={()=>chooseStorageMove(selectedItem.item_id,null)}>Take out</button>}
               <div className="mv-modal-action-field">
                 <label htmlFor="mv-detail-storage">{storage[selectedItem.item_id]?.container_item_id?'Move to…':'Put in…'}</label>
                 <select id="mv-detail-storage" aria-label={`Move or discard ${selectedItem.display_name}`} value=""
@@ -867,13 +901,25 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
                   onChange={event=>{
                     const target=event.target.value;
                     if(target==='__trash__'){
-                      setTrashItemId(selectedItem.item_id);setTrashQuantity(String(selectedItem.quantity));setTrashError('');
-                    }else if(target)void moveStorage(selectedItem.item_id,target);
+                      setPendingStorageMove(null);setTrashItemId(selectedItem.item_id);setTrashQuantity(String(selectedItem.quantity));setTrashError('');
+                    }else if(target)chooseStorageMove(selectedItem.item_id,target);
                   }}>
                   <option value="">Choose destination…</option>
                   {storageContainers.filter(container=>container.item_id!==selectedItem.item_id&&container.item_id!==storage[selectedItem.item_id]?.container_item_id).map(container=><option key={container.item_id} value={container.item_id}>{container.display_name}</option>)}
                   <option value="__trash__">Trash / Discard…</option>
                 </select>
+                {pendingStorageMove?.itemId===selectedItem.item_id&&<div className="mv-trash-confirm" role="group" aria-label="Choose quantity to move">
+                  <strong>Move {selectedItem.display_name} {pendingStorageMove.destination?'into '+(storageContainers.find(c=>c.item_id===pendingStorageMove.destination)?.display_name??'container'):'to carried inventory'}</strong>
+                  <label htmlFor="mv-storage-move-quantity">Quantity to move (of {numberText(selectedItem.quantity)})</label>
+                  <input id="mv-storage-move-quantity" type="number" min="1" max={Number(selectedItem.quantity)} step="1"
+                    value={storageMoveQuantity} disabled={storageMoveBusy} onChange={e=>setStorageMoveQuantity(e.target.value)}/>
+                  {storageActionError&&<p className="mv-storage-error" role="alert">{storageActionError}</p>}
+                  <div className="mv-trash-confirm-actions">
+                    <button type="button" disabled={storageMoveBusy} onClick={()=>{setPendingStorageMove(null);setStorageActionError('')}}>Cancel</button>
+                    <button type="button" disabled={busy||storageMoveBusy||!Number.isSafeInteger(Number(storageMoveQuantity))||Number(storageMoveQuantity)<1||Number(storageMoveQuantity)>Number(selectedItem.quantity)}
+                      onClick={()=>void confirmStorageMove()}>{storageMoveBusy?'Moving…':`Move ${storageMoveQuantity}`}</button>
+                  </div>
+                </div>}
                 {trashItemId===selectedItem.item_id&&<div className="mv-trash-confirm" role="group" aria-label="Confirm item disposal">
                   <div className="mv-trash-confirm-heading"><Trash2 size={17} aria-hidden="true"/><strong>Discard {selectedItem.display_name}?</strong></div>
                   <p>This permanently removes the selected quantity. It cannot be undone.</p>
