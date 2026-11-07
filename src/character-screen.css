@@ -502,3 +502,10 @@
   .nx-workbench-row .nx-favorite-button{margin-left:56px}
   .nx-inventory-inline-meta{gap:5px 8px}
 }
+
+/* Container utilization lives directly in its own inventory item card. */
+.nx-card-container-usage{display:grid;gap:6px;min-width:0;margin-top:3px}
+.nx-card-container-usage .mv-container-card-summary{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#a7dde9}
+.nx-card-container-meter{height:6px;max-width:270px;background:#051b29;border:1px solid #306a80;border-radius:99px;overflow:hidden}
+.nx-card-container-meter>span{display:block;height:100%;background:#50c6dc;border-radius:99px}
+.nx-card-container-warning{font-size:10px!important;color:#ffd19b!important}
