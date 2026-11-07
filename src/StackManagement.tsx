@@ -7,13 +7,12 @@ import './stack-management.css';
 type Item={item_id:string;display_name:string;quantity:number|string;eligible:boolean};
 type Storage={item_id:string;container_item_id:string|null;is_container:boolean;location_name:string};
 type Activity={event_id:string;action:string;item_name:string;quantity:number|string|null;occurred_at:string;description:string};
-type Action='split'|'merge'|'move_quantity'|'discard';
-type Props={db:SupabaseClient;character:string;inventoryVersion:number;items:Item[];storage:Record<string,Storage>;equippedIds:Set<string>;busy:boolean;onChanged:()=>Promise<void>};
-export default function StackManagement({db,character,inventoryVersion,items,storage,equippedIds,busy,onChanged}:Props){
+type Action='split'|'move_quantity'|'discard';
+type Props={db:SupabaseClient;character:string;inventoryVersion:number;items:Item[];storage:Record<string,Storage>;categories:Record<string,string>;equippedIds:Set<string>;busy:boolean;onChanged:()=>Promise<void>};
+export default function StackManagement({db,character,inventoryVersion,items,storage,categories,equippedIds,busy,onChanged}:Props){
  const [itemId,setItemId]=useState('');
  const [action,setAction]=useState<Action>('split');
  const [quantity,setQuantity]=useState('1');
- const [target,setTarget]=useState('');
  const [container,setContainer]=useState('');
  const [confirmDiscard,setConfirmDiscard]=useState(false);
  const [working,setWorking]=useState(false);
@@ -21,13 +20,13 @@ export default function StackManagement({db,character,inventoryVersion,items,sto
  const [error,setError]=useState('');
  const [history,setHistory]=useState<Activity[]>([]);
  const [historyLoading,setHistoryLoading]=useState(false);
- const eligibleItems=items.filter(item=>!storage[item.item_id]?.is_container&&!equippedIds.has(item.item_id));
+ const stackCategories=new Set(['gear','consumable','ammunition','material','component','misc','supplies']);
+ const eligibleItems=items.filter(item=>stackCategories.has(categories[item.item_id]??'')&&!storage[item.item_id]?.is_container&&!equippedIds.has(item.item_id));
  const selected=eligibleItems.find(item=>item.item_id===itemId);
- const similar=eligibleItems.filter(item=>item.item_id!==itemId&&item.display_name===selected?.display_name&&storage[item.item_id]?.container_item_id===storage[itemId]?.container_item_id);
  const containers=items.filter(item=>storage[item.item_id]?.is_container&&!storage[item.item_id]?.container_item_id);
  const currentContainer=storage[itemId]?.container_item_id;
  useEffect(()=>{if(!eligibleItems.some(i=>i.item_id===itemId))setItemId('')},[itemId,items,storage,equippedIds]);
- useEffect(()=>{setTarget('');setConfirmDiscard(false);setMessage('');setError('')},[action,itemId]);
+ useEffect(()=>{setConfirmDiscard(false);setMessage('');setError('')},[action,itemId]);
  useEffect(()=>{
   let cancelled=false;
   async function load(){
@@ -42,7 +41,6 @@ export default function StackManagement({db,character,inventoryVersion,items,sto
  const isWhole=Number.isSafeInteger(qty)&&qty>=1&&qty<=100000000;
  const canSubmit=!!selected&&isWhole&&qty<=Number(selected.quantity)&&
    (action!=='split'||qty<Number(selected.quantity))&&
-   (action!=='merge'||!!target)&&
    (action!=='move_quantity'||container!==(currentContainer??''))&&
    (action!=='discard'||confirmDiscard)&&!working&&!busy;
  async function perform(){
@@ -51,30 +49,29 @@ export default function StackManagement({db,character,inventoryVersion,items,sto
   try{
    const {error:e}=await db.rpc('manage_character_item_stack',{
     p_character:character,p_item:itemId,p_action:action,p_quantity:qty,
-    p_target_item:action==='merge'?target:null,p_container_item:action==='move_quantity'?(container||null):null
+    p_target_item:null,p_container_item:action==='move_quantity'?(container||null):null
    });
    if(e)throw e;
    await onChanged();
    setConfirmDiscard(false);
-   setMessage(action==='discard'?'Items discarded.':action==='merge'?'Stacks consolidated.':action==='split'?'Stack split.':'Quantity moved.');
+   setMessage(action==='discard'?'Items discarded.':action==='split'?'Stack split.':'Quantity moved. Compatible stacks combine automatically.');
    setItemId('');
   }catch(e){setError(inventoryErrorMessage(e))}
   finally{setWorking(false)}
  }
  return <section className="nx-stack-panel" aria-labelledby="nx-stack-heading">
   <details>
-   <summary id="nx-stack-heading"><Layers2 size={18}/> Item stack management</summary>
+   <summary id="nx-stack-heading"><Layers2 size={18}/> Item quantities & storage</summary>
    <div className="nx-stack-controls">
     <label>Item
       <select value={itemId} onChange={e=>setItemId(e.target.value)}>
-       <option value="">Choose an unequipped non-container item</option>
+       <option value="">Choose non-equippable supplies</option>
        {eligibleItems.map(item=><option key={item.item_id} value={item.item_id}>{item.display_name} — {item.quantity} available</option>)}
       </select>
     </label>
     <label>Action
       <select value={action} onChange={e=>setAction(e.target.value as Action)}>
        <option value="split">Split stack</option>
-       <option value="merge">Consolidate stacks</option>
        <option value="move_quantity">Move quantity to / from container</option>
        <option value="discard">Drop / discard quantity</option>
       </select>
@@ -83,13 +80,6 @@ export default function StackManagement({db,character,inventoryVersion,items,sto
       <input type="number" min="1" step="1" max={selected?Number(selected.quantity):100000000}
        value={quantity} onChange={e=>{setQuantity(e.target.value);setConfirmDiscard(false)}}/>
     </label>
-    {action==='merge'&&<label>Compatible target stack
-      <select value={target} onChange={e=>setTarget(e.target.value)}>
-       <option value="">Choose a target stack</option>
-       {similar.map(item=><option key={item.item_id} value={item.item_id}>{item.display_name} — {item.quantity}</option>)}
-      </select>
-      <small>The server verifies identical item properties and storage location before combining.</small>
-    </label>}
     {action==='move_quantity'&&<label>Destination
       <select value={container} onChange={e=>setContainer(e.target.value)}>
        <option value="">Carried (outside containers)</option>
@@ -105,7 +95,7 @@ export default function StackManagement({db,character,inventoryVersion,items,sto
     {message&&<p className="nx-stack-success" role="status">{message}</p>}
     <button type="button" disabled={!canSubmit} onClick={()=>void perform()}>
       {action==='discard'?<PackageMinus size={16}/>:action==='move_quantity'?<Archive size={16}/>:<PackagePlus size={16}/>}
-      {working?'Working…':action==='discard'?'Confirm discard':action==='split'?'Split stack':action==='merge'?'Consolidate stacks':'Move quantity'}
+      {working?'Working…':action==='discard'?'Confirm discard':action==='split'?'Split stack':'Move quantity'}
     </button>
    </div>
   </details>
