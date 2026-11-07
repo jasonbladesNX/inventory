@@ -21,4 +21,11 @@ assert.match(sql,/m\.user_id=\(select auth\.uid\(\)\)/,'authorized character sco
 assert.match(sql,/d\.category='consumable' and d\.name ilike '%potion%'/,'only recognized potion definitions');
 assert.match(sql,/revoke all on function public\.set_character_potion_hotbar_slot/,'anonymous writes blocked');
 assert.match(sql,/jsonb_set\(coalesce\(c\.sheet_data/,'slots persist in character sheet');
+assert.doesNotMatch(ui,/>Slot \{slot\}<\/label>/,'visible slot labels removed');
+assert.match(ui,/className="mv-potion-use"/,'potion name is use button');
+assert.match(ui,/potionUseBusy===slot\?'Using…':potionName/,'potion name displayed as button text');
+assert.match(ui,/className="mv-potion-edit"/,'separate edit button allows reassignment');
+assert.match(ui,/editingPotionSlot===slot&&<div className="mv-potion-editor">/,'selection controls hidden until edit');
+assert.match(ui,/onClick=\{\(\)=>void usePotionSlot\(slot\)\}/,'potion name uses existing safe consume action');
+assert.match(css,/\.mv-potion-slot \.mv-potion-use/,'potion buttons styled');
 console.log('PASS four-slot potion card, secured persistent assignments and one-item use contract');
