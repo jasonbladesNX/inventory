@@ -367,6 +367,7 @@ function App(){
             await rpc('move_character_item_storage',{p_character:char,p_item:itemId,p_container_item:containerItemId});
             await loadChar(campaign,char);
           }catch(e){setMsg(inventoryErrorMessage(e));throw e}finally{setBusy(false)}}}
+          onInventoryChanged={async()=>{await loadChar(campaign,char)}}
           onSaveAttributes={async(scores,size)=>{setBusy(true);setMsg('');try{
             await rpc('save_character_ability_scores',{p_character:char,p_scores:scores,p_size:size});
             await loadChar(campaign,char);
