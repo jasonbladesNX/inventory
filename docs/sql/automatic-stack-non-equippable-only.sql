@@ -1,7 +1,8 @@
--- Nexus Multiverse automatic stack rules.
--- Non-equippable compatible supplies consolidate after secure acquisitions
--- and standard item moves. Equippable gear always acquired as individual units.
--- Restricted helper execution; public actions keep their existing authorization.
+-- Nexus Multiverse: automatic stacking is restricted to non-equippable, compatible
+-- supplies. Equip-capable definitions are instantiated as individual units.
+-- Acquisitions and standard container movements consolidate compatible stacks,
+-- preserving existing target IDs and historical transaction item names.
+-- Character write permissions and existing capacity validations remain in force.
 CREATE OR REPLACE FUNCTION app_private.item_can_auto_stack(p_definition uuid)
  RETURNS boolean
  LANGUAGE sql
@@ -47,6 +48,7 @@ begin
    and i.identified=v_source.identified and i.custom_name is not distinct from v_source.custom_name
    and i.properties=v_source.properties and i.private_properties=v_source.private_properties
    and not exists(select 1 from public.equipment_assignments a where a.item_instance_id=i.id)
+   and not exists(select 1 from public.item_effects e where e.item_instance_id=i.id)
  order by i.id limit 1 for update of i;
  if v_target is null then return p_item;end if;
  update public.item_instances set quantity=quantity+v_source.quantity,version=version+1 where id=v_target;
@@ -176,10 +178,10 @@ begin
      raise exception 'Container capacity exceeded: % lb + % lb exceeds % lb',v_existing_weight,v_item_weight,v_limit;end if;
    update public.item_instances set container_id=v_box,version=version+1 where id=p_item;
  end if;
- perform app_private.consolidate_item_location(p_item);
  insert into public.inventory_transactions(campaign_id,actor_user_id,kind,details)
  values(v_campaign,(select auth.uid()),'container_move',
- jsonb_build_object('item_id',p_item,'character_id',p_character,'from_container_id',v_current,'to_container_id',v_box));
+ jsonb_build_object('item_id',p_item,'character_id',p_character,'item_name',(select coalesce(nullif(i.custom_name,''),d.name) from public.item_instances i join public.item_definitions d on d.id=i.definition_id where i.id=p_item),'from_container_id',v_current,'to_container_id',v_box));
+ perform app_private.consolidate_item_location(p_item);
 end
 $function$
 ;
