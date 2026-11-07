@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "m6.40-item-detail-trash-action",
+  "release": "m6.40-automatic-stacking-non-equippable",
   "date": "2026-11-06",
-  "note": "Item detail Put in dropdown now includes Trash / Discard with guarded quantity confirmation; existing secure stack discard transaction and activity logging"
+  "note": "Automatic compatible non-equippable supply consolidation on standard acquisition and storage move; equippable items individually instantiated and server-blocked from stacking; split stack in item details; trade-ledger references preserved"
 }
