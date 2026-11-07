@@ -538,11 +538,13 @@
 .mv-hp-form .mv-storage-error,.mv-hp-form .mv-trash-confirm-actions{flex-basis:100%}
 
 /* HP adjustments for normal combat and non-potion healing. */
-.mv-hp-quick-adjust{display:flex;flex-wrap:wrap;align-items:end;gap:8px;margin-top:4px}
-.mv-hp-quick-adjust label{display:grid;gap:4px;min-width:85px;flex:0 1 110px;font-size:12px;font-weight:650;color:#b9e6f1}
+.mv-hp-quick-adjust{display:grid;grid-template-columns:minmax(0,1fr) minmax(75px,100px) minmax(0,1fr);align-items:end;gap:8px;margin-top:4px}
+.mv-hp-quick-adjust label{display:grid;gap:4px;min-width:0;font-size:12px;font-weight:650;color:#b9e6f1}
 .mv-hp-quick-adjust input{width:100%;min-height:42px;box-sizing:border-box;padding:7px 9px;border-radius:7px;border:1px solid #428da2;background:#071f2d;color:#eefbff;font-size:16px}
 .mv-hp-quick-adjust button{min-height:42px;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:750;cursor:pointer}
 .mv-hp-damage-button{border:1px solid #d67f7f;color:#ffe3e3;background:#64313a}
 .mv-hp-heal-button{border:1px solid #64baa4;color:#defff4;background:#24584d}
 .mv-hp-quick-adjust button:disabled{opacity:.5;cursor:not-allowed}
 .mv-hp-feedback{margin:0;color:#b7f8d8;font-size:12px}
+
+@media(max-width:410px){.mv-hp-quick-adjust{grid-template-columns:minmax(0,1fr) 76px minmax(0,1fr);gap:5px}.mv-hp-quick-adjust button{padding:8px 5px;font-size:11px}}
