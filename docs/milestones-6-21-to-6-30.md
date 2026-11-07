@@ -1,6 +1,6 @@
 # Nexus Multiverse — Milestones 6.21–6.30
 
-Ten inventory exploration and quality-of-life milestones implemented as one batch. Browser
+Inventory exploration and quality-of-life milestones implemented as one batch, with the originally delivered comparison feature subsequently removed at user request. Browser
 acceptance is intentionally deferred to a single end-of-batch test. Automated, SQL
 authorization, regression and build checks remain required at every release.
 
@@ -13,7 +13,7 @@ authorization, regression and build checks remain required at every release.
 | 6.25 | Status and favorites filters | Favorites, equipped, unequipped, stored and missing-weight filters combine with search |
 | 6.26 | Condition and unit weight display | Authorized read-only inventory-indicator RPC; unknown items conceal definition-derived weight |
 | 6.27 | Container utilization | Existing container usage data, fullness meter, 90% warning and unknown-weight caution |
-| 6.28 | Two-item comparison | Selected inventory items compare category, quantity, condition, weight and location |
+| 6.28 | Item comparison (withdrawn) | Removed from the Inventory UI at user request; may be revisited later |
 | 6.29 | Inventory overview | Counts item entries, combined units, stored items and saved favorites |
 | 6.30 | Filtered CSV export | Downloads only visible item entries, with UTF-8, quoting and spreadsheet-formula escaping |
 
@@ -42,8 +42,7 @@ authorization, regression and build checks remain required at every release.
 ## Deferred features and limits
 
 - Search filters current item display names, not full descriptions or unrevealed metadata.
-- Comparison currently covers inventory facts, not combat damage, attack rolls, pricing
-  or unimplemented game-system-specific rules.
+- Item comparison was removed at user request. No comparison controls remain.
 - Favorites refer to item instances, not globally published catalog definitions.
 - CSV uses the current filter state; it is not a complete backup and does not
   include hidden GM-only attributes or unpublished item effects.
