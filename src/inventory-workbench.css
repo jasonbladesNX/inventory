@@ -13,7 +13,7 @@
 .nx-inventory-filters select{width:100%;min-height:44px;box-sizing:border-box;margin:0;border:1px solid #3a899f;border-radius:8px;background:#092738;color:#e3faff;padding:8px 10px;font-size:15px}
 .nx-inventory-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
 .nx-inventory-toolbar>span{font-size:11px;color:#a5cdd9;margin-right:auto}
-.nx-inventory-toolbar button,.nx-inventory-compare button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;background:#0d4054;border:1px solid #4095ac;border-radius:8px;color:#d8f7ff;padding:8px 11px;font-size:11px;font-weight:750;cursor:pointer}
+.nx-inventory-toolbar button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;background:#0d4054;border:1px solid #4095ac;border-radius:8px;color:#d8f7ff;padding:8px 11px;font-size:11px;font-weight:750;cursor:pointer}
 .nx-inventory-toolbar button:disabled{opacity:.5;cursor:not-allowed}
 .nx-inventory-feedback{color:#a8e8d0;font-size:11px;margin:0}
 .nx-inventory-no-match{padding:24px 10px;text-align:center}
