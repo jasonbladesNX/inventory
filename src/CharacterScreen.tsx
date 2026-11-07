@@ -107,7 +107,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [potionSlotBusy,setPotionSlotBusy]=useState<number|null>(null);
   const [potionUseBusy,setPotionUseBusy]=useState<number|null>(null);
   const [potionError,setPotionError]=useState('');
-  const [editingPotionSlot,setEditingPotionSlot]=useState<number|null>(null);
+  const [potionEditorOpen,setPotionEditorOpen]=useState(false);
+  const potionEditorTriggerRef=useRef<HTMLButtonElement>(null);
+  const potionEditorCloseRef=useRef<HTMLButtonElement>(null);
   const [validSlots,setValidSlots]=useState<Record<string,string[]>>({});
   const [itemCategories,setItemCategories]=useState<Record<string,string>>({});
   const [inventoryIndicators,setInventoryIndicators]=useState<Record<string,WorkbenchIndicator>>({});
@@ -559,7 +561,19 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     }catch(e){setFavoriteError(inventoryErrorMessage(e))}
     finally{setFavoriteBusy(null)}
   };
-  useEffect(()=>{setEditingPotionSlot(null)},[character]);
+  useEffect(()=>{setPotionEditorOpen(false)},[character,tab]);
+  useEffect(()=>{
+    if(!potionEditorOpen)return;
+    potionEditorCloseRef.current?.focus();
+    const onKeyDown=(event:KeyboardEvent)=>{
+      if(event.key==='Escape'&&potionSlotBusy===null){
+        setPotionEditorOpen(false);
+        potionEditorTriggerRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown',onKeyDown);
+    return()=>document.removeEventListener('keydown',onKeyDown);
+  },[potionEditorOpen,potionSlotBusy]);
   const assignPotionSlot=async(slot:number,definitionId:string)=>{
     if(busy||loading||potionSlotBusy!==null||potionUseBusy!==null)return;
     setPotionSlotBusy(slot);setPotionError('');
@@ -569,7 +583,6 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       });
       if(rpcError)throw rpcError;
       setPotionHotbar(data as PotionHotbar);
-      setEditingPotionSlot(null);
     }catch(e){setPotionError(inventoryErrorMessage(e))}
     finally{setPotionSlotBusy(null)}
   };
@@ -899,8 +912,13 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         </div>}
       </section>
       <section className="mv-panel mv-potions-panel" aria-labelledby="mv-potions-title">
-        <h3 id="mv-potions-title"><FlaskConical size={20}/> Potions</h3>
-        <p className="mv-potions-description">Assign up to four potion types for quick use. Each use consumes one potion from inventory.</p>
+        <div className="mv-potions-heading">
+          <h3 id="mv-potions-title"><FlaskConical size={20}/> Potions</h3>
+          <button ref={potionEditorTriggerRef} type="button" className="mv-potions-edit-launch"
+            aria-label="Edit potion assignments" aria-haspopup="dialog"
+            disabled={loading||busy||potionSlotBusy!==null||potionUseBusy!==null}
+            onClick={()=>{setPotionError('');setPotionEditorOpen(true)}}>Edit</button>
+        </div>
         <div className="mv-potion-slots">
           {[1,2,3,4].map(slot=>{
             const assignment=potionHotbar.slots.find(row=>row.slot===slot);
@@ -908,34 +926,17 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
             const count=option?.quantity??0;
             const potionName=option?.name??assignment?.name??'Unavailable potion';
             return <div className="mv-potion-slot" key={slot}>
-              <div className="mv-potion-slot-heading">
-                <span>{assignment?.definition_id?`${count} available`:'Empty'}</span>
-                <button type="button" className="mv-potion-edit" aria-label={`Change potion assignment ${slot}`}
-                  aria-expanded={editingPotionSlot===slot} disabled={loading||busy||potionSlotBusy!==null||potionUseBusy!==null}
-                  onClick={()=>setEditingPotionSlot(value=>value===slot?null:slot)}>Edit</button>
-              </div>
-              {assignment?.definition_id?<button type="button" className="mv-potion-use" disabled={!option||Number(count)<1||loading||busy||potionSlotBusy!==null||potionUseBusy!==null}
-                aria-label={`Use one ${potionName}`} onClick={()=>void usePotionSlot(slot)}>
-                {potionUseBusy===slot?'Using…':potionName}
-              </button>:<button type="button" className="mv-potion-assign" disabled={loading||busy||potionSlotBusy!==null||potionUseBusy!==null}
-                onClick={()=>setEditingPotionSlot(slot)}>Assign potion</button>}
-              {editingPotionSlot===slot&&<div className="mv-potion-editor">
-                <label htmlFor={`mv-potion-slot-${slot}`}>Choose potion</label>
-                <select id={`mv-potion-slot-${slot}`} value={assignment?.definition_id??''}
-                  disabled={loading||busy||potionSlotBusy!==null||potionUseBusy!==null}
-                  onChange={event=>void assignPotionSlot(slot,event.target.value)}>
-                  <option value="">Empty slot</option>
-                  {assignment?.definition_id&&!option&&<option value={assignment.definition_id}>{potionName} (0 remaining)</option>}
-                  {potionHotbar.options.map(candidate=><option key={candidate.definition_id} value={candidate.definition_id}>
-                    {candidate.name} ({candidate.quantity} available)
-                  </option>)}
-                </select>
-              </div>}
+              <button type="button" className="mv-potion-use"
+                disabled={!option||Number(count)<1||loading||busy||potionSlotBusy!==null||potionUseBusy!==null}
+                aria-label={assignment?.definition_id?`Use one ${potionName} (${count} remaining)`:`Empty potion slot ${slot}`}
+                onClick={()=>void usePotionSlot(slot)}>
+                {potionUseBusy===slot?'Using…':assignment?.definition_id?`${potionName} (${count})`:'Empty'}
+              </button>
             </div>;
           })}
         </div>
-        {!loading&&potionHotbar.options.length===0&&<p className="mv-empty">No usable potions in inventory. Add a potion to assign it here.</p>}
-        {potionError&&<p className="mv-storage-error" role="alert">Potion action failed: {potionError}</p>}
+        {!loading&&potionHotbar.options.length===0&&<p className="mv-empty">No usable potions in inventory. Use Edit to assign a potion when one is available.</p>}
+        {potionError&&!potionEditorOpen&&<p className="mv-storage-error" role="alert">Potion action failed: {potionError}</p>}
       </section>
       <div className="mv-bottom-panels">
         <section className="mv-panel" aria-labelledby="mv-currency-title">
@@ -986,6 +987,50 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
                 setLoadoutOpen(false);
                 if(row)void requestUnequip(row);
               }}/>
+          </div>
+        </section>
+      </div>,document.body)}
+    {tab==='character'&&potionEditorOpen&&createPortal(
+      <div className="mv-modal-backdrop" onMouseDown={event=>{
+        if(event.target===event.currentTarget&&potionSlotBusy===null){
+          setPotionEditorOpen(false);potionEditorTriggerRef.current?.focus();
+        }
+      }}>
+        <section className="mv-item-modal mv-potion-dialog" role="dialog" aria-modal="true"
+          aria-labelledby="mv-potion-dialog-title">
+          <div className="mv-modal-header">
+            <div className="mv-modal-heading"><FlaskConical size={24} aria-hidden="true"/><div>
+              <span className="mv-modal-eyebrow">Character quick access</span>
+              <h3 id="mv-potion-dialog-title">Edit Potions</h3>
+            </div></div>
+            <button type="button" ref={potionEditorCloseRef} className="mv-modal-close"
+              aria-label="Close potion editor" disabled={potionSlotBusy!==null}
+              onClick={()=>{setPotionEditorOpen(false);potionEditorTriggerRef.current?.focus()}}><X size={22}/></button>
+          </div>
+          <div className="mv-modal-body mv-potion-dialog-body">
+            <p>Choose which potion type belongs in each quick-access slot. Assigning or clearing a slot does not consume a potion.</p>
+            {[1,2,3,4].map(slot=>{
+              const assignment=potionHotbar.slots.find(row=>row.slot===slot);
+              const assignedOption=potionHotbar.options.find(row=>row.definition_id===assignment?.definition_id);
+              return <label key={slot} htmlFor={`mv-potion-slot-${slot}`} className="mv-potion-dialog-field">
+                <span>Slot {slot}</span>
+                <select id={`mv-potion-slot-${slot}`} value={assignment?.definition_id??''}
+                  disabled={loading||busy||potionSlotBusy!==null||potionUseBusy!==null}
+                  onChange={event=>void assignPotionSlot(slot,event.target.value)}>
+                  <option value="">Empty slot</option>
+                  {assignment?.definition_id&&!assignedOption&&
+                    <option value={assignment.definition_id}>{assignment.name??'Unavailable potion'} (0)</option>}
+                  {potionHotbar.options.map(candidate=><option key={candidate.definition_id} value={candidate.definition_id}>
+                    {candidate.name} ({candidate.quantity})
+                  </option>)}
+                </select>
+              </label>;
+            })}
+            {potionError&&<p className="mv-storage-error" role="alert">Unable to save potion assignment: {potionError}</p>}
+          </div>
+          <div className="mv-modal-footer">
+            <button type="button" disabled={potionSlotBusy!==null}
+              onClick={()=>{setPotionEditorOpen(false);potionEditorTriggerRef.current?.focus()}}>Done</button>
           </div>
         </section>
       </div>,document.body)}
