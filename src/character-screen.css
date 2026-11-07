@@ -486,3 +486,19 @@
  .nx-workbench-row .nx-favorite-button{margin-left:56px}
  .nx-workbench-row .mv-inventory-quick-action,.nx-workbench-row .mv-browse-container{margin-left:auto}
 }
+
+/* Compact, horizontally flowing inventory metadata. */
+.nx-workbench-row .mv-inventory-item{align-items:center;gap:9px;padding-top:10px;padding-bottom:10px}
+.nx-workbench-row .mv-item-info{flex:1 1 180px;min-width:0;gap:4px}
+.nx-inventory-inline-meta{display:flex;align-items:center;gap:5px 10px;flex-wrap:wrap;min-width:0}
+.nx-inventory-inline-meta>span{font-size:11px;line-height:1.4;color:#afd7e3;white-space:normal}
+.nx-inventory-inline-meta .mv-equipped-indicator{display:inline-flex;align-items:center;gap:4px;flex:none;width:auto;margin:0;padding:3px 7px;border-radius:999px;white-space:nowrap}
+.nx-inventory-inline-meta .nx-inventory-quantity{color:#e4f7fd;font-weight:750}
+.nx-inventory-inline-meta .nx-inventory-condition{color:#add6df;font-size:11px}
+.nx-inventory-inline-meta .nx-inventory-unit-weight{color:#8dbfcd}
+.nx-inventory-inline-meta .nx-inventory-unidentified{color:#ffcf9f}
+@media(max-width:470px){
+  .nx-workbench-row .mv-inventory-item .mv-item-info{flex-basis:calc(100% - 60px)}
+  .nx-workbench-row .nx-favorite-button{margin-left:56px}
+  .nx-inventory-inline-meta{gap:5px 8px}
+}
