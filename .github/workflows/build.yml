@@ -35,6 +35,7 @@ jobs:
       - run: node scripts/test-automatic-stacking.mjs
       - run: node scripts/test-item-consumption.mjs
       - run: node scripts/test-healing-potion.mjs
+      - run: node scripts/test-healing-potion-tiers.mjs
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
