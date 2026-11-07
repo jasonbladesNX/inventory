@@ -29,6 +29,14 @@ for(const [rule,name] of [
  [/onChanged\(\)/,'post-transaction refresh']
 ])assert.match(ui,rule,name);
 assert.match(parent,/<StackManagement/);
+assert.match(parent,/value="__trash__">Trash \/ Discard/);
+assert.match(parent,/setTrashItemId\(selectedItem.item_id\)/);
+assert.match(parent,/Quantity to discard/);
+assert.match(parent,/Confirm trash/);
+assert.match(parent,/confirmItemTrash/);
+assert.match(parent,/p_action:'discard'/);
+assert.match(parent,/!Number.isSafeInteger\(Number\(trashQuantity\)\)/);
+
 assert.match(main,/onInventoryChanged=/);
 assert.doesNotMatch(ui,/\.from\('item_instances'\)/);
 const target=fileURLToPath(new URL('./.m640-smoke.cjs',import.meta.url));
