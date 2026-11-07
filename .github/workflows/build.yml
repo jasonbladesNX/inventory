@@ -29,6 +29,7 @@ jobs:
       - run: node scripts/test-equipment-requirements.mjs
       - run: node scripts/test-loadout-health.mjs
       - run: node scripts/test-inventory-ui-refinements.mjs
+      - run: node scripts/test-inventory-workbench.mjs
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
