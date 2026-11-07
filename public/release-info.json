@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "m6.31-6.35-inventory-views-report-bundle",
+  "release": "ui-compact-inventory-toolbar-and-container-cards",
   "date": "2026-11-06",
-  "note": "Inventory quick views, grouping by category/location, filtered known-weight summary, printable snapshot and saved session view; one combined browser acceptance pending"
+  "note": "Removed quick buttons, saved view controls and summary metrics; CSV and print within report modal; compact search/group and filters; per-container capacity meters on item cards"
 }
