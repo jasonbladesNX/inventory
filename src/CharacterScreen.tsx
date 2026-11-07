@@ -595,7 +595,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           </button>
         </div>
         {loading?<p className="mv-empty">Loading equipment…</p>:equipped.length===0?<p className="mv-empty">No equipped items yet. Equip an item from Inventory to see it here.</p>:
-          <div className="mv-rows">{equipped.map(row=>{const SlotIcon=equipmentSlotIcon(row.slot);return <div className="mv-equipment-row" key={row.id}><SlotIcon size={18} aria-hidden="true"/><span>{row.slot}</span><strong>{row.name}</strong><button type="button" className="mv-unequip-button" disabled={busy||loading||unequipCheckPending} onClick={()=>{void requestUnequip(row)}} aria-label={`Unequip ${row.name} from ${row.slot}`}>{unequipCheckPending?'Checking…':'Unequip'}</button></div>;})}</div>
+          <div className="mv-rows">{equipped.map(row=>{const SlotIcon=equipmentSlotIcon(row.slot);return <div className="mv-equipment-row" key={row.id}><SlotIcon size={18} aria-hidden="true"/><span>{row.slot}</span><strong>{row.name}</strong><button type="button" className="mv-unequip-button" disabled={busy||loading||unequipCheckPending} onClick={()=>{void requestUnequip(row)}} aria-label={`Unequip ${row.name} from ${row.slot}`}>{unequipCheckPending?'Checking…':'Unequip'}</button></div>;})}</div>}
         {unequipCheckError&&<p className="mv-storage-error" role="alert">Unable to check equipment dependencies: {unequipCheckError}. No equipment was changed.</p>}
         {invalidEquipmentError&&<p className="mv-storage-error" role="alert">Unable to check equipment requirements: {invalidEquipmentError}</p>}
         {invalidEquipment.length>0&&<div className="mv-invalid-loadout" role="status">
