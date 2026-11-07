@@ -1,6 +1,6 @@
 {
   "application": "Nexus Multiverse",
-  "release": "m6.40-item-stack-and-activity-bundle",
+  "release": "m6.40-item-detail-trash-action",
   "date": "2026-11-06",
-  "note": "Milestones 6.36–6.40: transactional item splitting, consolidation, partial storage moves, guarded discard and character inventory activity; combined browser acceptance pending"
+  "note": "Item detail Put in dropdown now includes Trash / Discard with guarded quantity confirmation; existing secure stack discard transaction and activity logging"
 }
