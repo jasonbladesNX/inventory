@@ -4,6 +4,7 @@ import type {SupabaseClient} from '@supabase/supabase-js';
 import {Backpack, CircleDot, Coins, Crown, FlaskConical, Footprints, Gem, Hand, HeartPulse, PackageOpen, ScrollText, Shield, ShieldCheck, Shirt, ShoppingBag, Sparkles, Sword, UserRound, WandSparkles, Wrench, X} from 'lucide-react';
 import {inventoryErrorMessage} from './inventoryErrors';
 import LoadoutHealthPanel from './LoadoutHealthPanel';
+import InventoryWorkbench,{type WorkbenchIndicator} from './InventoryWorkbench';
 import './character-screen.css';
 
 export type InventoryTab = 'character' | 'inventory' | 'shop' | 'craft';
@@ -99,6 +100,10 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [wallet,setWallet]=useState<Money[]>([]);
   const [validSlots,setValidSlots]=useState<Record<string,string[]>>({});
   const [itemCategories,setItemCategories]=useState<Record<string,string>>({});
+  const [inventoryIndicators,setInventoryIndicators]=useState<Record<string,WorkbenchIndicator>>({});
+  const [favoriteIds,setFavoriteIds]=useState<Set<string>>(new Set());
+  const [favoriteBusy,setFavoriteBusy]=useState<string|null>(null);
+  const [favoriteError,setFavoriteError]=useState('');
   const [storage,setStorage]=useState<Record<string,StorageEntry>>({});
   const [inventoryLocation,setInventoryLocation]=useState<string>('all');
   const [inventorySlotFilter,setInventorySlotFilter]=useState('all');
@@ -173,9 +178,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   useEffect(()=>{
     let cancelled=false;
     async function load(){
-      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setStorage({});setContainerUsage({});setWeightSummary(null);setCarryProfile(null);setAttributes([]);setDerivedAttributes({});setEffectSources([]);setEffectSourcesError('');setInvalidEquipment([]);setInvalidEquipmentError('');
+      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setInventoryIndicators({});setFavoriteIds(new Set());setStorage({});setContainerUsage({});setWeightSummary(null);setCarryProfile(null);setAttributes([]);setDerivedAttributes({});setEffectSources([]);setEffectSourcesError('');setInvalidEquipment([]);setInvalidEquipmentError('');
       try{
-        const [assignments,currency,compatibility,categories,storageRows,usageRows,weightRows,carryRows,attributeRows,derivedRows,sourceRows,invalidRows]=await Promise.all([
+        const [assignments,currency,compatibility,categories,storageRows,usageRows,weightRows,carryRows,attributeRows,derivedRows,sourceRows,invalidRows,favoriteRows,indicatorRows]=await Promise.all([
           db.rpc('list_character_equipped_instances',{p_character:character}),
           db.rpc('list_my_trade_currency',{p_character:character}),
           db.rpc('list_character_valid_equipment_slots',{p_character:character}),
@@ -188,6 +193,8 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           db.rpc('list_character_derived_attributes',{p_character:character}),
           db.rpc('list_character_effect_sources',{p_character:character}),
           db.rpc('list_character_invalid_equipment',{p_character:character}),
+          db.rpc('list_my_character_item_favorites',{p_character:character}),
+          db.rpc('list_character_inventory_indicators',{p_character:character}),
         ]);
         if(assignments.error)throw assignments.error;
         if(currency.error)throw currency.error;
@@ -199,6 +206,8 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         if(carryRows.error)throw carryRows.error;
         if(attributeRows.error)throw attributeRows.error;
         if(derivedRows.error)throw derivedRows.error;
+        if(favoriteRows.error)throw favoriteRows.error;
+        if(indicatorRows.error)throw indicatorRows.error;
         if(cancelled)return;
         const slotLookup=new Map(slots.map(s=>[s.id,s.label]));
         setEquipped((assignments.data||[]).map(row=>({
@@ -218,6 +227,10 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           iconsByItem[row.item_id]=row.category;
         }
         setItemCategories(iconsByItem);
+        setFavoriteIds(new Set((favoriteRows.data||[]).map((row:{item_id:string})=>row.item_id)));
+        const indicators:Record<string,WorkbenchIndicator>={};
+        for(const row of indicatorRows.data||[])indicators[row.item_id]=row as WorkbenchIndicator;
+        setInventoryIndicators(indicators);
         const storageByItem:Record<string,StorageEntry>={};
         for(const row of storageRows.data||[])storageByItem[row.item_id]=row as StorageEntry;
         setStorage(storageByItem);
@@ -398,6 +411,19 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   }));
   const locationExists=inventoryLocation==='all'||inventoryLocation==='carried'||storageContainers.some(item=>item.item_id===inventoryLocation);
   const currentLocation=locationExists?inventoryLocation:'all';
+  const toggleFavorite=async(itemId:string)=>{
+    if(favoriteBusy||busy)return;
+    const next=!favoriteIds.has(itemId);
+    setFavoriteBusy(itemId);setFavoriteError('');
+    try{
+      const {error:rpcError}=await db.rpc('set_my_character_item_favorite',{
+        p_character:character,p_item:itemId,p_favorite:next
+      });
+      if(rpcError)throw rpcError;
+      setFavoriteIds(prev=>{const value=new Set(prev);if(next)value.add(itemId);else value.delete(itemId);return value});
+    }catch(e){setFavoriteError(inventoryErrorMessage(e))}
+    finally{setFavoriteBusy(null)}
+  };
   const renderInventoryCard=(item:InventoryItem)=>{
     const equippedRow=equippedByItem.get(item.item_id);
     const storedIn=storage[item.item_id]?.container_item_id;
@@ -416,11 +442,21 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       <button type="button" className="mv-item-icon mv-item-icon-button" aria-label={`View details for ${item.display_name}`} aria-haspopup="dialog" onClick={event=>openDetails(item.item_id,event)}>{renderItemIcon(item.item_id,25)}</button>
       <div className="mv-item-info">
         <strong>{item.display_name}</strong>
+        {inventoryIndicators[item.item_id]&&<span className="nx-inventory-condition">Condition: {titleCase(inventoryIndicators[item.item_id].condition_code||'unknown')}
+          {inventoryIndicators[item.item_id].unit_weight_lb!==null&&<> · {numberText(inventoryIndicators[item.item_id].unit_weight_lb??0,2)} lb each</>}
+          {!inventoryIndicators[item.item_id].identified&&' · Unidentified'}
+        </span>}
         {equippedRow&&<span className="mv-equipped-indicator"><Shield size={13} aria-hidden="true"/> Equipped · {equippedRow.slot}</span>}
         <span>Quantity: {numberText(item.quantity)}</span>
         {containerUsage[item.item_id]&&<span className="mv-container-card-summary"><Backpack size={13} aria-hidden="true"/> {containerUsage[item.item_id].item_count} {Number(containerUsage[item.item_id].item_count)===1?'item':'items'} · {numberText(containerUsage[item.item_id].used_weight_lb,2)} / {containerUsage[item.item_id].capacity_weight_lb===null?'?':numberText(containerUsage[item.item_id].capacity_weight_lb,2)} lb</span>}
         {storedIn&&<span className="mv-storage-status mv-stored-tag"><Backpack size={13} aria-hidden="true"/> Stored in {storage[item.item_id].location_name}</span>}
       </div>
+      <button type="button" className={'nx-favorite-button'+(favoriteIds.has(item.item_id)?' is-favorite':'')}
+        aria-label={(favoriteIds.has(item.item_id)?'Remove favorite ':'Save favorite ')+item.display_name}
+        aria-pressed={favoriteIds.has(item.item_id)} title={favoriteIds.has(item.item_id)?'Remove favorite':'Add to favorites'}
+        disabled={busy||favoriteBusy!==null} onClick={()=>{void toggleFavorite(item.item_id)}}>
+        <span aria-hidden="true">{favoriteIds.has(item.item_id)?'★':'☆'}</span>
+      </button>
       {isContainer?
         <button type="button" className="mv-browse-container" onClick={()=>setInventoryLocation(item.item_id)} aria-label={`View contents of ${item.display_name}`}>View contents</button>:
         <button type="button" className="mv-inventory-quick-action"
@@ -656,40 +692,13 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       <section className="mv-panel" aria-labelledby="mv-inventory-title">
         <h3 id="mv-inventory-title"><Backpack size={20}/> Inventory <span className="mv-item-count">{items.length} {items.length===1?'item':'items'}</span></h3>
         {inventoryWeightPanel}
-        {items.length===0?<p className="mv-empty">Your inventory is empty. Add an item using the campaign tools above.</p>:<>
-          <nav className="mv-inventory-locations" aria-label="Inventory locations">
-            <button type="button" className={'mv-location-tab'+(currentLocation==='all'?' is-active':'')} aria-current={currentLocation==='all'?'page':undefined} onClick={()=>setInventoryLocation('all')}>All <span>{items.length}</span></button>
-            <button type="button" className={'mv-location-tab'+(currentLocation==='carried'?' is-active':'')} aria-current={currentLocation==='carried'?'page':undefined} onClick={()=>setInventoryLocation('carried')}>Carried <span>{carriedItems.length}</span></button>
-            {containerGroups.map(({container,contents})=><button key={container.item_id} type="button" className={'mv-location-tab'+(currentLocation===container.item_id?' is-active':'')} aria-current={currentLocation===container.item_id?'page':undefined} onClick={()=>setInventoryLocation(container.item_id)}>
-              <Backpack size={15} aria-hidden="true"/> {container.display_name} <span>{contents.length}</span>
-            </button>)}
-          </nav>
-          <div className="mv-inventory-slot-filter">
-            <label htmlFor="mv-slot-category-filter">Filter by equipment type</label>
-            <select id="mv-slot-category-filter" value={inventorySlotFilter} onChange={event=>setInventorySlotFilter(event.target.value)}>
-              <option value="all">All item types</option>
-              {categoryOptions.map(code=><option key={code} value={code}>{categoryFilterLabels[code]??titleCase(code)}</option>)}
-            </select>
-          </div>
-          {currentLocation==='all'?<>
-            <section className="mv-inventory-group" aria-label="Carried items">
-              <div className="mv-inventory-group-heading"><h4>Carried &amp; Equipped</h4><span>{visibleCarried.length} items</span></div>
-              <div className="mv-inventory-items">{visibleCarried.length?visibleCarried.map(renderInventoryCard):<p className="mv-empty">No carried items match this filter.</p>}</div>
-            </section>
-            {containerGroups.filter(({contents})=>contents.length>0).map(({container,contents})=><section className="mv-inventory-group" key={container.item_id} aria-label={`Inside ${container.display_name}`}>
-              <div className="mv-inventory-group-heading"><h4><Backpack size={16} aria-hidden="true"/> Inside {container.display_name}</h4><button type="button" className="mv-group-browse" onClick={()=>setInventoryLocation(container.item_id)}>Browse · {contents.length}</button></div>
-              <div className="mv-inventory-items">{contents.map(renderInventoryCard)}</div>
-            </section>)}
-          </>:currentLocation==='carried'?<section className="mv-inventory-group">
-            <div className="mv-inventory-group-heading"><h4>Carried &amp; Equipped</h4><span>{visibleCarried.length} items</span></div>
-            <div className="mv-inventory-items">{visibleCarried.length?visibleCarried.map(renderInventoryCard):<p className="mv-empty">No carried items match this filter.</p>}</div>
-          </section>:containerGroups.filter(({container})=>container.item_id===currentLocation).map(({container,contents})=><section className="mv-inventory-group" key={container.item_id}>
-            <div className="mv-inventory-group-heading"><h4><Backpack size={17} aria-hidden="true"/> {container.display_name} Contents</h4><button type="button" className="mv-group-browse" onClick={()=>setInventoryLocation('all')}>All items</button></div>
-            {containerUsage[container.item_id]&&<div className="mv-location-capacity">{numberText(containerUsage[container.item_id].used_weight_lb,2)} / {containerUsage[container.item_id].capacity_weight_lb===null?'?':numberText(containerUsage[container.item_id].capacity_weight_lb,2)} lb used</div>}
-            <button type="button" className="mv-container-detail-link" onClick={event=>openDetails(container.item_id,event)}>Open {container.display_name} details</button>
-            {contents.length===0?<p className="mv-empty">No items in this container match the selected filter.</p>:<div className="mv-inventory-items">{contents.map(renderInventoryCard)}</div>}
-          </section>)}
-        </>}
+        {favoriteError&&<p className="mv-error" role="alert">Unable to save favorite: {favoriteError}</p>}
+        {items.length===0?<p className="mv-empty">Your inventory is empty. Add an item using the campaign tools above.</p>:
+          <InventoryWorkbench characterName={characterName} items={items} categories={itemCategories}
+            storage={storage} usage={containerUsage} indicators={inventoryIndicators}
+            equippedIds={new Set(equipped.map(row=>row.itemId))} favoriteIds={favoriteIds}
+            busy={busy||loading||favoriteBusy!==null} renderItem={renderInventoryCard}
+            onOpenDetails={openDetails}/>}
         {slots.length===0&&<p className="mv-empty">No equipment slots have been configured for this campaign yet.</p>}
       </section>
       <p className="mv-inventory-hint">Trading and connection diagnostics remain available below the inventory panel during testing.</p>
