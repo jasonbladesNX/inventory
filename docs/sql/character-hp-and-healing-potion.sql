@@ -50,7 +50,7 @@ declare
  v_campaign uuid; v_item public.item_instances%rowtype;
  v_name text; v_category text; v_props jsonb; v_after numeric;
  v_heal jsonb; v_dice_count integer; v_dice_sides integer; v_bonus integer;
- v_roll integer; v_requested_heal integer:=0; v_applied_heal integer:=0;
+ v_requested_heal integer:=0; v_applied_heal integer:=0;
  v_hp jsonb; v_current integer; v_max integer; v_n integer;
 begin
  if v_actor is null then raise exception 'Authentication required' using errcode='42501'; end if;
@@ -90,60 +90,9 @@ begin
  v_heal:=v_props->'use_effect';
  if v_heal is not null then
    if jsonb_typeof(v_heal)<>'object' or v_heal->>'type'<>'heal_hp'
-      or v_heal->>'dice_count' !~ '^[0-9]+
- if v_after=0 then
-   if exists(select 1 from public.transaction_lines l where l.item_instance_id=p_item)
-    or exists(select 1 from public.loot_claim_items l where l.item_instance_id=p_item)
-    or exists(select 1 from public.merchant_stock m where m.item_instance_id=p_item)
-   then raise exception 'This item has linked records; cannot consume its final unit yet' using errcode='22023'; end if;
-   delete from public.item_instances where id=p_item;
- else
-   update public.item_instances set quantity=v_after,version=version+1 where id=p_item;
- end if;
- insert into public.inventory_transactions(campaign_id,actor_user_id,kind,details)
- values(v_campaign,v_actor,'character_item_used',
-   jsonb_build_object('character_id',p_character,'item_id',p_item,'item_name',v_name,
-   'quantity',p_quantity,'source_quantity_before',v_item.quantity,'remaining_quantity',v_after,'heal_rolled',v_requested_heal,'heal_applied',v_applied_heal));
- return v_after;
-end
-$function$
-
-      or v_heal->>'dice_sides' !~ '^[0-9]+
- if v_after=0 then
-   if exists(select 1 from public.transaction_lines l where l.item_instance_id=p_item)
-    or exists(select 1 from public.loot_claim_items l where l.item_instance_id=p_item)
-    or exists(select 1 from public.merchant_stock m where m.item_instance_id=p_item)
-   then raise exception 'This item has linked records; cannot consume its final unit yet' using errcode='22023'; end if;
-   delete from public.item_instances where id=p_item;
- else
-   update public.item_instances set quantity=v_after,version=version+1 where id=p_item;
- end if;
- insert into public.inventory_transactions(campaign_id,actor_user_id,kind,details)
- values(v_campaign,v_actor,'character_item_used',
-   jsonb_build_object('character_id',p_character,'item_id',p_item,'item_name',v_name,
-   'quantity',p_quantity,'source_quantity_before',v_item.quantity,'remaining_quantity',v_after));
- return v_after;
-end
-$function$
-
-      or v_heal->>'bonus' !~ '^[0-9]+
- if v_after=0 then
-   if exists(select 1 from public.transaction_lines l where l.item_instance_id=p_item)
-    or exists(select 1 from public.loot_claim_items l where l.item_instance_id=p_item)
-    or exists(select 1 from public.merchant_stock m where m.item_instance_id=p_item)
-   then raise exception 'This item has linked records; cannot consume its final unit yet' using errcode='22023'; end if;
-   delete from public.item_instances where id=p_item;
- else
-   update public.item_instances set quantity=v_after,version=version+1 where id=p_item;
- end if;
- insert into public.inventory_transactions(campaign_id,actor_user_id,kind,details)
- values(v_campaign,v_actor,'character_item_used',
-   jsonb_build_object('character_id',p_character,'item_id',p_item,'item_name',v_name,
-   'quantity',p_quantity,'source_quantity_before',v_item.quantity,'remaining_quantity',v_after));
- return v_after;
-end
-$function$
-
+      or v_heal->>'dice_count' !~ '^[0-9]+$'
+      or v_heal->>'dice_sides' !~ '^[0-9]+$'
+      or v_heal->>'bonus' !~ '^[0-9]+$'
    then raise exception 'Unsupported item-use effect' using errcode='22023'; end if;
    v_dice_count:=(v_heal->>'dice_count')::integer;
    v_dice_sides:=(v_heal->>'dice_sides')::integer;
@@ -152,50 +101,15 @@ $function$
    then raise exception 'Healing effect exceeds supported limits' using errcode='22023'; end if;
    if p_quantity>20 then raise exception 'Use at most 20 healing potions per action' using errcode='22023'; end if;
    select c.sheet_data->'hp' into v_hp from public.characters c where c.id=p_character;
-   if v_hp is null or jsonb_typeof(v_hp)<>'object' or v_hp->>'max' !~ '^[0-9]+
- if v_after=0 then
-   if exists(select 1 from public.transaction_lines l where l.item_instance_id=p_item)
-    or exists(select 1 from public.loot_claim_items l where l.item_instance_id=p_item)
-    or exists(select 1 from public.merchant_stock m where m.item_instance_id=p_item)
-   then raise exception 'This item has linked records; cannot consume its final unit yet' using errcode='22023'; end if;
-   delete from public.item_instances where id=p_item;
- else
-   update public.item_instances set quantity=v_after,version=version+1 where id=p_item;
- end if;
- insert into public.inventory_transactions(campaign_id,actor_user_id,kind,details)
- values(v_campaign,v_actor,'character_item_used',
-   jsonb_build_object('character_id',p_character,'item_id',p_item,'item_name',v_name,
-   'quantity',p_quantity,'source_quantity_before',v_item.quantity,'remaining_quantity',v_after));
- return v_after;
-end
-$function$
-
-      or v_hp->>'current' !~ '^[0-9]+
- if v_after=0 then
-   if exists(select 1 from public.transaction_lines l where l.item_instance_id=p_item)
-    or exists(select 1 from public.loot_claim_items l where l.item_instance_id=p_item)
-    or exists(select 1 from public.merchant_stock m where m.item_instance_id=p_item)
-   then raise exception 'This item has linked records; cannot consume its final unit yet' using errcode='22023'; end if;
-   delete from public.item_instances where id=p_item;
- else
-   update public.item_instances set quantity=v_after,version=version+1 where id=p_item;
- end if;
- insert into public.inventory_transactions(campaign_id,actor_user_id,kind,details)
- values(v_campaign,v_actor,'character_item_used',
-   jsonb_build_object('character_id',p_character,'item_id',p_item,'item_name',v_name,
-   'quantity',p_quantity,'source_quantity_before',v_item.quantity,'remaining_quantity',v_after));
- return v_after;
-end
-$function$
-
+   if v_hp is null or jsonb_typeof(v_hp)<>'object' or v_hp->>'max' !~ '^[0-9]+$'
+      or v_hp->>'current' !~ '^[0-9]+$'
    then raise exception 'Configure character hit points before using healing potions' using errcode='22023'; end if;
    v_current:=(v_hp->>'current')::integer;
    v_max:=(v_hp->>'max')::integer;
    if v_max<1 or v_max>100000 or v_current<0 or v_current>v_max
    then raise exception 'Character hit points are invalid' using errcode='22023'; end if;
    for v_n in 1..(p_quantity::integer*v_dice_count) loop
-     v_roll:=1+floor(random()*v_dice_sides)::integer;
-     v_requested_heal:=v_requested_heal+v_roll;
+     v_requested_heal:=v_requested_heal+1+floor(random()*v_dice_sides)::integer;
    end loop;
    v_requested_heal:=v_requested_heal+v_bonus*p_quantity::integer;
    v_applied_heal:=least(v_requested_heal,v_max-v_current);
@@ -216,7 +130,7 @@ $function$
  insert into public.inventory_transactions(campaign_id,actor_user_id,kind,details)
  values(v_campaign,v_actor,'character_item_used',
    jsonb_build_object('character_id',p_character,'item_id',p_item,'item_name',v_name,
-   'quantity',p_quantity,'source_quantity_before',v_item.quantity,'remaining_quantity',v_after));
+   'quantity',p_quantity,'source_quantity_before',v_item.quantity,'remaining_quantity',v_after,'heal_rolled',v_requested_heal,'heal_applied',v_applied_heal));
  return v_after;
 end
 $function$
