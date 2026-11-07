@@ -1,7 +1,7 @@
 import React,{useEffect,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {createClient} from '@supabase/supabase-js';
-import {BookOpen,Castle,ChevronLeft,Compass,Crown,Plus,ScrollText,Shield,UserRound} from 'lucide-react';
+import {BookOpen,Castle,ChevronLeft,Compass,Crown,Eye,EyeOff,Plus,ScrollText,Shield,UserRound} from 'lucide-react';
 import {prioritizeStarterRulesets} from './rulesets';
 import {inventoryErrorMessage} from './inventoryErrors';
 import CharacterScreen,{type InventoryTab} from './CharacterScreen';
@@ -18,6 +18,7 @@ const key=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY||'';
 const ready=!!url&&!!key&&!key.startsWith('REPLACE');
 const db=ready?createClient(url,key):null;
 type Row={id:string;name:string;[key:string]:any};
+type PlayerCharacter={character_id:string;character_name:string;campaign_id:string;campaign_name:string};
 type Page='landing'|'player'|'gm'|'create'|'play';
 type Entry='player'|'gm'|'create';
 const itemCategories=[['gear','General Gear'],['weapon','Weapon'],['shield','Shield'],['armor','Armor'],['clothing','Clothing'],['jewelry','Jewelry'],['ring','Ring'],['headgear','Headgear'],['footwear','Footwear'],['focus','Spellcasting Focus'],['tool','Tool'],['wondrous','Wondrous Item']];
@@ -32,6 +33,10 @@ function App(){
   const[sessionReady,setSessionReady]=useState(false);
   const[email,setEmail]=useState('');
   const[password,setPassword]=useState('');
+  const[showPassword,setShowPassword]=useState(false);
+  const[playerCharacters,setPlayerCharacters]=useState<PlayerCharacter[]>([]);
+  const[playerCharactersLoading,setPlayerCharactersLoading]=useState(false);
+  const[playerCharactersError,setPlayerCharactersError]=useState('');
   const[register,setRegister]=useState(false);
   const[systems,setSystems]=useState<any[]>([]);
   const[campaigns,setCampaigns]=useState<Row[]>([]);
@@ -117,6 +122,19 @@ function App(){
     setEffects(await rpc('list_character_effects',{p_character:ch}));
     setInventoryVersion(v=>v+1);
   }
+  async function openPlayerCharacter(selected:PlayerCharacter){
+    if(busy||campaignBusy||playerCharactersLoading)return;
+    setBusy(true);setMsg('');
+    try{
+      setCampaign(selected.campaign_id);
+      await loadCampaign(selected.campaign_id);
+      await loadChar(selected.campaign_id,selected.character_id);
+      setChar(selected.character_id);
+      setActiveTab('character');
+      navigate('play');
+    }catch(e){setMsg(inventoryErrorMessage(e))}
+    finally{setBusy(false)}
+  }
   async function chooseCharacter(id:string){
     setChar(id);
     if(id)await run(()=>loadChar(campaign,id));
@@ -148,8 +166,20 @@ function App(){
     }).catch(e=>setMsg(inventoryErrorMessage(e)));
   },[session]);
   useEffect(()=>{
+    if(page!=='player'||!session||!db)return;
+    let cancelled=false;
+    setPlayerCharactersLoading(true);setPlayerCharactersError('');setPlayerCharacters([]);
+    void db.rpc('list_my_player_characters').then(({data,error})=>{
+      if(cancelled)return;
+      if(error)throw error;
+      setPlayerCharacters((data||[]) as PlayerCharacter[]);
+    }).catch(e=>{if(!cancelled)setPlayerCharactersError(inventoryErrorMessage(e))})
+      .finally(()=>{if(!cancelled)setPlayerCharactersLoading(false)});
+    return()=>{cancelled=true};
+  },[page,session?.user?.id]);
+  useEffect(()=>{
     if(session)return;
-    setCampaign('');setChar('');setGmAccess(false);setChars([]);setItems([]);
+    setCampaign('');setChar('');setGmAccess(false);setChars([]);setItems([]);setPlayerCharacters([]);
     if(sessionReady)setPage('landing');
   },[session,sessionReady]);
 
@@ -173,7 +203,14 @@ function App(){
     })
   }}>
     <label>Email<input type="email" autoComplete="email" placeholder="you@example.com" required value={email} onChange={e=>setEmail(e.target.value)}/></label>
-    <label>Password<input type="password" autoComplete={register?'new-password':'current-password'} required minLength={6} value={password} onChange={e=>setPassword(e.target.value)}/></label>
+    <label>Password
+      <span className="nx-password-field">
+        <input type={showPassword?'text':'password'} autoComplete={register?'new-password':'current-password'} required minLength={6} value={password} onChange={e=>setPassword(e.target.value)}/>
+        <button type="button" className="nx-password-toggle" aria-label={showPassword?'Hide password':'Show password'} aria-pressed={showPassword} onClick={()=>setShowPassword(v=>!v)}>
+          {showPassword?<EyeOff size={19} aria-hidden="true"/>:<Eye size={19} aria-hidden="true"/>}
+        </button>
+      </span>
+    </label>
     <button type="submit" disabled={busy}>{register?'Create account':'Sign in'}</button>
     <button type="button" className="nx-text-button" onClick={()=>setRegister(!register)}>{register?'Already registered? Sign in':'New account? Register'}</button>
     <p className="nx-small-note">The same Nexus account is used for both player and GM access. Campaign permissions determine which tools are available.</p>
@@ -205,7 +242,7 @@ function App(){
         <p className="nx-landing-description">Manage your character, collect treasures and explore your campaign from one connected hub.</p>
         <div className="nx-entry-grid">
           <button type="button" className="nx-entry-card" onClick={()=>openEntry('player')}>
-            <UserRound size={28}/><strong>Player Login</strong><span>Choose your campaign and character</span>
+            <UserRound size={28}/><strong>Player Login</strong><span>Choose one of your characters</span>
           </button>
           <button type="button" className="nx-entry-card" onClick={()=>openEntry('gm')}>
             <Shield size={28}/><strong>GM Login</strong><span>Campaign management and tools</span>
@@ -226,11 +263,20 @@ function App(){
       page==='player'?<section className="nx-page-card nx-select-page">
         <button type="button" className="nx-back-link" onClick={()=>navigate('landing')}><ChevronLeft size={17}/> Landing</button>
         <div className="nx-page-icon"><UserRound/></div><h1>Player Portal</h1>
-        <p>Select your campaign and character to enter the inventory interface.</p>
-        <div className="nx-selection-form">{campaignSelect}{characterSelect}
-          <button type="button" className="nx-primary-action" disabled={!campaign||!char||campaignBusy||busy} onClick={()=>{setActiveTab('character');navigate('play')}}>Enter Character</button>
+        <p>Choose one of your assigned characters to enter its campaign.</p>
+        <div className="nx-player-character-list" aria-label="Your characters">
+          {playerCharactersLoading?<p role="status">Loading your characters…</p>:
+            playerCharactersError?<p className="nx-character-list-error" role="alert">Unable to load your characters: {playerCharactersError}</p>:
+            playerCharacters.length===0?<p className="nx-small-note">No characters are currently assigned to this account. Ask your GM to assign a character in an active campaign.</p>:
+            playerCharacters.map(person=><button type="button" key={person.character_id} className="nx-player-character-card"
+              disabled={busy||campaignBusy} aria-label={`Open ${person.character_name} in ${person.campaign_name}`}
+              onClick={()=>{void openPlayerCharacter(person)}}>
+              <span className="nx-player-character-avatar"><UserRound size={23} aria-hidden="true"/></span>
+              <span className="nx-player-character-label"><strong>{person.character_name}</strong>
+                <span><BookOpen size={14} aria-hidden="true"/> {person.campaign_name}</span></span>
+              <span className="nx-player-character-open">Open <Compass size={16} aria-hidden="true"/></span>
+            </button>)}
         </div>
-        {campaign&&!campaignBusy&&chars.length===0&&<p className="nx-small-note">No accessible characters were found in this campaign.</p>}
         <div className="nx-future-feature"><ScrollText size={20}/><div><strong>Request Character Transfer</strong><span>Coming soon — transfer characters between campaigns with GM approval.</span></div></div>
       </section>:
       page==='create'?<section className="nx-page-card nx-create-page">
@@ -379,7 +425,7 @@ function App(){
         </section>}
       </div>:<section className="nx-page-card">
         <h1>Select a Character</h1>
-        <p>Choose your campaign and character in the Player Portal.</p>
+        <p>Choose an assigned character in the Player Portal.</p>
         <button type="button" onClick={()=>navigate('player')}>Go to Player Portal</button>
       </section>}
       {msg&&<div className="nx-global-message" role="status">{msg}</div>}
