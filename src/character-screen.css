@@ -443,3 +443,33 @@
 .mv-invalid-loadout p{font-size:12px;line-height:1.6;margin:7px 0;color:#ffdcc5}
 .mv-invalid-loadout small{display:block;font-size:11px;line-height:1.5;color:#d9b5a1}
 @media(max-width:460px){.mv-unequip-modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:13px}.mv-unequip-modal-actions button{min-width:0}}
+
+/* Nexus Multiverse character + inventory layout refinements. */
+.mv-equipped-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;border-bottom:1px solid #2e7185;padding-bottom:12px}
+.mv-equipped-heading h3{margin:0;border:0;padding:0}
+.mv-loadout-launch{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:43px;padding:9px 12px;background:#0c3d53;border:1px solid #55bdd5;border-radius:9px;color:#a9f2ff;font-size:12px;font-weight:750;cursor:pointer}
+.mv-loadout-launch:hover,.mv-loadout-launch:focus-visible{background:#14546d;border-color:#8cf0ff}
+.mv-equipment-row>svg{color:#66e6f9}
+.mv-loadout-dialog{width:min(790px,calc(100vw - 24px));max-width:790px;max-height:min(87dvh,950px);display:flex;flex-direction:column;overflow:hidden}
+.mv-loadout-dialog>.mv-modal-header{flex:none}
+.mv-loadout-dialog-body{padding:15px;overflow-y:auto;overscroll-behavior:contain;min-height:0}
+.mv-loadout-dialog-body .nx-loadout-health{margin:0}
+.mv-inventory-quick-action{border:1px solid #45b5d0;background:#0e4159;color:#e5faff;border-radius:9px;min-height:44px;padding:9px 14px;font-size:12px;font-weight:750;white-space:nowrap;flex:none;cursor:pointer}
+.mv-inventory-quick-action:hover:not(:disabled),.mv-inventory-quick-action:focus-visible{background:#17627b}
+.mv-inventory-quick-action:disabled{opacity:.55;cursor:not-allowed}
+.mv-stored-tag{display:inline-flex!important;align-items:center;gap:5px;align-self:start;width:fit-content;padding:4px 8px;border:1px solid #367c8e;border-radius:999px;background:#10384b;color:#9be5f5!important;font-weight:700;font-size:11px!important}
+.mv-inventory-slot-filter{display:grid;grid-template-columns:minmax(130px,1fr) minmax(190px,1.4fr);align-items:center;gap:10px;margin:12px 0 15px;padding:11px 12px;border:1px solid #326d83;border-radius:9px;background:#09293a}
+.mv-inventory-slot-filter label{font-size:12px;color:#b0e2ed;font-weight:750}
+.mv-inventory-slot-filter select{width:100%;min-width:0;max-width:100%;min-height:45px;margin:0;box-sizing:border-box;padding:9px 12px;border:1px solid #4ca1b6;border-radius:8px;background:#061e2d;color:#e7fcff;font-size:16px}
+.mv-carry-capacity-help{margin-top:10px;border:1px solid #2e687d;border-radius:8px;background:#09293a;padding:9px 11px}
+.mv-carry-capacity-help summary{cursor:pointer;font-size:12px;font-weight:750;color:#a6e1ef;min-height:25px}
+.mv-carry-capacity-help[open] summary{margin-bottom:10px}
+.mv-carry-capacity-help .mv-weight-unknown{margin:9px 0}
+@media(max-width:600px){
+  .mv-equipped-heading{align-items:center}
+  .mv-loadout-launch span{display:none}
+  .mv-loadout-launch{width:45px;padding:10px}
+  .mv-inventory-slot-filter{grid-template-columns:1fr}
+  .mv-inventory-quick-action{min-height:43px;margin-left:auto}
+  .mv-loadout-dialog-body{padding:10px}
+}
