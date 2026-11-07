@@ -271,10 +271,10 @@ function App(){
             playerCharacters.map(person=><button type="button" key={person.character_id} className="nx-player-character-card"
               disabled={busy||campaignBusy} aria-label={`Open ${person.character_name} in ${person.campaign_name}`}
               onClick={()=>{void openPlayerCharacter(person)}}>
-              <span className="nx-player-character-avatar"><UserRound size={23} aria-hidden="true"/></span>
-              <span className="nx-player-character-label"><strong>{person.character_name}</strong>
-                <span><BookOpen size={14} aria-hidden="true"/> {person.campaign_name}</span></span>
-              <span className="nx-player-character-open">Open <Compass size={16} aria-hidden="true"/></span>
+              <span className="nx-player-character-label">
+                <strong>{person.character_name}</strong>
+                <span>{person.campaign_name}</span>
+              </span>
             </button>)}
         </div>
         <div className="nx-future-feature"><ScrollText size={20}/><div><strong>Request Character Transfer</strong><span>Coming soon — transfer characters between campaigns with GM approval.</span></div></div>
