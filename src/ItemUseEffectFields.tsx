@@ -69,7 +69,7 @@ export default function ItemUseEffectFields({value,onChange,disabled,prefix}:Pro
   return <fieldset className="nx-use-effect-fields" disabled={disabled}>
     <legend>Automatic Use Effect</legend>
     <label>When used
-      <select value={value.type} onChange={e=>update('type',e.target.value)}>
+      <select value={value.type} onChange={e=>onChange({...value,type:e.target.value,code:e.target.value==='ability_bonus'?'str':(['add_condition','remove_condition'].includes(e.target.value)?'poisoned':value.code)})}>
         {effectTypes.map(([code,label])=><option key={code} value={code}>{label}</option>)}
       </select>
     </label>
