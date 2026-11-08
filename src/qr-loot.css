@@ -25,3 +25,9 @@
 .mv-loot-confirm{display:grid;gap:8px;border:1px solid #639da8;border-radius:8px;padding:10px}
 .mv-loot-confirm>div{display:flex;gap:8px}
 .mv-loot-success{display:flex;align-items:center;gap:7px;color:#b4f7dc;font-weight:700;font-size:12px}
+
+.nx-qr-loot-currency-list{display:grid;gap:8px;border:1px solid #376e7e;border-radius:9px;padding:10px}
+.nx-qr-loot-currency-list>strong{font-size:13px;color:#d8f8f2}
+.nx-qr-loot-currency-list>p{margin:0;font-size:12px;color:#a8cbd7}
+.nx-qr-loot-currency-list>div{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px;border:1px solid #275b6e;border-radius:7px;font-size:12px;color:#cce7ef}
+.nx-qr-loot-currency-list button{padding:7px 10px;background:#174257;color:#e2f7fa;border:1px solid #547f94;border-radius:7px;cursor:pointer}
