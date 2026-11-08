@@ -100,11 +100,11 @@ export default function CombatStatusPanel({db,character,inventoryVersion,busy,hp
       <button type="button" disabled={disabled} onClick={()=>{setError('');setDialog('add')}}><Activity size={16}/> Add Condition / Effect</button>
       {hpCurrent===0&&<button type="button" className="mv-death-open" disabled={disabled} onClick={()=>{setError('');setDeathDismissed(false);setDialog('death')}}><HeartPulse size={16}/> Death Saves</button>}
     </div>
-    {(state.conditions.length>0||state.effects.length>0)&&<section className="mv-combat-active" aria-label="Active conditions and timed effects">
+    {(state.conditions.length>0||state.effects.some(entry=>entry.kind!=='bonus'))&&<section className="mv-combat-active" aria-label="Active conditions and status effects">
       <strong>Active Conditions & Effects</strong>
       <div className="mv-combat-status-list">
-        {[...state.conditions.map(entry=>({...entry,group:'condition' as const})),...state.effects.map(entry=>({...entry,group:'effect' as const}))].map(entry=><div className="mv-combat-status-row" key={entry.group+':'+entry.code}>
-          <span><strong>{entry.code.toUpperCase()}{entry.kind==='bonus'? ' '+(Number(entry.value)>=0?'+':'')+String(entry.value):''}</strong><small>{durationText(entry)} · {entry.source??'Manual'}</small></span>
+        {[...state.conditions.map(entry=>({...entry,group:'condition' as const})),...state.effects.filter(entry=>entry.kind!=='bonus').map(entry=>({...entry,group:'effect' as const}))].map(entry=><div className="mv-combat-status-row" key={entry.group+':'+entry.code}>
+          <span><strong>{entry.code.toUpperCase()}</strong><small>{durationText(entry)} · {entry.source??'Manual'}</small></span>
           <button type="button" disabled={disabled} onClick={()=>void act(entry.group==='condition'?'condition_remove':'effect_remove',{code:entry.code})}>Remove</button>
         </div>)}
       </div>
