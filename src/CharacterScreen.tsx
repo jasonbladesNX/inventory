@@ -9,6 +9,7 @@ import CharacterRestPanel from './CharacterRestPanel';
 import CharacterCurrencyPanel from './CharacterCurrencyPanel';
 import CampaignShop from './CampaignShop';
 import ClaimLootPanel from './ClaimLootPanel';
+import CharacterCraftingPanel from './CharacterCraftingPanel';
 import InventoryWorkbench,{type WorkbenchIndicator} from './InventoryWorkbench';
 import StackManagement from './StackManagement';
 import './character-screen.css';
@@ -1069,7 +1070,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       <p className="mv-inventory-hint">Trading and connection diagnostics remain available below the inventory panel during testing.</p>
     </div>}
     {tab==='shop'&&<CampaignShop db={db} campaign={campaign} character={character} inventoryVersion={inventoryVersion} busy={busy||loading} onChanged={onInventoryChanged}/>}
-    {tab==='craft'&&<section className="mv-panel mv-placeholder"><FlaskConical size={30}/><h3>Crafting</h3><p>Recipes, materials and crafting actions are planned. No materials can be consumed from this preview.</p></section>}
+    {tab==='craft'&&<CharacterCraftingPanel db={db} campaign={campaign} character={character} inventoryVersion={inventoryVersion} busy={busy||loading} onChanged={onInventoryChanged}/>
     {loadoutOpen&&tab==='character'&&createPortal(
       <div className="mv-modal-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget){setLoadoutOpen(false);loadoutTriggerRef.current?.focus()}}}>
         <section className="mv-item-modal mv-loadout-dialog" role="dialog" aria-modal="true" aria-labelledby="mv-loadout-dialog-title">
