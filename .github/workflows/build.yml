@@ -40,6 +40,7 @@ jobs:
       - run: node scripts/test-character-hp-quick-adjust.mjs
       - run: node scripts/test-character-potion-hotbar.mjs
       - run: node scripts/test-combat-milestones-7-1-to-7-5.mjs
+      - run: node scripts/test-custom-item-use-effects.mjs
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
