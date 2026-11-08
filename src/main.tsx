@@ -14,6 +14,7 @@ import Trading from './Trading';
 import GmCurrencyManager from './GmCurrencyManager';
 import GmMerchantManager from './GmMerchantManager';
 import GmLootManager from './GmLootManager';
+import GmCraftingManager from './GmCraftingManager';
 import './style.css';
 import './app-pages.css';
 
@@ -379,6 +380,7 @@ function App(){
           <GmCurrencyManager db={db!} campaign={campaign} characters={chars} onChanged={async()=>{if(char)await loadChar(campaign,char)}}/>
           <GmMerchantManager db={db!} campaign={campaign} definitions={defs}/>
           <GmLootManager db={db!} campaign={campaign}/>
+          <GmCraftingManager db={db!} campaign={campaign} definitions={defs}/>
           <section className="nx-page-card nx-gm-tools">
             <h2><BookOpen size={20}/> GM Item Catalog</h2>
             <form className="nx-tool-form" onSubmit={e=>{e.preventDefault();void run(async()=>{
