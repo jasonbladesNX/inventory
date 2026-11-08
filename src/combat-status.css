@@ -1,0 +1,24 @@
+.mv-combat-panel{display:grid;gap:14px}
+.mv-combat-panel>h3{display:flex;align-items:center;gap:8px;margin:0}
+.mv-combat-section{border:1px solid #285c72;border-radius:10px;background:#092636;padding:12px;display:grid;gap:11px;min-width:0}
+.mv-combat-section h4{display:flex;align-items:center;gap:7px;color:#c0edf6;font-size:14px;margin:0}
+.mv-combat-section p{font-size:11px;color:#93bfcd;line-height:1.5;margin:0}
+.mv-combat-inline{display:flex;align-items:end;flex-wrap:wrap;gap:9px}
+.mv-combat-inline>strong{color:#a3edd8;font-size:16px;margin-right:auto}
+.mv-combat-panel label{display:grid;gap:5px;color:#b2dce7;font-size:11px;font-weight:650;min-width:0}
+.mv-combat-panel input,.mv-combat-panel select{min-width:0;box-sizing:border-box;max-width:100%;min-height:39px;background:#061d2d;border:1px solid #48849b;border-radius:7px;padding:7px 9px;color:#e5faff;font-size:14px}
+.mv-combat-inline input{width:90px}
+.mv-combat-panel button{min-height:39px;padding:7px 11px;border:1px solid #499eb2;border-radius:8px;background:#145269;color:#e5fbff;font-size:12px;font-weight:750;display:inline-flex;align-items:center;justify-content:center;gap:5px;cursor:pointer}
+.mv-combat-panel button:disabled{opacity:.48;cursor:not-allowed}
+.mv-combat-panel button:hover:not(:disabled){background:#206a81}
+.mv-combat-controls{display:flex;flex-wrap:wrap;align-items:end;gap:8px}
+.mv-combat-controls>label{flex:1 1 95px}
+.mv-combat-controls>button{flex:0 0 auto}
+.mv-combat-status-list{display:grid;gap:5px}
+.mv-combat-status-row{display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid #315b70;padding:8px 10px;border-radius:8px}
+.mv-combat-status-row>span{display:grid;gap:3px}
+.mv-combat-status-row strong{text-transform:capitalize;font-size:12px}
+.mv-combat-status-row small,.mv-combat-muted{font-size:11px;color:#93bece}
+.mv-death-save-summary{display:flex;flex-wrap:wrap;gap:12px;color:#bddde8;font-size:12px}
+.mv-death-save-summary strong{color:#f9d3a0}
+@media(max-width:460px){.mv-combat-controls>label{flex:1 1 90px}.mv-combat-controls>button{width:100%}}
