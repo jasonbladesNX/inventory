@@ -335,12 +335,12 @@ function App(){
           <section className="nx-page-card nx-gm-tools">
             <h2><BookOpen size={20}/> GM Item Catalog</h2>
             <form className="nx-tool-form" onSubmit={e=>{e.preventDefault();void run(async()=>{
-              await rpc('create_campaign_custom_item',{p_campaign:campaign,p_name:itemName,p_category:itemCategory,p_bonus_attribute:attr||null,p_bonus:bonus?Number(bonus):null,p_two_handed:itemCategory==='weapon'&&twoHanded,p_consumable:itemConsumable||itemCategory==='consumable'});
+              await rpc('create_campaign_custom_item',{p_campaign:campaign,p_name:itemName,p_category:itemCategory,p_bonus_attribute:itemConsumable||itemCategory==='consumable'?null:attr||null,p_bonus:itemConsumable||itemCategory==='consumable'?null:bonus?Number(bonus):null,p_two_handed:itemCategory==='weapon'&&twoHanded,p_consumable:itemConsumable||itemCategory==='consumable'});
               await loadCampaign(campaign);setItemName('');setItemConsumable(false);
             })}}>
               <label>New item name<input required value={itemName} onChange={e=>setItemName(e.target.value)} placeholder="New equipment item"/></label>
               <label>Equipment category
-                <select value={itemCategory} onChange={e=>setItemCategory(e.target.value)}>
+                <select value={itemCategory} onChange={e=>{setItemCategory(e.target.value);if(!['gear','consumable','ammunition','material','component','misc','supplies'].includes(e.target.value))setItemConsumable(false)}}>
                   {itemCategories.map(([code,label])=><option key={code} value={code}>{label}</option>)}
                 </select>
               </label>
