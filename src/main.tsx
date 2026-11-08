@@ -21,7 +21,7 @@ type Row={id:string;name:string;[key:string]:any};
 type PlayerCharacter={character_id:string;character_name:string;campaign_id:string;campaign_name:string};
 type Page='landing'|'player'|'gm'|'create'|'play';
 type Entry='player'|'gm'|'create';
-const itemCategories=[['gear','General Gear'],['weapon','Weapon'],['shield','Shield'],['armor','Armor'],['clothing','Clothing'],['jewelry','Jewelry'],['ring','Ring'],['headgear','Headgear'],['footwear','Footwear'],['focus','Spellcasting Focus'],['tool','Tool'],['wondrous','Wondrous Item']];
+const itemCategories=[['gear','General Gear'],['consumable','Consumable'],['weapon','Weapon'],['shield','Shield'],['armor','Armor'],['clothing','Clothing'],['jewelry','Jewelry'],['ring','Ring'],['headgear','Headgear'],['footwear','Footwear'],['focus','Spellcasting Focus'],['tool','Tool'],['wondrous','Wondrous Item']];
 
 function App(){
   const[page,setPage]=useState<Page>('landing');
@@ -56,6 +56,9 @@ function App(){
   const[slotLabel,setSlotLabel]=useState('');
   const[itemName,setItemName]=useState('');
   const[itemCategory,setItemCategory]=useState('gear');
+  const[itemConsumable,setItemConsumable]=useState(false);
+  const[editConsumableDefinition,setEditConsumableDefinition]=useState('');
+  const[editConsumableValue,setEditConsumableValue]=useState(true);
   const[effectPotionName,setEffectPotionName]=useState('');
   const[effectPotionType,setEffectPotionType]=useState('temp_hp');
   const[effectPotionCode,setEffectPotionCode]=useState('poisoned');
@@ -95,7 +98,7 @@ function App(){
     try{
       const [people,catalog,equipment,account,membership,recipientQuery,campaignOwner]=await Promise.all([
         db.from('characters').select('id,name,member_id').eq('campaign_id',id),
-        db.from('item_definitions').select('id,name,category,code,source_info,default_properties').eq('campaign_id',id),
+        db.from('item_definitions').select('id,name,category,code,source_info,default_properties,campaign_id').eq('campaign_id',id),
         db.from('equipment_slot_definitions').select('id,label').eq('campaign_id',id),
         db.auth.getUser(),
         db.from('campaign_members').select('id,user_id,role,status').eq('campaign_id',id),
@@ -332,8 +335,8 @@ function App(){
           <section className="nx-page-card nx-gm-tools">
             <h2><BookOpen size={20}/> GM Item Catalog</h2>
             <form className="nx-tool-form" onSubmit={e=>{e.preventDefault();void run(async()=>{
-              await rpc('create_campaign_equipment_item',{p_campaign:campaign,p_name:itemName,p_category:itemCategory,p_bonus_attribute:attr||null,p_bonus:bonus?Number(bonus):null,p_two_handed:itemCategory==='weapon'&&twoHanded});
-              await loadCampaign(campaign);setItemName('');
+              await rpc('create_campaign_custom_item',{p_campaign:campaign,p_name:itemName,p_category:itemCategory,p_bonus_attribute:attr||null,p_bonus:bonus?Number(bonus):null,p_two_handed:itemCategory==='weapon'&&twoHanded,p_consumable:itemConsumable||itemCategory==='consumable'});
+              await loadCampaign(campaign);setItemName('');setItemConsumable(false);
             })}}>
               <label>New item name<input required value={itemName} onChange={e=>setItemName(e.target.value)} placeholder="New equipment item"/></label>
               <label>Equipment category
@@ -342,9 +345,37 @@ function App(){
                 </select>
               </label>
               <label className="nx-checkbox"><input type="checkbox" checked={twoHanded} disabled={itemCategory!=='weapon'} onChange={e=>setTwoHanded(e.target.checked)}/> Two-handed weapon</label>
-              <label>Bonus attribute (optional)<input placeholder="e.g. STR" value={attr} onChange={e=>setAttr(e.target.value)}/></label>
-              <label>Bonus amount (optional)<input type="number" step="any" placeholder="e.g. 2" value={bonus} onChange={e=>setBonus(e.target.value)}/></label>
+              <label className="nx-checkbox"><input type="checkbox" checked={itemConsumable||itemCategory==='consumable'}
+                disabled={!['gear','consumable','ammunition','material','component','misc','supplies'].includes(itemCategory)||itemCategory==='consumable'}
+                onChange={e=>{setItemConsumable(e.target.checked);if(e.target.checked){setAttr('');setBonus('')}}}/> Consumable / Usable — deduct one item when used</label>
+              {(itemConsumable||itemCategory==='consumable')&&<p className="nx-small-note">Usable items are consumed from inventory and recorded in activity. Mechanical effects require a configured effect potion.</p>}
+              <label>Bonus attribute (optional)<input placeholder="e.g. STR" disabled={itemConsumable||itemCategory==='consumable'} value={attr} onChange={e=>setAttr(e.target.value)}/></label>
+              <label>Bonus amount (optional)<input type="number" step="any" placeholder="e.g. 2" disabled={itemConsumable||itemCategory==='consumable'} value={bonus} onChange={e=>setBonus(e.target.value)}/></label>
               <button type="submit" disabled={busy}>Create Catalog Item</button>
+            </form>
+            <form className="nx-tool-form" onSubmit={e=>{e.preventDefault();void run(async()=>{
+              const choice=defs.find(d=>d.id===editConsumableDefinition);
+              if(!choice)throw Error('Select a custom item.');
+              await rpc('set_campaign_item_consumable',{
+                p_campaign:campaign,p_definition:choice.id,p_consumable:editConsumableValue
+              });
+              await loadCampaign(campaign);
+              setMsg(`${choice.name} is now ${editConsumableValue?'consumable / usable':'not consumable'}.`);
+            })}}>
+              <h3>Update Existing Custom Item</h3>
+              <label>Item
+                <select required value={editConsumableDefinition} onChange={e=>setEditConsumableDefinition(e.target.value)}>
+                  <option value="">Choose an eligible custom item…</option>
+                  {defs.filter(d=>['gear','consumable','ammunition','material','component','misc','supplies'].includes(d.category)&&!!d.campaign_id).map(d=><option key={d.id} value={d.id}>{d.name}</option>)}
+                </select>
+              </label>
+              <label>Usable status
+                <select value={editConsumableValue?'yes':'no'} onChange={e=>setEditConsumableValue(e.target.value==='yes')}>
+                  <option value="yes">Consumable / Usable</option>
+                  <option value="no">Not consumable</option>
+                </select>
+              </label>
+              <button type="submit" disabled={busy||campaignBusy||!editConsumableDefinition}>Save Item Status</button>
             </form>
           </section>
           <section className="nx-page-card nx-gm-tools">
