@@ -7,6 +7,7 @@ import LoadoutHealthPanel from './LoadoutHealthPanel';
 import CombatStatusPanel from './CombatStatusPanel';
 import CharacterRestPanel from './CharacterRestPanel';
 import CharacterCurrencyPanel from './CharacterCurrencyPanel';
+import CampaignShop from './CampaignShop';
 import InventoryWorkbench,{type WorkbenchIndicator} from './InventoryWorkbench';
 import StackManagement from './StackManagement';
 import './character-screen.css';
@@ -1066,7 +1067,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         equippedIds={new Set(equipped.map(row=>row.itemId))} busy={busy||loading} onChanged={onInventoryChanged}/>
       <p className="mv-inventory-hint">Trading and connection diagnostics remain available below the inventory panel during testing.</p>
     </div>}
-    {tab==='shop'&&<section className="mv-panel mv-placeholder"><ShoppingBag size={30}/><h3>Campaign Shops</h3><p>Shop browsing and purchases are not enabled yet. Merchant transactions will be connected after security testing.</p></section>}
+    {tab==='shop'&&<CampaignShop db={db} campaign={campaign} character={character} inventoryVersion={inventoryVersion} busy={busy||loading} onChanged={onInventoryChanged}/>}
     {tab==='craft'&&<section className="mv-panel mv-placeholder"><FlaskConical size={30}/><h3>Crafting</h3><p>Recipes, materials and crafting actions are planned. No materials can be consumed from this preview.</p></section>}
     {loadoutOpen&&tab==='character'&&createPortal(
       <div className="mv-modal-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget){setLoadoutOpen(false);loadoutTriggerRef.current?.focus()}}}>
