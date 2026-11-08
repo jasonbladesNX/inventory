@@ -34,8 +34,10 @@ assert.match(consumption,/v_heal->>'type'<>'heal_hp'/,'use RPC retains existing 
 const character=readFileSync('src/CharacterScreen.tsx','utf8');
 const combat=readFileSync('src/CombatStatusPanel.tsx','utf8');
 assert.match(character,/setActiveTimedEffects\(state\.effects\.filter\(effect=>effect\.kind==='bonus'\)/,'active timed bonus feed from combat status');
-assert.match(character,/className="mv-attribute-timed-bonus"/,'attribute summary displays timed bonuses');
-assert.match(character,/Timed \{effect\.value>=0/,'timed bonus has explicit signed value');
+assert.match(character,/className="mv-attribute-summary-item mv-attribute-summary-button"/,'attribute cards are clickable');
+assert.match(character,/className="mv-attribute-details-modal"/,'attribute bonus popup is available');
+assert.match(character,/selectedTimedBonuses\.map/,'attribute popup lists timed effects');
+assert.match(character,/selectedEquipmentSources\.map/,'attribute popup lists equipment effect sources');
 assert.match(character,/setUseSuccess\(\`Item used/,'inventory quick use feedback');
 assert.match(character,/setUseSuccess\(\`\$\{option\.name\} used/,'potion hotbar use feedback');
 assert.match(character,/role="status">\{useSuccess\}/,'visible use confirmation');
