@@ -43,6 +43,7 @@ jobs:
       - run: node scripts/test-custom-item-use-effects.mjs
       - run: node scripts/test-compact-character-ui.mjs
       - run: node scripts/test-attribute-effect-popups.mjs
+      - run: node scripts/test-character-rest-7-6.mjs
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
