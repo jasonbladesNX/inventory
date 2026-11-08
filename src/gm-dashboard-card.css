@@ -1,0 +1,10 @@
+.nx-gm-collapsible{border:1px solid #315b71;border-radius:11px;overflow:hidden;background:#0a2b3e;min-width:0}
+.nx-gm-collapsible-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:55px;padding:12px 16px;border:0;background:#113b50;color:#e5f8ff;text-align:left;font:inherit;font-weight:750;font-size:15px;cursor:pointer}
+.nx-gm-collapsible-toggle:hover,.nx-gm-collapsible-toggle:focus-visible{background:#18536a;outline-offset:-3px}
+.nx-gm-collapsible-toggle svg{flex:none;transition:transform .15s}
+.nx-gm-collapsible-toggle[aria-expanded="true"] svg{transform:rotate(180deg)}
+.nx-gm-collapsible-content[hidden]{display:none!important}
+.nx-gm-collapsible-content>.nx-page-card{border:0;border-radius:0;margin:0;box-shadow:none}
+.nx-gm-collapsible-content>.nx-gm-tools>h2:first-child{display:none}
+.nx-gm-collapsible-content>.nx-page-card{padding:16px}
+@media(max-width:520px){.nx-gm-collapsible-toggle{padding:12px;font-size:14px}.nx-gm-collapsible-content>.nx-page-card{padding:12px}}
