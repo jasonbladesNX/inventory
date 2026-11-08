@@ -5,6 +5,7 @@ import {Backpack, CircleDot, Coins, Crown, FlaskConical, Footprints, Gem, Hand, 
 import {inventoryErrorMessage} from './inventoryErrors';
 import LoadoutHealthPanel from './LoadoutHealthPanel';
 import CombatStatusPanel from './CombatStatusPanel';
+import CharacterRestPanel from './CharacterRestPanel';
 import InventoryWorkbench,{type WorkbenchIndicator} from './InventoryWorkbench';
 import StackManagement from './StackManagement';
 import './character-screen.css';
@@ -954,6 +955,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         busy={busy||loading} hpCurrent={hitPoints?.configured?(hitPoints.current??null):null}
         tempOpen={tempHpOpen} onCloseTemp={()=>setTempHpOpen(false)}
         onChanged={onInventoryChanged} onCombatLoaded={state=>{setTempHpValue(state.temporary_hp);setActiveTimedEffects(state.effects.filter(effect=>effect.kind==='bonus').map(effect=>({code:effect.code,value:Number(effect.value??0),unit:effect.unit,remaining:effect.remaining,source:effect.source})))}}/>
+      <CharacterRestPanel db={db} character={character} inventoryVersion={inventoryVersion} busy={busy||loading} onChanged={onInventoryChanged}/>
       {hitPointPanel}
       {attributePanel}
       {attributeDetailsModal}
