@@ -45,6 +45,7 @@ jobs:
       - run: node scripts/test-attribute-effect-popups.mjs
       - run: node scripts/test-character-rest-7-6.mjs
       - run: node scripts/test-character-currency-7-7.mjs
+      - run: node scripts/test-campaign-merchants-7-8.mjs
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
