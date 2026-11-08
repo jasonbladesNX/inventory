@@ -47,6 +47,7 @@ jobs:
       - run: node scripts/test-character-currency-7-7.mjs
       - run: node scripts/test-campaign-merchants-7-8.mjs
       - run: node scripts/test-qr-loot-7-9.mjs
+      - run: node scripts/test-character-crafting-7-10.mjs
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
