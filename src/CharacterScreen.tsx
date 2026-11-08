@@ -108,6 +108,8 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [potionSlotBusy,setPotionSlotBusy]=useState<number|null>(null);
   const [potionUseBusy,setPotionUseBusy]=useState<number|null>(null);
   const [potionError,setPotionError]=useState('');
+  const [useSuccess,setUseSuccess]=useState('');
+  const [activeTimedEffects,setActiveTimedEffects]=useState<{code:string;value:number;unit:string;remaining:number|null;source?:string}[]>([]);
   const [potionEditorOpen,setPotionEditorOpen]=useState(false);
   const potionEditorTriggerRef=useRef<HTMLButtonElement>(null);
   const potionEditorCloseRef=useRef<HTMLButtonElement>(null);
@@ -218,7 +220,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   useEffect(()=>{
     let cancelled=false;
     async function load(){
-      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setInventoryIndicators({});setUsableItemIds(new Set());setFavoriteIds(new Set());setStorage({});setContainerUsage({});setWeightSummary(null);setCarryProfile(null);setHitPoints(null);setPotionHotbar({slots:[],options:[]});setPotionError('');setAttributes([]);setDerivedAttributes({});setEffectSources([]);setEffectSourcesError('');setInvalidEquipment([]);setInvalidEquipmentError('');
+      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setInventoryIndicators({});setUsableItemIds(new Set());setFavoriteIds(new Set());setStorage({});setContainerUsage({});setWeightSummary(null);setCarryProfile(null);setHitPoints(null);setPotionHotbar({slots:[],options:[]});setPotionError('');setActiveTimedEffects([]);setAttributes([]);setDerivedAttributes({});setEffectSources([]);setEffectSourcesError('');setInvalidEquipment([]);setInvalidEquipmentError('');
       try{
         const [assignments,currency,compatibility,categories,storageRows,usageRows,weightRows,carryRows,attributeRows,derivedRows,sourceRows,invalidRows,favoriteRows,indicatorRows,usableRows,hpRows,potionRows]=await Promise.all([
           db.rpc('list_character_equipped_instances',{p_character:character}),
@@ -491,7 +493,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         p_target_item:null,p_container_item:null
       });
       if(rpcError)throw rpcError;
-      closeDetails();await onInventoryChanged();
+      closeDetails();await onInventoryChanged();setUseSuccess(`${amount} × ${item.display_name} used. Any configured effects are now active on your character.`);
     }catch(e){setSplitError(inventoryErrorMessage(e))}
     finally{setSplitBusy(false)}
   };
@@ -598,6 +600,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       });
       if(rpcError)throw rpcError;
       await onInventoryChanged();
+      setUseSuccess(`${option.name} used. Its configured effect has been applied.`);
     }catch(e){setPotionError(inventoryErrorMessage(e))}
     finally{setPotionUseBusy(null)}
   };
@@ -610,6 +613,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       });
       if(rpcError)throw rpcError;
       await onInventoryChanged();
+      setUseSuccess(`Item used. Check Combat Status for any active effects.`);
     }catch(e){setQuickUseError(inventoryErrorMessage(e))}
     finally{setQuickUseBusy(null)}
   };
@@ -778,12 +782,14 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         const bonus=Number(derived?.equipment_bonus??0);
         const effective=derived?.effective_score??row.score;
         const modifier=derived?.effective_modifier??row.modifier;
+        const timedBonuses=activeTimedEffects.filter(effect=>effect.code.toUpperCase()===row.attribute_code);
         return <div key={row.attribute_code} className="mv-attribute-summary-item"
           title={bonus!==0?`Base ${row.score??'not set'}; equipment ${bonus>0?'+':''}${numberText(bonus,2)}`:`Base ${row.score??'not set'}`}>
           <span>{row.attribute_code}:</span>
           <strong>{effective===null?'—':numberText(effective,2)}</strong>
           {modifier!==null&&<span className="mv-attribute-summary-mod">({modifier>=0?'+':''}{modifier})</span>}
           {bonus!==0&&<small className="mv-attribute-equipment-label">Gear net {bonus>0?'+':''}{numberText(bonus,2)}</small>}
+          {timedBonuses.map((effect,i)=><small key={effect.code+':'+i} className="mv-attribute-timed-bonus" title={effect.source??'Timed effect'}>Timed {effect.value>=0?'+':''}{effect.value} · {effect.remaining===null?'Until removed':`${effect.remaining} ${effect.unit}${effect.remaining===1?'':'s'}`}</small>)}
         </div>
       })}
     </div>
@@ -859,10 +865,11 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       <div className="mv-ornament" aria-hidden="true">✦</div>
     </div>
     {tab==='character'&&<div className="mv-panels">
+      {useSuccess&&<p className="mv-use-success" role="status">{useSuccess}</p>}
       {hitPointPanel}
       <CombatStatusPanel db={db} character={character} inventoryVersion={inventoryVersion}
         busy={busy||loading} hpCurrent={hitPoints?.configured?(hitPoints.current??null):null}
-        onChanged={onInventoryChanged}/>
+        onChanged={onInventoryChanged} onCombatLoaded={state=>setActiveTimedEffects(state.effects.filter(effect=>effect.kind==='bonus').map(effect=>({code:effect.code,value:Number(effect.value??0),unit:effect.unit,remaining:effect.remaining,source:effect.source})))}/>
       {attributePanel}
       {attributeModal}
     {unequipWarning&&createPortal(
@@ -953,6 +960,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       {error&&<p className="mv-error" role="alert">Unable to load equipment or wallet: {error}</p>}
     </div>}
     {tab==='inventory'&&<div className="mv-inventory-view">
+      {useSuccess&&<p className="mv-use-success" role="status">{useSuccess}</p>}
       <section className="mv-panel" aria-labelledby="mv-inventory-title">
         <h3 id="mv-inventory-title"><Backpack size={20}/> Inventory <span className="mv-item-count">{items.length} {items.length===1?'item':'items'}</span></h3>
         {inventoryWeightPanel}
