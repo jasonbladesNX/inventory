@@ -11,6 +11,7 @@ import RequirementEditor from './RequirementEditor';
 import ItemUseEffectFields,{buildUseEffect,draftFromEffect,emptyUseEffect,type UseEffectDraft} from './ItemUseEffectFields';
 import ConnectionChecks from './ConnectionChecks';
 import Trading from './Trading';
+import GmCurrencyManager from './GmCurrencyManager';
 import './style.css';
 import './app-pages.css';
 
@@ -373,6 +374,7 @@ function App(){
               <button type="submit" disabled={busy}>Create Character</button>
             </form>
           </section>
+          <GmCurrencyManager db={db!} campaign={campaign} characters={chars} onChanged={async()=>{if(char)await loadChar(campaign,char)}}/>
           <section className="nx-page-card nx-gm-tools">
             <h2><BookOpen size={20}/> GM Item Catalog</h2>
             <form className="nx-tool-form" onSubmit={e=>{e.preventDefault();void run(async()=>{
