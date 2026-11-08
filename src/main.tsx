@@ -8,6 +8,7 @@ import CharacterScreen,{type InventoryTab} from './CharacterScreen';
 import EffectEditor from './EffectEditor';
 import EffectEditorBoundary from './EffectEditorBoundary';
 import RequirementEditor from './RequirementEditor';
+import ItemUseEffectFields,{buildUseEffect,draftFromEffect,emptyUseEffect,type UseEffectDraft} from './ItemUseEffectFields';
 import ConnectionChecks from './ConnectionChecks';
 import Trading from './Trading';
 import './style.css';
@@ -57,6 +58,8 @@ function App(){
   const[itemName,setItemName]=useState('');
   const[itemCategory,setItemCategory]=useState('gear');
   const[itemConsumable,setItemConsumable]=useState(false);
+  const[newItemUseEffect,setNewItemUseEffect]=useState<UseEffectDraft>({...emptyUseEffect});
+  const[existingItemUseEffect,setExistingItemUseEffect]=useState<UseEffectDraft>({...emptyUseEffect});
   const[editConsumableDefinition,setEditConsumableDefinition]=useState('');
   const[editConsumableValue,setEditConsumableValue]=useState(true);
   const[effectPotionName,setEffectPotionName]=useState('');
@@ -335,8 +338,8 @@ function App(){
           <section className="nx-page-card nx-gm-tools">
             <h2><BookOpen size={20}/> GM Item Catalog</h2>
             <form className="nx-tool-form" onSubmit={e=>{e.preventDefault();void run(async()=>{
-              await rpc('create_campaign_custom_item',{p_campaign:campaign,p_name:itemName,p_category:itemCategory,p_bonus_attribute:itemConsumable||itemCategory==='consumable'?null:attr||null,p_bonus:itemConsumable||itemCategory==='consumable'?null:bonus?Number(bonus):null,p_two_handed:itemCategory==='weapon'&&twoHanded,p_consumable:itemConsumable||itemCategory==='consumable'});
-              await loadCampaign(campaign);setItemName('');setItemConsumable(false);
+              await rpc('create_campaign_custom_item_with_effect',{p_campaign:campaign,p_name:itemName,p_category:itemCategory,p_bonus_attribute:itemConsumable||itemCategory==='consumable'?null:attr||null,p_bonus:itemConsumable||itemCategory==='consumable'?null:bonus?Number(bonus):null,p_two_handed:itemCategory==='weapon'&&twoHanded,p_consumable:itemConsumable||itemCategory==='consumable',p_use_effect:itemConsumable||itemCategory==='consumable'?buildUseEffect(newItemUseEffect):null});
+              await loadCampaign(campaign);setItemName('');setItemConsumable(false);setNewItemUseEffect({...emptyUseEffect});
             })}}>
               <label>New item name<input required value={itemName} onChange={e=>setItemName(e.target.value)} placeholder="New equipment item"/></label>
               <label>Equipment category
@@ -348,23 +351,25 @@ function App(){
               <label className="nx-checkbox"><input type="checkbox" checked={itemConsumable||itemCategory==='consumable'}
                 disabled={!['gear','consumable','ammunition','material','component','misc','supplies'].includes(itemCategory)||itemCategory==='consumable'}
                 onChange={e=>{setItemConsumable(e.target.checked);if(e.target.checked){setAttr('');setBonus('')}}}/> Consumable / Usable — deduct one item when used</label>
-              {(itemConsumable||itemCategory==='consumable')&&<p className="nx-small-note">Usable items are consumed from inventory and recorded in activity. Mechanical effects require a configured effect potion.</p>}
+              {(itemConsumable||itemCategory==='consumable')&&<p className="nx-small-note">Usable items deduct one unit from inventory and can apply an optional effect.</p>}
               <label>Bonus attribute (optional)<input placeholder="e.g. STR" disabled={itemConsumable||itemCategory==='consumable'} value={attr} onChange={e=>setAttr(e.target.value)}/></label>
               <label>Bonus amount (optional)<input type="number" step="any" placeholder="e.g. 2" disabled={itemConsumable||itemCategory==='consumable'} value={bonus} onChange={e=>setBonus(e.target.value)}/></label>
+              {(itemConsumable||itemCategory==='consumable')&&<ItemUseEffectFields prefix="new-custom-item" value={newItemUseEffect} onChange={setNewItemUseEffect} disabled={busy}/>} 
               <button type="submit" disabled={busy}>Create Catalog Item</button>
             </form>
             <form className="nx-tool-form" onSubmit={e=>{e.preventDefault();void run(async()=>{
               const choice=defs.find(d=>d.id===editConsumableDefinition);
               if(!choice)throw Error('Select a custom item.');
-              await rpc('set_campaign_item_consumable',{
-                p_campaign:campaign,p_definition:choice.id,p_consumable:editConsumableValue
+              await rpc('update_campaign_custom_item_use_settings',{
+                p_campaign:campaign,p_definition:choice.id,p_consumable:editConsumableValue,
+                p_use_effect:editConsumableValue?buildUseEffect(existingItemUseEffect):null
               });
               await loadCampaign(campaign);
-              setMsg(`${choice.name} is now ${editConsumableValue?'consumable / usable':'not consumable'}.`);
+              setMsg(`${choice.name} use settings saved.`);
             })}}>
               <h3>Update Existing Custom Item</h3>
               <label>Item
-                <select required value={editConsumableDefinition} onChange={e=>setEditConsumableDefinition(e.target.value)}>
+                <select required value={editConsumableDefinition} onChange={e=>{const id=e.target.value;const selected=defs.find(d=>d.id===id);setEditConsumableDefinition(id);setEditConsumableValue(selected?.default_properties?.consumable===true||selected?.category==='consumable');setExistingItemUseEffect(draftFromEffect(selected?.default_properties?.use_effect))}}>
                   <option value="">Choose an eligible custom item…</option>
                   {defs.filter(d=>['gear','consumable','ammunition','material','component','misc','supplies'].includes(d.category)&&!!d.campaign_id).map(d=><option key={d.id} value={d.id}>{d.name}</option>)}
                 </select>
@@ -375,7 +380,8 @@ function App(){
                   <option value="no">Not consumable</option>
                 </select>
               </label>
-              <button type="submit" disabled={busy||campaignBusy||!editConsumableDefinition}>Save Item Status</button>
+              {editConsumableValue&&<ItemUseEffectFields prefix="existing-custom-item" value={existingItemUseEffect} onChange={setExistingItemUseEffect} disabled={busy||campaignBusy}/>}
+              <button type="submit" disabled={busy||campaignBusy||!editConsumableDefinition}>Save Item Settings</button>
             </form>
           </section>
           <section className="nx-page-card nx-gm-tools">
