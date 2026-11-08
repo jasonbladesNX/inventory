@@ -142,6 +142,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [hpError,setHpError]=useState('');
   const [hpAdjustAmount,setHpAdjustAmount]=useState('1');
   const [hpAdjustBusy,setHpAdjustBusy]=useState(false);
+  const [tempHpValue,setTempHpValue]=useState(0);
+  const [tempHpOpen,setTempHpOpen]=useState(false);
+  const [tempHpClearing,setTempHpClearing]=useState(false);
   const [hpAdjustFeedback,setHpAdjustFeedback]=useState('');
   const [carryError,setCarryError]=useState('');
   const [attributesSaving,setAttributesSaving]=useState(false);
@@ -733,11 +736,28 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     }catch(e){setHpError(inventoryErrorMessage(e))}
     finally{setHpAdjustBusy(false)}
   };
+  const clearTemporaryHitPoints=async()=>{
+    if(busy||loading||tempHpClearing)return;
+    setTempHpClearing(true);setHpError('');
+    try{
+      const {error:rpcError}=await db.rpc('update_character_combat_state',{p_character:character,p_action:'temp_hp',p_payload:{amount:0}});
+      if(rpcError)throw rpcError;
+      setTempHpValue(0);
+      await onInventoryChanged();
+    }catch(e){setHpError(inventoryErrorMessage(e))}
+    finally{setTempHpClearing(false)}
+  };
   const hitPointPanel=<section className="mv-panel mv-hp-panel" aria-labelledby="mv-hp-heading">
     <div className="mv-equipped-heading">
       <h3 id="mv-hp-heading"><HeartPulse size={20}/> Hit Points</h3>
-      {!hpEditing&&<button type="button" className="mv-attributes-edit-trigger" disabled={busy||loading}
-        onClick={()=>{setHpCurrent(hitPoints?.configured?String(hitPoints.current):'');setHpMax(hitPoints?.configured?String(hitPoints.max):'');setHpError('');setHpEditing(true)}}>{hitPoints?.configured?'Edit HP':'Set HP'}</button>}
+      <div className="mv-hp-title-actions">
+        {!hpEditing&&<button type="button" className="mv-attributes-edit-trigger" disabled={busy||loading}
+          onClick={()=>{setHpCurrent(hitPoints?.configured?String(hitPoints.current):'');setHpMax(hitPoints?.configured?String(hitPoints.max):'');setHpError('');setHpEditing(true)}}>{hitPoints?.configured?'Edit HP':'Set HP'}</button>}
+        <button type="button" className="mv-attributes-edit-trigger" disabled={busy||loading||tempHpClearing}
+          onClick={()=>{if(tempHpValue>0)void clearTemporaryHitPoints();else setTempHpOpen(true)}}>
+          {tempHpValue>0?'Clear temp HP':'Temp HP'}
+        </button>
+      </div>
     </div>
     {!hpEditing&&<div className="mv-hp-summary">
       {hitPoints?.configured?<><strong>{hitPoints.current} / {hitPoints.max} HP</strong>
@@ -866,10 +886,11 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     </div>
     {tab==='character'&&<div className="mv-panels">
       {useSuccess&&<p className="mv-use-success" role="status">{useSuccess}</p>}
-      {hitPointPanel}
       <CombatStatusPanel db={db} character={character} inventoryVersion={inventoryVersion}
         busy={busy||loading} hpCurrent={hitPoints?.configured?(hitPoints.current??null):null}
-        onChanged={onInventoryChanged} onCombatLoaded={state=>setActiveTimedEffects(state.effects.filter(effect=>effect.kind==='bonus').map(effect=>({code:effect.code,value:Number(effect.value??0),unit:effect.unit,remaining:effect.remaining,source:effect.source})))}/>
+        tempOpen={tempHpOpen} onCloseTemp={()=>setTempHpOpen(false)}
+        onChanged={onInventoryChanged} onCombatLoaded={state=>{setTempHpValue(state.temporary_hp);setActiveTimedEffects(state.effects.filter(effect=>effect.kind==='bonus').map(effect=>({code:effect.code,value:Number(effect.value??0),unit:effect.unit,remaining:effect.remaining,source:effect.source})))}}/>
+      {hitPointPanel}
       {attributePanel}
       {attributeModal}
     {unequipWarning&&createPortal(
