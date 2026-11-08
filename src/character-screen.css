@@ -568,3 +568,7 @@
 .mv-potion-dialog-field{display:grid;gap:7px;font-size:12px;font-weight:750;color:#b2e2ed}
 .mv-potion-dialog-field select{box-sizing:border-box;width:100%;min-width:0;min-height:44px;padding:10px;border:1px solid #4a91a3;border-radius:8px;background:#051d2b;color:#e7faff;font-size:14px}
 @media(max-width:510px){.mv-potion-slots{gap:7px}.mv-potion-slot .mv-potion-use{font-size:12px;padding:10px 6px;min-height:55px}}
+
+/* Temporary potion effects are visible without highlighting one ability card over another. */
+.mv-attribute-timed-bonus{display:block;flex-basis:100%;text-align:center;color:#a1ead1;font-size:10px;line-height:1.35;font-weight:700}
+.mv-use-success{margin:7px 0 13px;padding:10px 12px;border:1px solid #3f9077;border-radius:8px;background:#113e36;color:#c9f8e8;font-size:12px;line-height:1.5}
