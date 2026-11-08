@@ -32,4 +32,15 @@ assert.match(zero,/v_at_zero_damage/,'damage at 0 HP causes death failure');
 assert.match(gm,/create_campaign_effect_potion/,'GM can create new effect potions');
 assert.match(potions,/app_private.is_gm\(p_campaign\)/,'GM-only custom potion creator');
 assert.match(status,/revoke all on function public.update_character_combat_state/,'anonymous combat mutation denied');
+// 7.2 regression: ordinary custom items are explicitly usable, and existing items can be updated.
+const catalog=readFileSync('docs/sql/custom-item-consumable-7-2.sql','utf8');
+assert.match(gm,/Consumable \/ Usable — deduct one item when used/,'GM create-item usable checkbox');
+assert.match(gm,/create_campaign_custom_item/,'create new custom consumable RPC');
+assert.match(gm,/set_campaign_item_consumable/,'update existing custom item usability');
+assert.match(gm,/Update Existing Custom Item/,'existing item edit UI');
+assert.match(gm,/\['gear','consumable'/,'consumable item category listed');
+assert.match(catalog,/app_private\.is_gm\(p_campaign\)/,'GM authorization required');
+assert.match(catalog,/Equipment and items with persistent effects cannot be made consumable/,'equipment safety checks');
+assert.match(catalog,/jsonb_set\(coalesce\(d\.default_properties/,'consumable property stored');
+assert.match(catalog,/revoke all on function public\.set_campaign_item_consumable/,'anonymous mutation denied');
 console.log('PASS milestones 7.1–7.5: temp HP, custom potion effects, conditions, timed bonuses, expiry, death saves');
