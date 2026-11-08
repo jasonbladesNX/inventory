@@ -15,6 +15,7 @@ import GmCurrencyManager from './GmCurrencyManager';
 import GmMerchantManager from './GmMerchantManager';
 import GmLootManager from './GmLootManager';
 import GmCraftingManager from './GmCraftingManager';
+import GmDashboardCard from './GmDashboardCard';
 import './style.css';
 import './app-pages.css';
 
@@ -364,6 +365,7 @@ function App(){
         </div>
         {campaign&&!campaignBusy&&!gmAccess&&<section className="nx-page-card nx-warning"><Shield size={20}/><div><h2>GM permission required</h2><p>Your account doesn't have manager access to this campaign. Select another campaign or use the Player Portal.</p></div></section>}
         {campaign&&gmAccess&&!campaignBusy&&<>
+          <GmDashboardCard key={'characters-'+campaign} title="Character Management">
           <section className="nx-page-card nx-gm-tools">
             <h2><UserRound size={20}/> Character Management</h2>
             {characterSelect}
@@ -377,10 +379,20 @@ function App(){
               <button type="submit" disabled={busy}>Create Character</button>
             </form>
           </section>
-          <GmCurrencyManager db={db!} campaign={campaign} characters={chars} onChanged={async()=>{if(char)await loadChar(campaign,char)}}/>
-          <GmMerchantManager db={db!} campaign={campaign} definitions={defs}/>
-          <GmLootManager db={db!} campaign={campaign}/>
-          <GmCraftingManager db={db!} campaign={campaign} definitions={defs}/>
+          </GmDashboardCard>
+          <GmDashboardCard key={'recipes-'+campaign} title="Crafting Recipes" initiallyOpen>
+            <GmCraftingManager db={db!} campaign={campaign} definitions={defs}/>
+          </GmDashboardCard>
+          <GmDashboardCard key={'currency-'+campaign} title="Campaign Currency">
+            <GmCurrencyManager db={db!} campaign={campaign} characters={chars} onChanged={async()=>{if(char)await loadChar(campaign,char)}}/>
+          </GmDashboardCard>
+          <GmDashboardCard key={'merchants-'+campaign} title="Campaign Merchants">
+            <GmMerchantManager db={db!} campaign={campaign} definitions={defs}/>
+          </GmDashboardCard>
+          <GmDashboardCard key={'loot-'+campaign} title="QR Loot Containers">
+            <GmLootManager db={db!} campaign={campaign}/>
+          </GmDashboardCard>
+          <GmDashboardCard key={'catalog-'+campaign} title="GM Item Catalog">
           <section className="nx-page-card nx-gm-tools">
             <h2><BookOpen size={20}/> GM Item Catalog</h2>
             <form className="nx-tool-form" onSubmit={e=>{e.preventDefault();void run(async()=>{
@@ -430,6 +442,8 @@ function App(){
               <button type="submit" disabled={busy||campaignBusy||!editConsumableDefinition}>Save Item Settings</button>
             </form>
           </section>
+          </GmDashboardCard>
+          <GmDashboardCard key={'potions-'+campaign} title="Custom Effect Potions">
           <section className="nx-page-card nx-gm-tools">
             <h2><BookOpen size={20}/> Custom Effect Potions</h2>
             <p>Create campaign-specific consumables that grant temporary HP, apply or remove a condition, or track an ability bonus. Grant them to characters using the item catalog tool below.</p>
@@ -471,9 +485,13 @@ function App(){
               <button type="submit" disabled={busy||campaignBusy||!effectPotionName.trim()}>Create Effect Potion</button>
             </form>
           </section>
+          </GmDashboardCard>
+          <GmDashboardCard key={'requirements-'+campaign} title="Equipment Requirements">
           <RequirementEditor db={db!} campaign={campaign} definitions={defs}
             attributes={effectAttributes}
             onChanged={async()=>{await loadCampaign(campaign)}}/>
+          </GmDashboardCard>
+          <GmDashboardCard key={'effects-'+campaign} title="Equipment Effects">
           <EffectEditorBoundary campaign={campaign}>
             <EffectEditor db={db!} campaign={campaign} definitions={defs}
               attributes={effectAttributes} operations={effectOperations}
@@ -481,6 +499,8 @@ function App(){
               allowEquippedCategory={allowsCategoryCondition}
               onChanged={async()=>{if(char)await loadChar(campaign,char)}}/>
           </EffectEditorBoundary>
+          </GmDashboardCard>
+          <GmDashboardCard key={'slots-'+campaign} title="Equipment Slots">
           <section className="nx-page-card nx-gm-tools">
             <h2><Shield size={20}/> Equipment Slots</h2>
             <p>{slots.map(s=>s.label).join(' · ')||'No slots configured yet.'}</p>
@@ -497,6 +517,8 @@ function App(){
               <button type="submit" disabled={busy}>Add Slot</button>
             </form>
           </section>
+          </GmDashboardCard>
+          <GmDashboardCard key={'grants-'+campaign} title="Grant Item to Character">
           <section className="nx-page-card nx-gm-tools">
             <h2><Plus size={20}/> Grant Item to Character</h2>
             <form className="nx-tool-form" onSubmit={e=>{e.preventDefault();void run(async()=>{
@@ -527,6 +549,7 @@ function App(){
             </form>
             {chars.length===0&&<p className="nx-small-note">Create a character above before granting items.</p>}
           </section>
+          </GmDashboardCard>
         </>}
       </section>:
       page==='play'&&campaign&&char?<div className="nx-play-page">
