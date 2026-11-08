@@ -20,7 +20,7 @@ assert.match(player,/onChanged\(\)/,'inventory refreshed after craft');
 assert.match(sql,/enable row level security/,'tables use RLS');
 assert.match(sql,/revoke all on public.campaign_crafting_recipes/,'direct table access denied');
 assert.match(sql,/app_private\.is_gm\(p_campaign\)/,'GM-only recipes');
-assert.match(sql,/v_recipe\.active/,'craft checks active recipe');
+assert.match(sql,/r\.active/,'craft checks active recipe');
 assert.match(sql,/pg_advisory_xact_lock/,'crafts serialize with inventory-changing actions');
 assert.match(sql,/Missing required crafting materials/,'craft blocks missing ingredients');
 assert.match(sql,/i\.container_id is null/,'nested materials excluded initially');
