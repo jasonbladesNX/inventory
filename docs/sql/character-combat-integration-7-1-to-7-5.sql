@@ -78,7 +78,7 @@ begin
 end
 $function$
 
-
+;
 CREATE OR REPLACE FUNCTION public.use_character_inventory_item(p_character uuid, p_item uuid, p_quantity numeric DEFAULT 1)
  RETURNS numeric
  LANGUAGE plpgsql
@@ -288,7 +288,7 @@ $function$
 end
 $function$
 
-
+;
 CREATE OR REPLACE FUNCTION public.set_character_hit_points(p_character uuid, p_current integer, p_max integer)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -314,7 +314,7 @@ begin
  return jsonb_build_object('configured',true,'current',p_current,'max',p_max);
 end $function$
 
-
+;
 CREATE OR REPLACE FUNCTION public.list_character_inventory_activity(p_character uuid, p_limit integer DEFAULT 40)
  RETURNS TABLE(event_id uuid, action text, item_name text, quantity numeric, occurred_at timestamp with time zone, description text)
  LANGUAGE plpgsql
@@ -359,4 +359,4 @@ begin
       select 1 from public.inventory_holders h where h.id=i.holder_id and h.character_id=p_character and h.holder_type='character'))
  )
  order by t.occurred_at desc,t.id desc limit greatest(1,least(coalesce(p_limit,40),100));
-end $function$
+end $function$;
