@@ -10,6 +10,8 @@ export default function GmMerchantManager({db,campaign,definitions}:{db:Supabase
  const[merchants,setMerchants]=useState<Merchant[]>([]),[currencies,setCurrencies]=useState<Currency[]>([]);
  const[itemCatalog,setItemCatalog]=useState<Definition[]>([]);
  const[merchant,setMerchant]=useState(''),[listings,setListings]=useState<Listing[]>([]);
+ const[listingSelection,setListingSelection]=useState('');
+ const[listingBusy,setListingBusy]=useState(false);
  const[name,setName]=useState(''),[description,setDescription]=useState(''),[active,setActive]=useState(true);
  const[definition,setDefinition]=useState(''),[currency,setCurrency]=useState(''),[price,setPrice]=useState('1'),[buyback,setBuyback]=useState('0');
  const[stock,setStock]=useState('1'),[buyFromPlayers,setBuyFromPlayers]=useState(false);
@@ -30,23 +32,28 @@ export default function GmMerchantManager({db,campaign,definitions}:{db:Supabase
   return()=>{cancelled=true};
  },[db,campaign,definitions.length]);
  useEffect(()=>{if(!merchant){setListings([]);return}let cancelled=false;
+  setListingBusy(true);
   void db.rpc('list_merchant_stock',{p_merchant:merchant}).then(({data,error:rpcError})=>{
    if(rpcError)throw rpcError;if(!cancelled)setListings(data||[]);
-  }).catch(e=>{if(!cancelled)setError(inventoryErrorMessage(e))});
+  }).catch(e=>{if(!cancelled)setError(inventoryErrorMessage(e))})
+  .finally(()=>{if(!cancelled)setListingBusy(false)});
   return()=>{cancelled=true};
  },[db,merchant]);
+ const resetListing=()=>{setListingSelection('');setDefinition('');setCurrency('');setPrice('1');setBuyback('0');setStock('1');setBuyFromPlayers(false)};
  const choose=(id:string)=>{
-  setMerchant(id);const m=merchants.find(row=>row.id===id);
+  setMerchant(id);resetListing();setNotice('');const m=merchants.find(row=>row.id===id);
   setName(m?.name??'');setDescription(m?.description??'');setActive(m?.active??true);
  };
  const saveMerchant=async(e:React.FormEvent)=>{
   e.preventDefault();if(busy)return;setBusy(true);setError('');setNotice('');
   try{
    const {data,error:rpcError}=await db.rpc('save_campaign_merchant',{p_campaign:campaign,p_name:name.trim(),p_merchant:merchant||null,p_description:description.trim(),p_active:active});
-   if(rpcError)throw rpcError;await load();setMerchant(String(data));setNotice('Merchant saved.');
+   if(rpcError)throw rpcError;await load();setMerchant(String(data));resetListing();setNotice('Merchant saved. Add merchandise below to stock this shop.');
   }catch(ex){setError(inventoryErrorMessage(ex))}finally{setBusy(false)}
  };
  const chooseListing=(id:string)=>{
+  setListingSelection(id);
+  if(!id){resetListing();return}
   const l=listings.find(row=>row.listing_id===id);
   if(!l)return;
   setDefinition(l.definition_id);setCurrency(l.currency_id);setPrice(String(l.price));setBuyback(String(l.buyback));
@@ -61,7 +68,7 @@ export default function GmMerchantManager({db,campaign,definitions}:{db:Supabase
    });
    if(rpcError)throw rpcError;
    const {data,error:loadError}=await db.rpc('list_merchant_stock',{p_merchant:merchant});
-   if(loadError)throw loadError;setListings(data||[]);setNotice('Merchandise and stock saved.');
+   if(loadError)throw loadError;setListings(data||[]);resetListing();setNotice('Merchandise and stock saved. The listing is now available in Edit Existing Merchandise.');
   }catch(ex){setError(inventoryErrorMessage(ex))}finally{setBusy(false)}
  };
  return <section className="nx-page-card nx-gm-tools" aria-label="Campaign Merchants">
@@ -79,10 +86,14 @@ export default function GmMerchantManager({db,campaign,definitions}:{db:Supabase
   </form>
   {merchant&&<form className="nx-tool-form" onSubmit={e=>void saveListing(e)}>
    <h3>Merchant Stock & Prices</h3>
-   <label>Edit listed merchandise<select value="" onChange={e=>chooseListing(e.target.value)}>
-    <option value="">Choose a listing to edit…</option>
-    {listings.map(l=><option key={l.listing_id} value={l.listing_id}>{l.item_name} · {l.price} {l.currency_code} · Stock {l.quantity}</option>)}
-   </select></label>
+   <p>Managing <strong>{merchants.find(m=>m.id===merchant)?.name||name}</strong>. {listings.length===0?'This shop has no merchandise yet. Select an item below to add its first listing.':String(listings.length)+' listing(s) available. You can add a new item or edit an existing listing.'}</p>
+   <label>Edit Existing Merchandise
+    <select value={listingSelection} disabled={busy||listingBusy} onChange={e=>chooseListing(e.target.value)}>
+     <option value="">Add New Merchandise</option>
+     {listings.map(l=><option key={l.listing_id} value={l.listing_id}>{l.item_name} · {l.price} {l.currency_code} · Stock {l.quantity}</option>)}
+    </select>
+   </label>
+   <h4>{listingSelection?'Edit Merchandise':'Add New Merchandise'}</h4>
    <label>Item definition<select required value={definition} onChange={e=>setDefinition(e.target.value)}>
     <option value="">Choose item…</option>{itemCatalog.map(d=><option value={d.id} key={d.id}>{d.name} ({d.category})</option>)}
    </select></label>
@@ -93,7 +104,7 @@ export default function GmMerchantManager({db,campaign,definitions}:{db:Supabase
    <label>Buyback price per unit<input type="number" required min={0} max={1000000000} step="any" value={buyback} onChange={e=>setBuyback(e.target.value)}/></label>
    <label>Available stock<input type="number" required min={0} max={1000000} step="1" value={stock} onChange={e=>setStock(e.target.value)}/></label>
    <label><input type="checkbox" checked={buyFromPlayers} onChange={e=>setBuyFromPlayers(e.target.checked)}/> Merchant buys this item from players</label>
-   <button type="submit" disabled={busy||!definition||!currency}>Save Merchandise</button>
+   <button type="submit" disabled={busy||listingBusy||!definition||!currency}>{listingSelection?'Update Merchandise':'Add Merchandise to Shop'}</button>
    {!currencies.length&&<p>Create a currency denomination in Campaign Currency before adding merchandise.</p>}
    {!itemCatalog.length&&<p>No campaign or ruleset items are available. Create an item in the GM Item Catalog first.</p>}
   </form>}
