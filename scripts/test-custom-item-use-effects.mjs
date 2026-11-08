@@ -31,4 +31,13 @@ assert.match(update,/public\.set_campaign_item_use_effect/,'existing usable item
 assert.match(update,/default_properties='?/, 'existing status editor clears effects before disabling use');
 assert.match(consumption,/v_effect_type in \('temp_hp','remove_condition','add_condition','ability_bonus'\)/,'use RPC applies supported status effects');
 assert.match(consumption,/v_heal->>'type'<>'heal_hp'/,'use RPC retains existing healing behavior');
+const character=readFileSync('src/CharacterScreen.tsx','utf8');
+const combat=readFileSync('src/CombatStatusPanel.tsx','utf8');
+assert.match(character,/setActiveTimedEffects\(state\.effects\.filter\(effect=>effect\.kind==='bonus'\)/,'active timed bonus feed from combat status');
+assert.match(character,/className="mv-attribute-timed-bonus"/,'attribute summary displays timed bonuses');
+assert.match(character,/Timed \{effect\.value>=0/,'timed bonus has explicit signed value');
+assert.match(character,/setUseSuccess\(\`Item used/,'inventory quick use feedback');
+assert.match(character,/setUseSuccess\(\`\$\{option\.name\} used/,'potion hotbar use feedback');
+assert.match(character,/role="status">\{useSuccess\}/,'visible use confirmation');
+assert.match(combat,/get_character_combat_state/,'combat panel reads persisted effects after use');
 console.log('PASS new and existing custom-item use effects: healing, temporary HP, conditions, timed ability bonuses');
