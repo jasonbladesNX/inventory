@@ -114,7 +114,7 @@ export default function GmLootManager({db,campaign}:{db:SupabaseClient;campaign:
    {items.length>0?<div className="nx-qr-loot-items">{items.map(item=><div key={item.item_id}>
     <span>{item.name} × {item.quantity}</span>
     {selected.is_active&&<button type="button" disabled={busy} onClick={()=>remove(item.item_id)}>Remove</button>}
-   </div>)}</div>:<p>This container is empty. Add items below.</p>}
+   </div>)}</div>:<p>{lootMoney.length?'No physical items in this container.':'This container has no physical items. Add items or currency below.'}</p>}
    <div className="nx-qr-loot-currency-list">
     <strong>Currency contents</strong>
     {lootMoney.length?lootMoney.map(m=><div key={m.currency_id}><span>{Number(m.amount).toLocaleString(undefined,{maximumFractionDigits:m.precision_digits})} {m.code} · {m.name}</span>
