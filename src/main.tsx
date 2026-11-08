@@ -20,7 +20,7 @@ const ready=!!url&&!!key&&!key.startsWith('REPLACE');
 const db=ready?createClient(url,key):null;
 type Row={id:string;name:string;[key:string]:any};
 type PlayerCharacter={character_id:string;character_name:string;campaign_id:string;campaign_name:string};
-type Page='landing'|'player'|'gm'|'create'|'play';
+type Page='landing'|'player'|'gm-select'|'gm'|'create'|'play';
 type Entry='player'|'gm'|'create';
 const itemCategories=[['gear','General Gear'],['consumable','Consumable'],['weapon','Weapon'],['shield','Shield'],['armor','Armor'],['clothing','Clothing'],['jewelry','Jewelry'],['ring','Ring'],['headgear','Headgear'],['footwear','Footwear'],['focus','Spellcasting Focus'],['tool','Tool'],['wondrous','Wondrous Item']];
 
@@ -29,6 +29,9 @@ function App(){
   const[entry,setEntry]=useState<Entry>('player');
   const[activeTab,setActiveTab]=useState<InventoryTab>('character');
   const[gmAccess,setGmAccess]=useState(false);
+  const[gmCampaignIds,setGmCampaignIds]=useState<string[]>([]);
+  const[gmCampaignLoading,setGmCampaignLoading]=useState(false);
+  const[gmCampaignError,setGmCampaignError]=useState('');
   const[inventoryVersion,setInventoryVersion]=useState(0);
   const[session,setSession]=useState<any>(null);
   const[sessionReady,setSessionReady]=useState(false);
@@ -158,6 +161,7 @@ function App(){
   }
   function openEntry(next:Entry){
     setEntry(next);
+    if(next==='gm'){setCampaign('');setGmAccess(false);navigate('gm-select');return}
     navigate(next==='create'?'create':next);
   }
 
@@ -177,6 +181,24 @@ function App(){
       setSystems(prioritizeStarterRulesets((result.data||[]).map(s=>({...s,game_systems:Array.isArray(s.game_systems)?s.game_systems[0]||null:s.game_systems}))));
     }).catch(e=>setMsg(inventoryErrorMessage(e)));
   },[session]);
+  useEffect(()=>{
+    if(page!=='gm-select'||!session||!db)return;
+    let cancelled=false;
+    setGmCampaignLoading(true);setGmCampaignError('');setGmCampaignIds([]);
+    void Promise.all([
+      db.from('campaigns').select('id,name,owner_user_id,ruleset_version_id'),
+      db.from('campaign_members').select('campaign_id,role,status').eq('user_id',session.user.id).eq('status','active')
+    ]).then(([campaignResult,membershipResult])=>{
+      if(campaignResult.error)throw campaignResult.error;
+      if(membershipResult.error)throw membershipResult.error;
+      if(cancelled)return;
+      setCampaigns(campaignResult.data||[]);
+      const authorized=new Set((membershipResult.data||[]).filter(m=>m.role==='gm'||m.role==='owner').map(m=>m.campaign_id));
+      setGmCampaignIds((campaignResult.data||[]).filter(c=>c.owner_user_id===session.user.id||authorized.has(c.id)).map(c=>c.id));
+    }).catch(e=>{if(!cancelled)setGmCampaignError(inventoryErrorMessage(e))})
+    .finally(()=>{if(!cancelled)setGmCampaignLoading(false)});
+    return()=>{cancelled=true};
+  },[page,session?.user?.id]);
   useEffect(()=>{
     if(page!=='player'||!session||!db)return;
     let cancelled=false;
@@ -272,6 +294,23 @@ function App(){
         <p>Sign in to your Nexus account to continue.</p>
         {signIn}
       </section>:
+      page==='gm-select'?<section className="nx-page-card nx-select-page">
+        <button type="button" className="nx-back-link" onClick={()=>navigate('landing')}><ChevronLeft size={17}/> Landing</button>
+        <div className="nx-page-icon"><Crown/></div><h1>GM Campaigns</h1>
+        <p>Select a campaign to manage.</p>
+        <div className="nx-player-character-list" aria-label="Available GM campaigns">
+          {gmCampaignLoading?<p role="status">Loading your campaigns…</p>:
+            gmCampaignError?<p className="nx-character-list-error" role="alert">{gmCampaignError}</p>:
+            gmCampaignIds.length===0?<p className="nx-small-note">No campaigns are available for this GM account.</p>:
+            campaigns.filter(c=>gmCampaignIds.includes(c.id)).map(c=><button type="button" key={c.id} className="nx-player-character-card"
+              disabled={busy||campaignBusy} onClick={()=>{void (async()=>{setBusy(true);setMsg('');try{
+                await loadCampaign(c.id);setCampaign(c.id);navigate('gm');
+              }catch(e){setGmCampaignError(inventoryErrorMessage(e))}finally{setBusy(false)}})()}}>
+              <span className="nx-player-character-label"><strong>{c.name}</strong><span>Open GM Dashboard</span></span>
+            </button>)}
+        </div>
+        <button type="button" className="nx-create-shortcut" onClick={()=>navigate('create')}><Plus size={18}/> Set Up New Campaign</button>
+      </section>:
       page==='player'?<section className="nx-page-card nx-select-page">
         <button type="button" className="nx-back-link" onClick={()=>navigate('landing')}><ChevronLeft size={17}/> Landing</button>
         <div className="nx-page-icon"><UserRound/></div><h1>Player Portal</h1>
@@ -292,7 +331,7 @@ function App(){
         <div className="nx-future-feature"><ScrollText size={20}/><div><strong>Request Character Transfer</strong><span>Coming soon — transfer characters between campaigns with GM approval.</span></div></div>
       </section>:
       page==='create'?<section className="nx-page-card nx-create-page">
-        <button type="button" className="nx-back-link" onClick={()=>navigate('gm')}><ChevronLeft size={17}/> GM Dashboard</button>
+        <button type="button" className="nx-back-link" onClick={()=>navigate('gm-select')}><ChevronLeft size={17}/> GM Campaigns</button>
         <div className="nx-page-icon"><Castle/></div><h1>Campaign Setup</h1>
         <p>Create the campaign and choose its game system. Character, item catalog and equipment-slot editing will remain in the GM Dashboard.</p>
         <form className="nx-selection-form" onSubmit={e=>{e.preventDefault();void run(async()=>{
@@ -313,11 +352,10 @@ function App(){
       </section>:
       page==='gm'?<section className="nx-gm-page">
         <div className="nx-page-card nx-gm-header">
-          <button type="button" className="nx-back-link" onClick={()=>navigate('landing')}><ChevronLeft size={17}/> Landing</button>
+          <button type="button" className="nx-back-link" onClick={()=>navigate('gm-select')}><ChevronLeft size={17}/> Campaigns</button>
           <div className="nx-page-icon"><Crown/></div><h1>GM Dashboard</h1>
           <p>Campaign management, character administration, catalog configuration and equipment effects.</p>
-          {campaignSelect}
-          <button type="button" className="nx-create-shortcut" onClick={()=>navigate('create')}><Plus size={18}/> Set Up New Campaign</button>
+          <p className="nx-small-note">Managing: <strong>{selectedCampaign?.name||'Campaign'}</strong></p>
           {!campaign&&<p className="nx-small-note">Select a campaign to manage its resources.</p>}
         </div>
         {campaign&&!campaignBusy&&!gmAccess&&<section className="nx-page-card nx-warning"><Shield size={20}/><div><h2>GM permission required</h2><p>Your account doesn't have manager access to this campaign. Select another campaign or use the Player Portal.</p></div></section>}
