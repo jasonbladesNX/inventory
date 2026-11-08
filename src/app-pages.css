@@ -87,3 +87,12 @@ body{background:#030d18}
 .nx-player-character-label strong{display:block;font:500 19px Georgia,serif;color:#f0fdff;overflow-wrap:anywhere}
 .nx-player-character-label>span{display:block;font-size:12px;font-weight:500;color:#a1d0dd;overflow-wrap:anywhere}
 @media(max-width:450px){.nx-page-card .nx-player-character-list .nx-player-character-card{padding:13px 12px}.nx-player-character-label strong{font-size:17px}}
+
+/* GM custom item automatic use-effect editor. */
+.nx-use-effect-fields{display:grid;gap:11px;min-width:0;margin:7px 0 13px;padding:13px;border:1px solid #36738a;border-radius:10px;background:rgba(9,43,60,.36)}
+.nx-use-effect-fields legend{padding:0 6px;color:#b7e6f2;font-size:13px;font-weight:700}
+.nx-use-effect-fields label{display:grid;gap:5px;min-width:0}
+.nx-use-effect-fields input,.nx-use-effect-fields select{max-width:100%;box-sizing:border-box}
+.nx-use-effect-fields small{font-size:11px;color:#9ebecb;line-height:1.45}
+.nx-effect-field-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;align-items:end}
+.nx-effect-field-grid>small{grid-column:1/-1}
