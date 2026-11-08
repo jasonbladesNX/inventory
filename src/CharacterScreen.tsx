@@ -787,7 +787,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         </div>
       })}
     </div>
-    <p className="mv-attributes-summary-note">Effective scores include eligible equipment adjustments. Same-group effects do not stack; compatible operations follow the ruleset's resolution policy. Edit Attributes changes base scores only.</p>
+    <p className="mv-attributes-summary-note">Effective scores include eligible equipment adjustments and active timed ability bonuses. Same-group equipment effects follow the ruleset's stacking policy. Edit Attributes changes base scores only.</p>
     {!attributes.every(a=>a.is_editable)&&<p className="mv-attributes-note">Attribute editing is not configured for this ruleset yet.</p>}
   </section>;
   const attributeModal=attributeEditorOpen&&attributes.length>0&&attributes.every(a=>a.is_editable)&&createPortal(
