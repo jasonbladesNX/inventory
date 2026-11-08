@@ -19,7 +19,7 @@ export default function ClaimLootPanel({db,character,busy,onChanged}:Props){
   try{
    const {error:rpcError}=await db.rpc('claim_loot_qr',{p_token:raw,p_character:character});
    if(rpcError)throw rpcError;
-   setNotice('Loot claimed successfully. Items have moved into your character inventory.');
+   setNotice('Loot claimed successfully. Container items and/or currency were added to your character.');
    setToken('');setConfirm(false);
    const url=new URL(window.location.href);url.searchParams.delete('loot');window.history.replaceState({},'',url.toString());
    await onChanged();
