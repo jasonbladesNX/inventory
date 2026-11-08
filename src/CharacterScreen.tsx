@@ -8,6 +8,7 @@ import CombatStatusPanel from './CombatStatusPanel';
 import CharacterRestPanel from './CharacterRestPanel';
 import CharacterCurrencyPanel from './CharacterCurrencyPanel';
 import CampaignShop from './CampaignShop';
+import ClaimLootPanel from './ClaimLootPanel';
 import InventoryWorkbench,{type WorkbenchIndicator} from './InventoryWorkbench';
 import StackManagement from './StackManagement';
 import './character-screen.css';
@@ -1044,7 +1045,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           <CharacterCurrencyPanel db={db} campaign={campaign} character={character} inventoryVersion={inventoryVersion}
             wallet={wallet} busy={busy||loading} onChanged={onInventoryChanged}/>
         </section>
-        <div className="mv-loot-panel"><PackageOpen size={29}/><strong>Claim Loot</strong><small>Coming in a later test build</small></div>
+        <ClaimLootPanel db={db} character={character} busy={busy||loading} onChanged={onInventoryChanged}/>
       </div>
       {error&&<p className="mv-error" role="alert">Unable to load equipment or wallet: {error}</p>}
     </div>}
