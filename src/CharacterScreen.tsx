@@ -6,6 +6,7 @@ import {inventoryErrorMessage} from './inventoryErrors';
 import LoadoutHealthPanel from './LoadoutHealthPanel';
 import CombatStatusPanel from './CombatStatusPanel';
 import CharacterRestPanel from './CharacterRestPanel';
+import CharacterCurrencyPanel from './CharacterCurrencyPanel';
 import InventoryWorkbench,{type WorkbenchIndicator} from './InventoryWorkbench';
 import StackManagement from './StackManagement';
 import './character-screen.css';
@@ -1039,9 +1040,8 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       </section>
       <div className="mv-bottom-panels">
         <section className="mv-panel" aria-labelledby="mv-currency-title">
-          <h3 id="mv-currency-title"><Coins size={20}/> Currency</h3>
-          {loading?<p className="mv-empty">Loading wallet…</p>:wallet.length===0?<p className="mv-empty">No currency balances yet.</p>:
-            <div className="mv-rows">{[...wallet].sort((a,b)=>walletOrder(a.code)-walletOrder(b.code)).map(c=><div className="mv-currency-row" key={c.currency_id}><span className="mv-coin" aria-hidden="true">●</span><span>{c.name||c.code}</span><strong>{numberText(c.available,c.precision_digits)}</strong></div>)}</div>}
+          <CharacterCurrencyPanel db={db} campaign={campaign} character={character} inventoryVersion={inventoryVersion}
+            wallet={wallet} busy={busy||loading} onChanged={onInventoryChanged}/>
         </section>
         <div className="mv-loot-panel"><PackageOpen size={29}/><strong>Claim Loot</strong><small>Coming in a later test build</small></div>
       </div>
