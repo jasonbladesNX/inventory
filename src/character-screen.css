@@ -572,3 +572,8 @@
 /* Temporary potion effects are visible without highlighting one ability card over another. */
 .mv-attribute-timed-bonus{display:block;flex-basis:100%;text-align:center;color:#a1ead1;font-size:10px;line-height:1.35;font-weight:700}
 .mv-use-success{margin:7px 0 13px;padding:10px 12px;border:1px solid #3f9077;border-radius:8px;background:#113e36;color:#c9f8e8;font-size:12px;line-height:1.5}
+
+/* HP action buttons stay together on the heading row. */
+.mv-hp-title-actions{display:flex;align-items:center;gap:7px;justify-content:flex-end;flex-wrap:wrap}
+.mv-hp-title-actions button{white-space:nowrap}
+@media(max-width:510px){.mv-hp-title-actions{gap:5px}.mv-hp-title-actions button{padding:6px 9px;font-size:11px}}
