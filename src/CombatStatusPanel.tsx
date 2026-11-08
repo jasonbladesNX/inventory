@@ -96,7 +96,7 @@ export default function CombatStatusPanel({db,character,inventoryVersion,busy,hp
         <button type="button" disabled={disabled||!Number.isInteger(Number(effectValue))||Number(effectValue)<-30||Number(effectValue)>30||(effectUnit!=='permanent'&&!integer(effectDuration,1,100000))}
           onClick={()=>void act('effect_add',{code:effectCode,value:Number(effectValue),kind:'bonus',duration:Number(effectDuration),unit:effectUnit})}>Add Effect</button>
       </div>
-      <p>Timed ability bonuses are tracked separately from equipped-item bonuses; they are not yet included in derived attribute calculations.</p>
+      <p>Timed ability bonuses contribute to effective ability scores while active. Equipment bonuses remain separately identified.</p>
       <div className="mv-combat-controls">
         <label>Advance <input type="number" min="1" max="100000" value={advanceAmount} disabled={disabled} onChange={e=>setAdvanceAmount(e.target.value)}/></label>
         <label>Unit <select value={advanceUnit} disabled={disabled} onChange={e=>setAdvanceUnit(e.target.value)}>{units.filter(u=>u!=='permanent').map(unit=><option key={unit} value={unit}>{unit}</option>)}</select></label>
