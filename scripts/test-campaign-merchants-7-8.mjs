@@ -6,6 +6,7 @@ const app=readFileSync('src/main.tsx','utf8');
 const character=readFileSync('src/CharacterScreen.tsx','utf8');
 const sql=readFileSync('docs/sql/campaign-merchants-7-8.sql','utf8');
 const sale=readFileSync('docs/sql/merchant-sellable-items-7-8.sql','utf8');
+const catalog=readFileSync('docs/sql/shop-item-definitions-7-8.sql','utf8');
 assert.match(app,/GmMerchantManager db=\{db!\}/,'GM merchant editor wired');
 assert.match(character,/tab==='shop'&&<CampaignShop/,'player Shop tab wired');
 assert.match(shop,/list_campaign_merchants/,'shop lists campaign merchants');
@@ -16,6 +17,8 @@ assert.match(shop,/Confirm \{confirm.action==='buy'/,'shop requires confirmation
 assert.match(shop,/list_character_merchant_history/,'shop includes transaction history');
 assert.match(gm,/save_campaign_merchant/,'GM creates and edits merchants');
 assert.match(gm,/save_merchant_listing/,'GM manages stock, prices and buyback');
+assert.match(gm,/list_campaign_shop_item_definitions/,'GM merchant catalog includes authorized item definitions');
+assert.match(catalog,/d\.ruleset_version_id=v_ruleset/,'merchant can list imported ruleset equipment');
 assert.match(sql,/enable row level security/,'merchant tables have RLS');
 assert.match(sql,/revoke all on public.campaign_merchants/,'merchant tables not directly writable');
 assert.match(sql,/app_private\.is_gm\(p_campaign\)/,'merchant settings GM-only');
