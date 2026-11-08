@@ -56,6 +56,12 @@ function App(){
   const[slotLabel,setSlotLabel]=useState('');
   const[itemName,setItemName]=useState('');
   const[itemCategory,setItemCategory]=useState('gear');
+  const[effectPotionName,setEffectPotionName]=useState('');
+  const[effectPotionType,setEffectPotionType]=useState('temp_hp');
+  const[effectPotionCode,setEffectPotionCode]=useState('poisoned');
+  const[effectPotionAmount,setEffectPotionAmount]=useState('5');
+  const[effectPotionDuration,setEffectPotionDuration]=useState('3');
+  const[effectPotionUnit,setEffectPotionUnit]=useState('round');
   const[twoHanded,setTwoHanded]=useState(false);
   const[attr,setAttr]=useState('');
   const[bonus,setBonus]=useState('');
@@ -339,6 +345,47 @@ function App(){
               <label>Bonus attribute (optional)<input placeholder="e.g. STR" value={attr} onChange={e=>setAttr(e.target.value)}/></label>
               <label>Bonus amount (optional)<input type="number" step="any" placeholder="e.g. 2" value={bonus} onChange={e=>setBonus(e.target.value)}/></label>
               <button type="submit" disabled={busy}>Create Catalog Item</button>
+            </form>
+          </section>
+          <section className="nx-page-card nx-gm-tools">
+            <h2><BookOpen size={20}/> Custom Effect Potions</h2>
+            <p>Create campaign-specific consumables that grant temporary HP, apply or remove a condition, or track an ability bonus. Grant them to characters using the item catalog tool below.</p>
+            <form className="nx-tool-form" onSubmit={e=>{e.preventDefault();void run(async()=>{
+              if(!campaign)throw Error('Select a campaign first.');
+              await rpc('create_campaign_effect_potion',{
+                p_campaign:campaign,p_name:effectPotionName.trim(),p_effect_type:effectPotionType,
+                p_code:effectPotionType==='temp_hp'?null:effectPotionType==='ability_bonus'?effectPotionCode.toLowerCase():effectPotionCode.toLowerCase(),
+                p_amount:effectPotionType==='temp_hp'||effectPotionType==='ability_bonus'?Number(effectPotionAmount):null,
+                p_duration:effectPotionType==='add_condition'||effectPotionType==='ability_bonus'?Number(effectPotionDuration):null,
+                p_unit:effectPotionUnit
+              });
+              setEffectPotionName('');
+              await loadCampaign(campaign);
+              setMsg('Effect potion created. Use Grant Item to Character to add it to a character inventory.');
+            })}}>
+              <label>Potion name<input required minLength={3} maxLength={120} placeholder="Potion of Resilience" value={effectPotionName} onChange={e=>setEffectPotionName(e.target.value)}/></label>
+              <label>Effect type<select value={effectPotionType} onChange={e=>{setEffectPotionType(e.target.value);setEffectPotionCode(e.target.value==='ability_bonus'?'str':'poisoned')}}>
+                <option value="temp_hp">Grant temporary HP</option>
+                <option value="remove_condition">Remove condition</option>
+                <option value="add_condition">Apply condition</option>
+                <option value="ability_bonus">Timed ability bonus</option>
+              </select></label>
+              {effectPotionType!=='temp_hp'&&<label>{effectPotionType==='ability_bonus'?'Ability':'Condition'}
+                {effectPotionType==='ability_bonus'?<select value={effectPotionCode} onChange={e=>setEffectPotionCode(e.target.value)}>
+                  {['str','dex','con','int','wis','cha'].map(a=><option key={a} value={a}>{a.toUpperCase()}</option>)}
+                </select>:<input required maxLength={60} value={effectPotionCode} onChange={e=>setEffectPotionCode(e.target.value)}/>}
+              </label>}
+              {(effectPotionType==='temp_hp'||effectPotionType==='ability_bonus')&&<label>{effectPotionType==='temp_hp'?'Temporary HP':'Ability bonus'}
+                <input required type="number" step="1" min={effectPotionType==='temp_hp'?1:-30} max={effectPotionType==='temp_hp'?100000:30}
+                  value={effectPotionAmount} onChange={e=>setEffectPotionAmount(e.target.value)}/>
+              </label>}
+              {(effectPotionType==='add_condition'||effectPotionType==='ability_bonus')&&<>
+                <label>Duration units<select value={effectPotionUnit} onChange={e=>setEffectPotionUnit(e.target.value)}>
+                  {['round','turn','minute','hour','rest','permanent'].map(u=><option key={u} value={u}>{u}</option>)}
+                </select></label>
+                {effectPotionUnit!=='permanent'&&<label>Duration<input type="number" required min={1} max={100000} value={effectPotionDuration} onChange={e=>setEffectPotionDuration(e.target.value)}/></label>}
+              </>}
+              <button type="submit" disabled={busy||campaignBusy||!effectPotionName.trim()}>Create Effect Potion</button>
             </form>
           </section>
           <RequirementEditor db={db!} campaign={campaign} definitions={defs}
