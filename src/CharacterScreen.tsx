@@ -149,6 +149,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [carryError,setCarryError]=useState('');
   const [attributesSaving,setAttributesSaving]=useState(false);
   const [attributeEditorOpen,setAttributeEditorOpen]=useState(false);
+  const [attributeDetailsCode,setAttributeDetailsCode]=useState<string|null>(null);
+  const attributeDetailsCloseRef=useRef<HTMLButtonElement>(null);
+  const attributeDetailsTriggerRef=useRef<HTMLButtonElement|null>(null);
   const attributeCloseRef=useRef<HTMLButtonElement>(null);
   const attributeTriggerRef=useRef<HTMLButtonElement>(null);
   const [loading,setLoading]=useState(false);
@@ -698,6 +701,28 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     catch(e){setCarryError(inventoryErrorMessage(e))}
     finally{setAttributesSaving(false)}
   };
+  const closeAttributeDetails=()=>{
+    setAttributeDetailsCode(null);
+    attributeDetailsTriggerRef.current?.focus();
+  };
+  useEffect(()=>{setAttributeDetailsCode(null)},[character,tab]);
+  useEffect(()=>{
+    if(!attributeDetailsCode)return;
+    attributeDetailsCloseRef.current?.focus();
+    const onKeyDown=(event:KeyboardEvent)=>{
+      if(event.key==='Escape'){event.preventDefault();closeAttributeDetails()}
+      if(event.key==='Tab'){
+        const dialog=attributeDetailsCloseRef.current?.closest('.mv-attribute-details-modal');
+        const focusables=dialog?.querySelectorAll<HTMLButtonElement>('button:not([disabled])');
+        if(!focusables?.length)return;
+        const first=focusables[0],last=focusables[focusables.length-1];
+        if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}
+        else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}
+      }
+    };
+    document.addEventListener('keydown',onKeyDown);
+    return()=>document.removeEventListener('keydown',onKeyDown);
+  },[attributeDetailsCode]);
   const closeAttributeEditor=()=>{
     setAttributeEditorOpen(false);
     setCarryError('');
@@ -799,23 +824,62 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     <div className="mv-attributes-summary" aria-label="Saved character ability scores">
       {attributes.map(row=>{
         const derived=derivedAttributes[row.attribute_code];
-        const bonus=Number(derived?.equipment_bonus??0);
         const effective=derived?.effective_score??row.score;
         const modifier=derived?.effective_modifier??row.modifier;
-        const timedBonuses=activeTimedEffects.filter(effect=>effect.code.toUpperCase()===row.attribute_code);
-        return <div key={row.attribute_code} className="mv-attribute-summary-item"
-          title={bonus!==0?`Base ${row.score??'not set'}; equipment ${bonus>0?'+':''}${numberText(bonus,2)}`:`Base ${row.score??'not set'}`}>
+        const code=row.attribute_code.toUpperCase();
+        const hasBonus=Number(derived?.equipment_bonus??0)!==0||activeTimedEffects.some(effect=>effect.code.toUpperCase()===code);
+        return <button type="button" key={row.attribute_code} className="mv-attribute-summary-item mv-attribute-summary-button"
+          aria-label={`View ${row.attribute_label} bonuses and modifiers`} aria-haspopup="dialog"
+          onClick={event=>{attributeDetailsTriggerRef.current=event.currentTarget;setAttributeDetailsCode(code)}}>
           <span>{row.attribute_code}:</span>
           <strong>{effective===null?'—':numberText(effective,2)}</strong>
           {modifier!==null&&<span className="mv-attribute-summary-mod">({modifier>=0?'+':''}{modifier})</span>}
-          {bonus!==0&&<small className="mv-attribute-equipment-label">Gear net {bonus>0?'+':''}{numberText(bonus,2)}</small>}
-          {timedBonuses.map((effect,i)=><small key={effect.code+':'+i} className="mv-attribute-timed-bonus" title={effect.source??'Timed effect'}>Timed {effect.value>=0?'+':''}{effect.value} · {effect.remaining===null?'Until removed':`${effect.remaining} ${effect.unit}${effect.remaining===1?'':'s'}`}</small>)}
-        </div>
+          {hasBonus&&<span className="mv-attribute-bonus-indicator" aria-label="Active bonuses">✦</span>}
+        </button>;
       })}
     </div>
-    <p className="mv-attributes-summary-note">Effective scores include eligible equipment adjustments and active timed ability bonuses. Same-group equipment effects follow the ruleset's stacking policy. Edit Attributes changes base scores only.</p>
+    <p className="mv-attributes-summary-note">Tap an attribute to view its base score, equipment adjustments, active timed bonuses, and modifier.</p>
     {!attributes.every(a=>a.is_editable)&&<p className="mv-attributes-note">Attribute editing is not configured for this ruleset yet.</p>}
   </section>;
+  const selectedAttribute=attributes.find(a=>a.attribute_code.toUpperCase()===attributeDetailsCode);
+  const selectedDerived=selectedAttribute?derivedAttributes[selectedAttribute.attribute_code]:null;
+  const selectedTimedBonuses=activeTimedEffects.filter(effect=>effect.code.toUpperCase()===attributeDetailsCode);
+  const selectedEquipmentSources=effectSources.filter(effect=>effect.attribute_code.toUpperCase()===attributeDetailsCode);
+  const attributeDetailsModal=attributeDetailsCode&&selectedAttribute&&createPortal(
+    <div className="mv-modal-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)closeAttributeDetails()}}>
+      <section role="dialog" aria-modal="true" aria-labelledby="mv-attribute-details-title"
+        className="mv-item-modal mv-attribute-details-modal">
+        <div className="mv-modal-header">
+          <div className="mv-modal-heading"><UserRound size={23} aria-hidden="true"/><div>
+            <span className="mv-modal-eyebrow">Attribute breakdown</span>
+            <h3 id="mv-attribute-details-title">{selectedAttribute.attribute_label} ({selectedAttribute.attribute_code})</h3>
+          </div></div>
+          <button type="button" ref={attributeDetailsCloseRef} className="mv-modal-close"
+            aria-label="Close attribute details" onClick={closeAttributeDetails}><X size={22}/></button>
+        </div>
+        <div className="mv-modal-body mv-attribute-details-body">
+          <div className="mv-attribute-details-summary">
+            <span>Base score <strong>{selectedAttribute.score??'—'}</strong></span>
+            <span>Equipment adjustment <strong>{Number(selectedDerived?.equipment_bonus??0)>=0?'+':''}{numberText(Number(selectedDerived?.equipment_bonus??0),2)}</strong></span>
+            <span>Timed bonuses <strong>{selectedTimedBonuses.reduce((sum,effect)=>sum+effect.value,0)>=0?'+':''}{numberText(selectedTimedBonuses.reduce((sum,effect)=>sum+effect.value,0),2)}</strong></span>
+            <span>Effective score <strong>{selectedDerived?.effective_score??selectedAttribute.score??'—'}</strong></span>
+            <span>Effective modifier <strong>{selectedDerived?.effective_modifier==null?'—':`${selectedDerived.effective_modifier>=0?'+':''}${selectedDerived.effective_modifier}`}</strong></span>
+          </div>
+          <h4>Active timed bonuses</h4>
+          {selectedTimedBonuses.length?selectedTimedBonuses.map((effect,index)=><div className="mv-attribute-effect-row" key={index}>
+            <strong>{effect.value>=0?'+':''}{numberText(effect.value,2)} {selectedAttribute.attribute_code}</strong>
+            <span>{effect.source??'Timed effect'} · {effect.remaining===null?'Until removed':`${effect.remaining} ${effect.unit}${effect.remaining===1?'':'s'} remaining`}</span>
+          </div>):<p className="mv-attributes-note">No active timed bonuses.</p>}
+          <h4>Equipment effects</h4>
+          {selectedEquipmentSources.length?selectedEquipmentSources.map(effect=><div className="mv-attribute-effect-row" key={effect.effect_id+':'+effect.item_id}>
+            <strong>{effect.item_name} · {effect.operation} {effect.effect_value==null?'—':String(effect.effect_value)}</strong>
+            <span>{effect.effect_status==='applied'?'Applied':effect.effect_status==='suppressed'?'Suppressed':effect.effect_status==='condition_unmet'?'Requirement not met':'Unsupported'}{effect.status_reason?` · ${effect.status_reason}`:''}</span>
+          </div>):<p className="mv-attributes-note">No equipment effect sources found.</p>}
+          {effectSourcesError&&<p className="mv-storage-error" role="alert">Equipment effect details unavailable: {effectSourcesError}</p>}
+          <p className="mv-attributes-note">Equipment adjustments follow the ruleset's stacking and operation rules. Timed bonuses are included in the effective score separately.</p>
+        </div>
+      </section>
+    </div>,document.body);
   const attributeModal=attributeEditorOpen&&attributes.length>0&&attributes.every(a=>a.is_editable)&&createPortal(
     <div className="mv-modal-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)closeAttributeEditor()}}>
       <section role="dialog" aria-modal="true" aria-labelledby="mv-attributes-modal-title" className="mv-item-modal mv-attributes-modal">
@@ -892,6 +956,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         onChanged={onInventoryChanged} onCombatLoaded={state=>{setTempHpValue(state.temporary_hp);setActiveTimedEffects(state.effects.filter(effect=>effect.kind==='bonus').map(effect=>({code:effect.code,value:Number(effect.value??0),unit:effect.unit,remaining:effect.remaining,source:effect.source})))}}/>
       {hitPointPanel}
       {attributePanel}
+      {attributeDetailsModal}
       {attributeModal}
     {unequipWarning&&createPortal(
       <div className="mv-modal-backdrop">
