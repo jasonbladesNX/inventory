@@ -17,6 +17,13 @@ assert.match(shop,/Confirm \{confirm.action==='buy'/,'shop requires confirmation
 assert.match(shop,/list_character_merchant_history/,'shop includes transaction history');
 assert.match(gm,/save_campaign_merchant/,'GM creates and edits merchants');
 assert.match(gm,/save_merchant_listing/,'GM manages stock, prices and buyback');
+assert.match(gm,/Add New Merchandise/,'empty shops offer an explicit add-new listing option');
+assert.match(gm,/Edit Existing Merchandise/,'existing listings are distinctly labeled');
+assert.match(gm,/value=\{listingSelection\}/,'selected listing is a controlled input');
+assert.match(gm,/setListingSelection\(id\)/,'edit listing selection is retained');
+assert.match(gm,/resetListing\(\)/,'listing editor resets on merchant change and save');
+assert.match(gm,/This shop has no merchandise yet/,'new shop empty state explains next step');
+
 assert.match(gm,/list_campaign_shop_item_definitions/,'GM merchant catalog includes authorized item definitions');
 assert.match(catalog,/d\.ruleset_version_id=v_ruleset/,'merchant can list imported ruleset equipment');
 assert.match(sql,/enable row level security/,'merchant tables have RLS');
