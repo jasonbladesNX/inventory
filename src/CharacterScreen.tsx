@@ -134,7 +134,6 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [draftSize,setDraftSize]=useState('');
   const [hitPoints,setHitPoints]=useState<{configured:boolean;current?:number;max?:number}|null>(null);
   const [hpCurrent,setHpCurrent]=useState('');
-  const [combatTempHp,setCombatTempHp]=useState(0);
   const [hpMax,setHpMax]=useState('');
   const [hpEditing,setHpEditing]=useState(false);
   const [hpSaving,setHpSaving]=useState(false);
@@ -743,7 +742,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           <span style={{width:`${Math.max(0,Math.min(100,100*(hitPoints.current??0)/(hitPoints.max??1)))}%`}}/>
         </div>
         <div className="mv-hp-quick-adjust" aria-label="Quick hit point adjustment">
-          <button type="button" className="mv-hp-damage-button" disabled={busy||loading||hpAdjustBusy||!Number.isSafeInteger(Number(hpAdjustAmount))||Number(hpAdjustAmount)<1||Number(hpAdjustAmount)>100000||((hitPoints.current??0)===0&&combatTempHp===0)}
+          <button type="button" className="mv-hp-damage-button" disabled={busy||loading||hpAdjustBusy||!Number.isSafeInteger(Number(hpAdjustAmount))||Number(hpAdjustAmount)<1||Number(hpAdjustAmount)>100000}
             onClick={()=>void adjustHitPoints('damage')}>Damage</button>
           <label htmlFor="mv-hp-adjust-amount">Amount
             <input id="mv-hp-adjust-amount" type="number" min="1" max="100000" step="1" inputMode="numeric"
@@ -863,7 +862,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       {hitPointPanel}
       <CombatStatusPanel db={db} character={character} inventoryVersion={inventoryVersion}
         busy={busy||loading} hpCurrent={hitPoints?.configured?(hitPoints.current??null):null}
-        onChanged={onInventoryChanged} onCombatLoaded={state=>setCombatTempHp(state.temporary_hp)}/>
+        onChanged={onInventoryChanged}/>
       {attributePanel}
       {attributeModal}
     {unequipWarning&&createPortal(
