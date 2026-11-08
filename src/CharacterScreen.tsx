@@ -4,6 +4,7 @@ import type {SupabaseClient} from '@supabase/supabase-js';
 import {Backpack, CircleDot, Coins, Crown, FlaskConical, Footprints, Gem, Hand, HeartPulse, PackageOpen, ScrollText, Shield, ShieldCheck, Shirt, ShoppingBag, Sparkles, Sword, Trash2, UserRound, WandSparkles, Wrench, X} from 'lucide-react';
 import {inventoryErrorMessage} from './inventoryErrors';
 import LoadoutHealthPanel from './LoadoutHealthPanel';
+import CombatStatusPanel from './CombatStatusPanel';
 import InventoryWorkbench,{type WorkbenchIndicator} from './InventoryWorkbench';
 import StackManagement from './StackManagement';
 import './character-screen.css';
@@ -133,6 +134,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [draftSize,setDraftSize]=useState('');
   const [hitPoints,setHitPoints]=useState<{configured:boolean;current?:number;max?:number}|null>(null);
   const [hpCurrent,setHpCurrent]=useState('');
+  const [combatTempHp,setCombatTempHp]=useState(0);
   const [hpMax,setHpMax]=useState('');
   const [hpEditing,setHpEditing]=useState(false);
   const [hpSaving,setHpSaving]=useState(false);
@@ -741,7 +743,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           <span style={{width:`${Math.max(0,Math.min(100,100*(hitPoints.current??0)/(hitPoints.max??1)))}%`}}/>
         </div>
         <div className="mv-hp-quick-adjust" aria-label="Quick hit point adjustment">
-          <button type="button" className="mv-hp-damage-button" disabled={busy||loading||hpAdjustBusy||!Number.isSafeInteger(Number(hpAdjustAmount))||Number(hpAdjustAmount)<1||Number(hpAdjustAmount)>100000||hitPoints.current===0}
+          <button type="button" className="mv-hp-damage-button" disabled={busy||loading||hpAdjustBusy||!Number.isSafeInteger(Number(hpAdjustAmount))||Number(hpAdjustAmount)<1||Number(hpAdjustAmount)>100000||((hitPoints.current??0)===0&&combatTempHp===0)}
             onClick={()=>void adjustHitPoints('damage')}>Damage</button>
           <label htmlFor="mv-hp-adjust-amount">Amount
             <input id="mv-hp-adjust-amount" type="number" min="1" max="100000" step="1" inputMode="numeric"
@@ -859,6 +861,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     </div>
     {tab==='character'&&<div className="mv-panels">
       {hitPointPanel}
+      <CombatStatusPanel db={db} character={character} inventoryVersion={inventoryVersion}
+        busy={busy||loading} hpCurrent={hitPoints?.configured?(hitPoints.current??null):null}
+        onChanged={onInventoryChanged} onCombatLoaded={state=>setCombatTempHp(state.temporary_hp)}/>
       {attributePanel}
       {attributeModal}
     {unequipWarning&&createPortal(
