@@ -1,0 +1,19 @@
+.mv-currency-heading{display:flex;justify-content:space-between;align-items:center;gap:9px;margin-bottom:9px}
+.mv-currency-heading h3{margin:0}
+.mv-currency-heading button,.mv-currency-dialog-body button{padding:8px 12px;border:1px solid #4f97aa;border-radius:8px;background:#164b61;color:#dcf8ff;font-size:12px;font-weight:700;cursor:pointer}
+.mv-currency-dialog{width:min(100%,490px)}
+.mv-currency-dialog-body{display:grid;gap:12px}
+.mv-currency-tabs{display:flex;gap:7px}
+.mv-currency-tabs button{flex:1;min-height:41px}
+.mv-currency-tabs button[aria-pressed="true"]{border-color:#7ce3c2;background:#1a665b}
+.mv-currency-dialog-body label{display:grid;gap:6px;font-size:12px;color:#c5e4ed;font-weight:700}
+.mv-currency-dialog-body input,.mv-currency-dialog-body select{box-sizing:border-box;width:100%;min-height:42px;padding:8px;border-radius:8px;border:1px solid #437a8c;background:#082434;color:#edfbff;font-size:14px}
+.mv-currency-dialog-body p{margin:0;font-size:11px;line-height:1.5;color:#b1d9e5}
+.mv-currency-dialog-body button:disabled{opacity:.5;cursor:not-allowed}
+.mv-currency-history{max-height:300px;overflow-y:auto;display:grid;gap:8px}
+.mv-currency-history-row{display:grid;gap:4px;padding:10px;border:1px solid #315b72;border-radius:8px}
+.mv-currency-history-row strong{font-size:12px}
+.mv-currency-history-row span{font-size:11px;color:#9bc7d5}
+.mv-currency-dialog-body .mv-currency-confirm{color:#ecf7cd;font-weight:700}
+.mv-currency-dialog-body .mv-currency-feedback{color:#a4efcb;font-weight:700}
+.nx-currency-list{display:grid;gap:5px;font-size:12px;padding:10px;border:1px solid #2d6579;border-radius:8px}
