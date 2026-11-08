@@ -1,0 +1,34 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+
+const gm=readFileSync('src/main.tsx','utf8');
+const form=readFileSync('src/ItemUseEffectFields.tsx','utf8');
+const sql=readFileSync('docs/sql/custom-item-use-effects.sql','utf8');
+const update=readFileSync('docs/sql/update-custom-item-use-settings.sql','utf8');
+const consumption=readFileSync('docs/sql/character-combat-integration-7-1-to-7-5.sql','utf8');
+
+assert.match(gm,/create_campaign_custom_item_with_effect/,'new item creation saves use effect');
+assert.match(gm,/update_campaign_custom_item_use_settings/,'existing item editor saves effect atomically');
+assert.match(gm,/draftFromEffect\(selected\?\.default_properties\?\.use_effect\)/,'existing item effect loaded into editor');
+assert.match(gm,/buildUseEffect\(newItemUseEffect\)/,'new item effect validated');
+assert.match(gm,/buildUseEffect\(existingItemUseEffect\)/,'edited effect validated');
+assert.match(gm,/ItemUseEffectFields prefix="new-custom-item"/,'new item effect fields available');
+assert.match(gm,/ItemUseEffectFields prefix="existing-custom-item"/,'existing item effect fields available');
+assert.match(form,/Restore hit points/,'healing effect available');
+assert.match(form,/Temporary ability-score bonus/,'timed bonus available');
+assert.match(form,/Grant temporary hit points/,'temp HP effect available');
+assert.match(form,/Apply a condition/,'condition apply available');
+assert.match(form,/Remove a condition/,'condition removal available');
+assert.match(form,/No automatic effect \(consume only\)/,'consumption without effect available');
+assert.match(form,/dice_count:intIn\(draft\.dice_count,1,10/,'healing dice client validation');
+assert.match(form,/duration=unit==='permanent'\?null/,'permanent effect duration supported');
+assert.match(sql,/validate_custom_item_use_effect/,'server validates effect input');
+assert.match(sql,/coalesce\(p_effect->>'dice_count',''\)/,'missing healing parameters rejected');
+assert.match(sql,/app_private\.is_gm\(p_campaign\)/,'GM authorization enforced');
+assert.match(sql,/set_campaign_item_use_effect/,'item definition stores effect');
+assert.match(sql,/jsonb_set\(coalesce\(d\.default_properties/,'custom use effect persists in definition');
+assert.match(update,/public\.set_campaign_item_use_effect/,'existing usable items receive validated effect');
+assert.match(update,/default_properties='?/, 'existing status editor clears effects before disabling use');
+assert.match(consumption,/v_effect_type in \('temp_hp','remove_condition','add_condition','ability_bonus'\)/,'use RPC applies supported status effects');
+assert.match(consumption,/v_heal->>'type'<>'heal_hp'/,'use RPC retains existing healing behavior');
+console.log('PASS new and existing custom-item use effects: healing, temporary HP, conditions, timed ability bonuses');
