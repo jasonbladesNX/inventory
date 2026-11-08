@@ -8,25 +8,27 @@ type Currency={id:string;code:string;name:string;precision_digits:number};
 type Listing={listing_id:string;definition_id:string;item_name:string;category:string;currency_id:string;currency_code:string;price:number|string;buyback:number|string;quantity:number;buys_from_players:boolean};
 export default function GmMerchantManager({db,campaign,definitions}:{db:SupabaseClient;campaign:string;definitions:Definition[]}){
  const[merchants,setMerchants]=useState<Merchant[]>([]),[currencies,setCurrencies]=useState<Currency[]>([]);
+ const[itemCatalog,setItemCatalog]=useState<Definition[]>([]);
  const[merchant,setMerchant]=useState(''),[listings,setListings]=useState<Listing[]>([]);
  const[name,setName]=useState(''),[description,setDescription]=useState(''),[active,setActive]=useState(true);
  const[definition,setDefinition]=useState(''),[currency,setCurrency]=useState(''),[price,setPrice]=useState('1'),[buyback,setBuyback]=useState('0');
  const[stock,setStock]=useState('1'),[buyFromPlayers,setBuyFromPlayers]=useState(false);
  const[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const load=async()=>{
-  const [m,c]=await Promise.all([
+  const [m,c,d]=await Promise.all([
    db.rpc('list_campaign_merchants',{p_campaign:campaign}),
-   db.rpc('list_campaign_currency_definitions',{p_campaign:campaign})
+   db.rpc('list_campaign_currency_definitions',{p_campaign:campaign}),
+   db.rpc('list_campaign_shop_item_definitions',{p_campaign:campaign})
   ]);
-  if(m.error)throw m.error;if(c.error)throw c.error;
-  setMerchants(m.data||[]);setCurrencies(c.data||[]);
+  if(m.error)throw m.error;if(c.error)throw c.error;if(d.error)throw d.error;
+  setMerchants(m.data||[]);setCurrencies(c.data||[]);setItemCatalog(d.data||[]);
  };
  useEffect(()=>{let cancelled=false;setMerchants([]);setListings([]);setMerchant('');setError('');
-  void Promise.all([db.rpc('list_campaign_merchants',{p_campaign:campaign}),db.rpc('list_campaign_currency_definitions',{p_campaign:campaign})])
-  .then(([a,b])=>{if(a.error)throw a.error;if(b.error)throw b.error;if(!cancelled){setMerchants(a.data||[]);setCurrencies(b.data||[])}})
+  void Promise.all([db.rpc('list_campaign_merchants',{p_campaign:campaign}),db.rpc('list_campaign_currency_definitions',{p_campaign:campaign}),db.rpc('list_campaign_shop_item_definitions',{p_campaign:campaign})])
+  .then(([a,b,d])=>{if(a.error)throw a.error;if(b.error)throw b.error;if(d.error)throw d.error;if(!cancelled){setMerchants(a.data||[]);setCurrencies(b.data||[]);setItemCatalog(d.data||[])}})
   .catch(e=>{if(!cancelled)setError(inventoryErrorMessage(e))});
   return()=>{cancelled=true};
- },[db,campaign]);
+ },[db,campaign,definitions.length]);
  useEffect(()=>{if(!merchant){setListings([]);return}let cancelled=false;
   void db.rpc('list_merchant_stock',{p_merchant:merchant}).then(({data,error:rpcError})=>{
    if(rpcError)throw rpcError;if(!cancelled)setListings(data||[]);
@@ -82,7 +84,7 @@ export default function GmMerchantManager({db,campaign,definitions}:{db:Supabase
     {listings.map(l=><option key={l.listing_id} value={l.listing_id}>{l.item_name} · {l.price} {l.currency_code} · Stock {l.quantity}</option>)}
    </select></label>
    <label>Item definition<select required value={definition} onChange={e=>setDefinition(e.target.value)}>
-    <option value="">Choose item…</option>{definitions.map(d=><option value={d.id} key={d.id}>{d.name} ({d.category})</option>)}
+    <option value="">Choose item…</option>{itemCatalog.map(d=><option value={d.id} key={d.id}>{d.name} ({d.category})</option>)}
    </select></label>
    <label>Currency<select required value={currency} onChange={e=>setCurrency(e.target.value)}>
     <option value="">Choose denomination…</option>{currencies.map(c=><option key={c.id} value={c.id}>{c.code} · {c.name}</option>)}
@@ -93,7 +95,7 @@ export default function GmMerchantManager({db,campaign,definitions}:{db:Supabase
    <label><input type="checkbox" checked={buyFromPlayers} onChange={e=>setBuyFromPlayers(e.target.checked)}/> Merchant buys this item from players</label>
    <button type="submit" disabled={busy||!definition||!currency}>Save Merchandise</button>
    {!currencies.length&&<p>Create a currency denomination in Campaign Currency before adding merchandise.</p>}
-   {!definitions.length&&<p>Create an item in the GM Item Catalog before listing it.</p>}
+   {!itemCatalog.length&&<p>No campaign or ruleset items are available. Create an item in the GM Item Catalog first.</p>}
   </form>}
   {notice&&<p role="status">{notice}</p>}
   {error&&<p role="alert" className="nx-character-list-error">{error}</p>}
