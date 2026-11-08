@@ -36,7 +36,7 @@ assert.match(status,/revoke all on function public.update_character_combat_state
 const catalog=readFileSync('docs/sql/custom-item-consumable-7-2.sql','utf8');
 assert.match(gm,/Consumable \/ Usable — deduct one item when used/,'GM create-item usable checkbox');
 assert.match(gm,/create_campaign_custom_item/,'create new custom consumable RPC');
-assert.match(gm,/set_campaign_item_consumable/,'update existing custom item usability');
+assert.match(gm,/update_campaign_custom_item_use_settings/,'update existing custom item use settings');
 assert.match(gm,/Update Existing Custom Item/,'existing item edit UI');
 assert.match(gm,/\['gear','consumable'/,'consumable item category listed');
 assert.match(catalog,/app_private\.is_gm\(p_campaign\)/,'GM authorization required');
