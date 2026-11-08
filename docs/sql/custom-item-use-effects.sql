@@ -9,14 +9,14 @@ begin
  if jsonb_typeof(p_effect)<>'object' then raise exception 'Use effect must be an object' using errcode='22023'; end if;
  v_type:=p_effect->>'type';
  if v_type='heal_hp' then
-   if (p_effect->>'dice_count') !~ '^[0-9]{1,2}$' or (p_effect->>'dice_sides') !~ '^[0-9]{1,3}$'
-     or (p_effect->>'bonus') !~ '^[0-9]{1,3}$' then raise exception 'Healing requires dice count, sides, and bonus' using errcode='22023'; end if;
+   if coalesce(p_effect->>'dice_count','') !~ '^[0-9]{1,2}$' or coalesce(p_effect->>'dice_sides','') !~ '^[0-9]{1,3}$'
+     or coalesce(p_effect->>'bonus','') !~ '^[0-9]{1,3}$' then raise exception 'Healing requires dice count, sides, and bonus' using errcode='22023'; end if;
    v_count:=(p_effect->>'dice_count')::int;v_sides:=(p_effect->>'dice_sides')::int;v_bonus:=(p_effect->>'bonus')::int;
    if v_count not between 1 and 10 or v_sides not between 2 and 100 or v_bonus not between 0 and 100 then
      raise exception 'Healing limits: 1-10 dice, 2-100 sides, 0-100 bonus' using errcode='22023'; end if;
    return jsonb_build_object('type','heal_hp','dice_count',v_count,'dice_sides',v_sides,'bonus',v_bonus);
  elsif v_type='temp_hp' then
-   if (p_effect->>'amount') !~ '^[0-9]{1,6}$' then raise exception 'Temporary HP must be a whole number' using errcode='22023'; end if;
+   if coalesce(p_effect->>'amount','') !~ '^[0-9]{1,6}$' then raise exception 'Temporary HP must be a whole number' using errcode='22023'; end if;
    v_amount:=(p_effect->>'amount')::int;
    if v_amount not between 1 and 100000 then raise exception 'Temporary HP must be 1-100000' using errcode='22023';end if;
    return jsonb_build_object('type','temp_hp','amount',v_amount);
@@ -29,12 +29,12 @@ begin
    if v_unit not in ('round','turn','minute','hour','rest','permanent') then raise exception 'Invalid effect duration unit' using errcode='22023'; end if;
    v_duration:=null;
    if v_unit<>'permanent' then
-     if (p_effect->>'duration') !~ '^[0-9]{1,6}$' then raise exception 'Duration must be a whole number' using errcode='22023';end if;
+     if coalesce(p_effect->>'duration','') !~ '^[0-9]{1,6}$' then raise exception 'Duration must be a whole number' using errcode='22023';end if;
      v_duration:=(p_effect->>'duration')::int;
      if v_duration not between 1 and 100000 then raise exception 'Duration must be 1-100000' using errcode='22023';end if;
    end if;
    if v_type='ability_bonus' then
-     if (p_effect->>'value') !~ '^-?[0-9]{1,3}$' then raise exception 'Ability bonus must be a whole number' using errcode='22023';end if;
+     if coalesce(p_effect->>'value','') !~ '^-?[0-9]{1,3}$' then raise exception 'Ability bonus must be a whole number' using errcode='22023';end if;
      v_amount:=(p_effect->>'value')::int;
      if v_amount not between -30 and 30 then raise exception 'Ability bonus must be -30 to +30' using errcode='22023';end if;
      return jsonb_build_object('type',v_type,'code',v_code,'value',v_amount,'unit',v_unit,'duration',v_duration);
