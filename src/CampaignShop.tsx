@@ -31,7 +31,7 @@ export default function CampaignShop({db,campaign,character,inventoryVersion,bus
  };
  useEffect(()=>{
   let cancelled=false;setLoading(true);setError('');setConfirm(null);
-  void db.rpc('list_campaign_merchants',{p_campaign:campaign}).then(({data,error:rpcError})=>{
+  void Promise.resolve(db.rpc('list_campaign_merchants',{p_campaign:campaign})).then(({data,error:rpcError})=>{
    if(rpcError)throw rpcError;if(cancelled)return;
    const shops=(data||[]) as Merchant[];
    setMerchants(shops);
