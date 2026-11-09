@@ -36,7 +36,7 @@ assert.doesNotMatch(ui,/window\.prompt\(/);
 assert.match(ui,/className="mv-attribute-summary-item mv-attribute-summary-button"/,'uniform clickable attribute-card classes');
 assert.doesNotMatch(ui,/has-equipment-bonus/,'no conditional attribute-card highlight');
 assert.doesNotMatch(css,/\.mv-attribute-summary-item\.has-equipment-bonus/,'no highlight override');
-assert.match(ui,/Gear net/,'equipment bonus information preserved');
+assert.match(ui,/Equipment adjustment/,'equipment bonus information preserved in attribute popup');
 // Weight details are hidden until expanded, for D&D and non-D&D rulesets.
 const weightPanel=ui.slice(ui.indexOf('const inventoryWeightPanel='),ui.indexOf('const walletOrder='));
 const detailsStart=weightPanel.indexOf('<details className="mv-carry-capacity-help">');
