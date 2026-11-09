@@ -15,6 +15,7 @@ import GmCurrencyManager from './GmCurrencyManager';
 import GmMerchantManager from './GmMerchantManager';
 import GmLootManager from './GmLootManager';
 import GmCraftingManager from './GmCraftingManager';
+import GmCraftingProfessions from './GmCraftingProfessions';
 import GmDashboardCard from './GmDashboardCard';
 import './style.css';
 import './app-pages.css';
@@ -38,6 +39,7 @@ function App(){
   const[gmCampaignLoading,setGmCampaignLoading]=useState(false);
   const[gmCampaignError,setGmCampaignError]=useState('');
   const[inventoryVersion,setInventoryVersion]=useState(0);
+  const[craftingConfigVersion,setCraftingConfigVersion]=useState(0);
   const[session,setSession]=useState<any>(null);
   const[sessionReady,setSessionReady]=useState(false);
   const[email,setEmail]=useState('');
@@ -380,8 +382,11 @@ function App(){
             </form>
           </section>
           </GmDashboardCard>
-          <GmDashboardCard key={'recipes-'+campaign} title="Crafting Recipes" initiallyOpen>
-            <GmCraftingManager db={db!} campaign={campaign} definitions={defs}/>
+          <GmDashboardCard key={'recipes-'+campaign} title="Crafting Skills & Recipes" initiallyOpen>
+            <GmCraftingProfessions db={db!} campaign={campaign} characters={chars}
+              onChanged={()=>setCraftingConfigVersion(v=>v+1)}/>
+            <GmCraftingManager db={db!} campaign={campaign} definitions={defs} characters={chars}
+              configVersion={craftingConfigVersion}/>
           </GmDashboardCard>
           <GmDashboardCard key={'currency-'+campaign} title="Campaign Currency">
             <GmCurrencyManager db={db!} campaign={campaign} characters={chars} onChanged={async()=>{if(char)await loadChar(campaign,char)}}/>
