@@ -153,7 +153,7 @@ function App(){
   async function chooseCampaign(id:string){
     setCampaign(id);
     setMsg('');
-    if(!id){setGmAccess(false);setChars([]);setChar('');setGrantCharacter('');setGrantDefinition('');setDefs([]);setCustomItemCategories([]);setSlots([]);return}
+    if(!id){setGmAccess(false);setChars([]);setChar('');setDefs([]);setCustomItemCategories([]);setSlots([]);return}
     await run(()=>loadCampaign(id));
   }
   async function loadChar(c:string,ch:string){
