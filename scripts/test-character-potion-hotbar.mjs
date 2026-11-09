@@ -9,7 +9,7 @@ assert.match(ui,/\[1,2,3,4\]\.map\(slot=>/,'exactly four numbered slots');
 assert.match(ui,/get_character_potion_hotbar/,'hotbar state fetched on refresh');
 assert.match(ui,/set_character_potion_hotbar_slot/,'slot assignment persisted');
 assert.match(ui,/p_definition:definitionId\|\|null/,'empty selection clears slot');
-assert.match(ui,/assignment\?\.definition_id&&!option/,'depleted potion assignment still rendered');
+assert.match(ui,/assignment\?\.name\?\?'Unavailable potion'/,'depleted potion assignment still rendered by name');
 assert.match(ui,/candidate\.quantity/,'quantity shown in selectable option');
 assert.match(ui,/usePotionSlot\(slot\)/,'one-click hotbar use');
 assert.match(ui,/p_item:option\.item_id,p_quantity:1/,'use delegates to existing one-item RPC');
