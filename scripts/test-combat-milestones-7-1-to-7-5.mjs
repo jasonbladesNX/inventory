@@ -38,7 +38,7 @@ assert.match(gm,/Consumable \/ Usable — deduct one item when used/,'GM create-
 assert.match(gm,/create_campaign_custom_item/,'create new custom consumable RPC');
 assert.match(gm,/update_campaign_custom_item_use_settings/,'update existing custom item use settings');
 assert.match(gm,/Update Existing Custom Item/,'existing item edit UI');
-assert.match(gm,/\['gear','consumable'/,'consumable item category listed');
+assert.match(gm,/\['gear','General Gear'\],\['ingredient','Ingredient'\],\['consumable','Consumable'\]/,'ingredient and consumable categories listed');
 assert.match(catalog,/app_private\.is_gm\(p_campaign\)/,'GM authorization required');
 assert.match(catalog,/Equipment and items with persistent effects cannot be made consumable/,'equipment safety checks');
 assert.match(catalog,/jsonb_set\(coalesce\(d\.default_properties/,'consumable property stored');
