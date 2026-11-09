@@ -6,36 +6,46 @@ import './crafting.css';
 type Ingredient={definition_id:string;name:string;quantity:number};
 type Recipe={id:string;name:string;description:string;output_name:string;output_quantity:number;active:boolean;ingredients:Ingredient[]};
 type Material={definition_id:string;name:string;available:number|string};
+type ToolRequirement={recipe_id:string;definition_id:string;name:string;quantity:number};
 type CraftHistory={id:string;recipe_name:string;output_name:string;quantity:number;crafts:number;occurred_at:string};
 type Props={db:SupabaseClient;campaign:string;character:string;inventoryVersion:number;busy:boolean;onChanged:()=>Promise<void>};
 export default function CharacterCraftingPanel({db,campaign,character,inventoryVersion,busy,onChanged}:Props){
  const [recipes,setRecipes]=useState<Recipe[]>([]),[materials,setMaterials]=useState<Material[]>([]),[history,setHistory]=useState<CraftHistory[]>([]);
+ const [requirements,setRequirements]=useState<ToolRequirement[]>([]),[ownedTools,setOwnedTools]=useState<Material[]>([]);
  const [craftCounts,setCraftCounts]=useState<Record<string,string>>({});
  const [loading,setLoading]=useState(true),[working,setWorking]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [review,setReview]=useState<{recipe:Recipe;count:number}|null>(null);
  const load=async()=>{
-  const [a,b,c]=await Promise.all([
+  const [a,b,c,d,e]=await Promise.all([
    db.rpc('list_campaign_crafting_recipes',{p_campaign:campaign}),
    db.rpc('list_character_crafting_materials',{p_character:character}),
-   db.rpc('list_character_crafting_history',{p_character:character,p_limit:30})
+   db.rpc('list_character_crafting_history',{p_character:character,p_limit:30}),
+   db.rpc('list_campaign_crafting_tools',{p_campaign:campaign}),
+   db.rpc('list_character_crafting_tools',{p_character:character})
   ]);
-  if(a.error)throw a.error;if(b.error)throw b.error;if(c.error)throw c.error;
+  if(a.error)throw a.error;if(b.error)throw b.error;if(c.error)throw c.error;if(d.error)throw d.error;if(e.error)throw e.error;
   setRecipes((a.data||[]).filter((r:Recipe)=>r.active));setMaterials(b.data||[]);setHistory(c.data||[]);
+  setRequirements(d.data||[]);setOwnedTools(e.data||[]);
  };
  useEffect(()=>{let cancelled=false;setLoading(true);setError('');setReview(null);
   void Promise.all([
    db.rpc('list_campaign_crafting_recipes',{p_campaign:campaign}),
    db.rpc('list_character_crafting_materials',{p_character:character}),
-   db.rpc('list_character_crafting_history',{p_character:character,p_limit:30})
-  ]).then(([a,b,c])=>{if(a.error)throw a.error;if(b.error)throw b.error;if(c.error)throw c.error;
-   if(!cancelled){setRecipes((a.data||[]).filter((r:Recipe)=>r.active));setMaterials(b.data||[]);setHistory(c.data||[])}
+   db.rpc('list_character_crafting_history',{p_character:character,p_limit:30}),
+   db.rpc('list_campaign_crafting_tools',{p_campaign:campaign}),
+   db.rpc('list_character_crafting_tools',{p_character:character})
+  ]).then(([a,b,c,d,e])=>{if(a.error)throw a.error;if(b.error)throw b.error;if(c.error)throw c.error;if(d.error)throw d.error;if(e.error)throw e.error;
+   if(!cancelled){setRecipes((a.data||[]).filter((r:Recipe)=>r.active));setMaterials(b.data||[]);setHistory(c.data||[]);setRequirements(d.data||[]);setOwnedTools(e.data||[])}
   }).catch(e=>{if(!cancelled)setError(inventoryErrorMessage(e))})
   .finally(()=>{if(!cancelled)setLoading(false)});
   return()=>{cancelled=true};
  },[db,campaign,character,inventoryVersion]);
  const available=(id:string)=>Number(materials.find(m=>m.definition_id===id)?.available??0);
+ const toolCount=(id:string)=>Number(ownedTools.find(t=>t.definition_id===id)?.available??0);
+ const toolsFor=(id:string)=>requirements.filter(t=>t.recipe_id===id);
  const canCraft=(r:Recipe,n:number)=>n>=1&&n<=100&&Number.isInteger(n)&&r.ingredients.length>0&&
- r.ingredients.every(i=>available(i.definition_id)>=Number(i.quantity)*n);
+ r.ingredients.every(i=>available(i.definition_id)>=Number(i.quantity)*n)&&
+ toolsFor(r.id).every(t=>toolCount(t.definition_id)>=Number(t.quantity));
  const craft=async()=>{
   if(!review||working||busy)return;setWorking(true);setError('');setNotice('');
   try{
@@ -50,7 +60,7 @@ export default function CharacterCraftingPanel({db,campaign,character,inventoryV
   <div className="mv-crafting-heading"><h3><FlaskConical size={20}/> Crafting</h3>
    <button type="button" disabled={working||loading||busy} onClick={()=>{setLoading(true);void load().catch(e=>setError(inventoryErrorMessage(e))).finally(()=>setLoading(false))}}><RefreshCw size={15}/> Refresh</button>
   </div>
-  <p>Combine materials in your inventory using GM-approved recipes. Only eligible, identified, unmodified, unequipped items outside containers are consumed.</p>
+  <p>Combine materials using GM-approved recipes. Ingredients are consumed; required tools must be present but are not consumed. Only eligible, identified, unmodified, unequipped items outside containers are used as ingredients.</p>
   {loading&&<p>Loading recipes and available materials…</p>}
   {!loading&&recipes.length===0&&<p className="mv-empty">No active crafting recipes yet. Your GM can add recipes in the GM Dashboard.</p>}
   <div className="mv-crafting-recipes">{recipes.map(r=>{
@@ -65,6 +75,12 @@ export default function CharacterCraftingPanel({db,campaign,character,inventoryV
       <span className={available(i.definition_id)>=Number(i.quantity)*count?'mv-crafting-ok':'mv-crafting-missing'}>Have {available(i.definition_id)}</span>
      </div>)}
     </div>
+    {toolsFor(r.id).length>0&&<div className="mv-crafting-ingredients mv-crafting-tools"><strong>Required tools (not consumed)</strong>
+     {toolsFor(r.id).map(t=><div key={t.definition_id}>
+      <span>{t.name} × {t.quantity}</span>
+      <span className={toolCount(t.definition_id)>=t.quantity?'mv-crafting-ok':'mv-crafting-missing'}>Have {toolCount(t.definition_id)}</span>
+     </div>)}
+    </div>}
     <label>Craft count<input type="number" min="1" max="100" step="1" value={craftCounts[r.id]??'1'} onChange={e=>{setCraftCounts(v=>({...v,[r.id]:e.target.value}));setReview(null)}}/></label>
     <button type="button" disabled={working||busy||!eligible} onClick={()=>{setReview({recipe:r,count});setError('')}}>Craft</button>
    </div>
