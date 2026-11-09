@@ -105,12 +105,12 @@ export default function GmCraftingManager({db,campaign,definitions,characters,co
   </select></label>
   <form className="nx-tool-form nx-crafting-editor" onSubmit={e=>void save(e)}>
    <h3>{recipe?'Edit Recipe':'New Recipe'}</h3>
-   <label>Recipe name<input required minLength={2} maxLength={120} value={name} onChange={e=>setName(e.target.value)}/></label>
-   <label>Description<input maxLength={500} value={description} onChange={e=>setDescription(e.target.value)}/></label>
-   <label>Crafted item<select required value={output} onChange={e=>setOutput(e.target.value)}>
+   <label className="nx-craft-field nx-craft-name">Recipe name<input required minLength={2} maxLength={120} value={name} onChange={e=>setName(e.target.value)}/></label>
+   <label className="nx-craft-field nx-craft-description">Description<input maxLength={500} value={description} onChange={e=>setDescription(e.target.value)}/></label>
+   <label className="nx-craft-field nx-craft-output">Crafted item<select required value={output} onChange={e=>setOutput(e.target.value)}>
     <option value="">Choose output item…</option>{catalog.map(d=><option value={d.id} key={d.id}>{d.name} ({d.category})</option>)}
    </select></label>
-   <label>Output quantity per craft<input type="number" min="1" max="500" step="1" required value={outputQty} onChange={e=>setOutputQty(e.target.value)}/></label>
+   <label className="nx-craft-field nx-craft-output-qty">Output quantity per craft<input type="number" min="1" max="500" step="1" required value={outputQty} onChange={e=>setOutputQty(e.target.value)}/></label>
    <h4>Ingredients per craft</h4>
    {ingredients.map((ing,i)=><div className="nx-crafting-ingredient-editor" key={i}>
     <label>Material<select required value={ing.definition_id} onChange={e=>updateIngredient(i,{definition_id:e.target.value})}>
@@ -130,16 +130,16 @@ export default function GmCraftingManager({db,campaign,definitions,characters,co
    </div>)}
    <button type="button" disabled={busy||tools.length>=20} onClick={()=>setTools(rows=>[...rows,{definition_id:'',quantity:'1'}])}>Add Required Tool</button>
    <h4>Category, Learning & Crafting Rules</h4>
-   <label>Recipe category<select required value={category} onChange={e=>setCategory(e.target.value)}>
+   <label className="nx-craft-field nx-craft-category">Recipe category<select required value={category} onChange={e=>setCategory(e.target.value)}>
     <option value="">Select category…</option>{professions.filter(p=>p.category_id).map(p=><option key={p.category_id!} value={p.category_id!}>{p.category_name} · {p.skill_name}</option>)}
    </select></label>
-   <label>Minimum learning check DC<input required type="number" min="1" max="40" step="1" value={learnDc} onChange={e=>setLearnDc(e.target.value)}/></label>
-   <label>Crafting check DC<input required type="number" min="1" max="40" step="1" value={craftDc} onChange={e=>setCraftDc(e.target.value)}/></label>
-   <label>Time mode<select value={timeMode} onChange={e=>setTimeMode(e.target.value)}>
+   <label className="nx-craft-field nx-craft-learn-dc">Minimum learning check DC<input required type="number" min="1" max="40" step="1" value={learnDc} onChange={e=>setLearnDc(e.target.value)}/></label>
+   <label className="nx-craft-field nx-craft-craft-dc">Crafting check DC<input required type="number" min="1" max="40" step="1" value={craftDc} onChange={e=>setCraftDc(e.target.value)}/></label>
+   <label className="nx-craft-field nx-craft-time-mode">Time mode<select value={timeMode} onChange={e=>setTimeMode(e.target.value)}>
     <option value="game">In-game time (immediate item result)</option>
     <option value="realtime">Real time (complete after duration)</option>
    </select></label>
-   <label>Minutes per craft<input required type="number" min="0" max="10080" step="1" value={minutes} onChange={e=>setMinutes(e.target.value)}/></label>
+   <label className="nx-craft-field nx-craft-minutes">Minutes per craft<input required type="number" min="0" max="10080" step="1" value={minutes} onChange={e=>setMinutes(e.target.value)}/></label>
    <p>Learning and crafting checks use 1d20 + the category skill's attribute modifier + the character's skill bonus. Failed learning leaves the Recipe item intact. Failed crafting consumes the ingredients.</p>
    <label><input type="checkbox" checked={active} onChange={e=>setActive(e.target.checked)}/> Recipe active (players must learn it using a Recipe item)</label>
    <button type="submit" disabled={busy||!name.trim()||!output||!category||ingredients.some(i=>!i.definition_id)||tools.some(t=>!t.definition_id)}>Save Recipe</button>
