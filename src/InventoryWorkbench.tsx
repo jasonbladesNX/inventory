@@ -9,7 +9,7 @@ export type WorkbenchUsage={container_item_id:string;used_weight_lb:number|strin
 export type WorkbenchIndicator={item_id:string;condition_code:string;identified:boolean;unit_weight_lb:number|string|null};
 type Props={
   characterName:string;items:WorkbenchItem[];
-  categories:Record<string,string>;storage:Record<string,WorkbenchStorage>;
+  categories:Record<string,string>;categoryNames?:Record<string,string>;storage:Record<string,WorkbenchStorage>;
   usage:Record<string,WorkbenchUsage>;indicators:Record<string,WorkbenchIndicator>;
   equippedIds:Set<string>;favoriteIds:Set<string>;busy:boolean;
   renderItem:(item:WorkbenchItem,onBrowseContainer:(id:string)=>void)=>React.ReactNode;
@@ -29,7 +29,7 @@ function csvCell(value:unknown):string{
   if(/^[\s]*[=+@-]/.test(v))v="'"+v;
   return '"'+v.replace(/"/g,'""')+'"';
 }
-export default function InventoryWorkbench({characterName,items,categories,storage,usage,indicators,equippedIds,favoriteIds,busy,renderItem}:Props){
+export default function InventoryWorkbench({characterName,items,categories,categoryNames={},storage,usage,indicators,equippedIds,favoriteIds,busy,renderItem}:Props){
   const [search,setSearch]=useState('');
   const [category,setCategory]=useState('all');
   const [location,setLocation]=useState('all');
@@ -56,7 +56,7 @@ export default function InventoryWorkbench({characterName,items,categories,stora
   },[reportOpen]);
   useEffect(()=>{if(location!=='all'&&location!=='carried'&&!items.some(item=>item.item_id===location&&storage[item.item_id]?.is_container))setLocation('all')},[items,storage,location]);
   const availableCategories=[...new Set(items.map(item=>categories[item.item_id]??'unknown'))].sort((a,b)=>
-    (categoryLabels[a]??a).localeCompare(categoryLabels[b]??b));
+    (categoryNames[a]??categoryLabels[a]??a).localeCompare(categoryNames[b]??categoryLabels[b]??b));
   const containers=items.filter(item=>storage[item.item_id]?.is_container&&!storage[item.item_id]?.container_item_id);
   const matches=useMemo(()=>items.filter(item=>{
     const id=item.item_id;
@@ -135,7 +135,7 @@ export default function InventoryWorkbench({characterName,items,categories,stora
       <label>Item type
         <select value={category} onChange={e=>setCategory(e.target.value)}>
           <option value="all">All item types ({items.length})</option>
-          {availableCategories.map(c=><option key={c} value={c}>{categoryLabels[c]??c} ({items.filter(item=>(categories[item.item_id]??'unknown')===c).length})</option>)}
+          {availableCategories.map(c=><option key={c} value={c}>{categoryNames[c]??categoryLabels[c]??c} ({items.filter(item=>(categories[item.item_id]??'unknown')===c).length})</option>)}
         </select>
       </label>
       <label>Where
@@ -219,7 +219,7 @@ export default function InventoryWorkbench({characterName,items,categories,stora
     {matches.length===0?<p className="mv-empty nx-inventory-no-match">No items match these filters.</p>:
       viewMode==='flat'?showList(matches,'All matching items'):
       viewMode==='category'?availableCategories.map(code=>
-        showList(matches.filter(item=>(categories[item.item_id]??'unknown')===code),categoryLabels[code]??code)
+        showList(matches.filter(item=>(categories[item.item_id]??'unknown')===code),categoryNames[code]??categoryLabels[code]??code)
       ):
       location==='all'?<>
         {showList(matches.filter(item=>!storage[item.item_id]?.container_item_id),'Carried & Equipped')}
