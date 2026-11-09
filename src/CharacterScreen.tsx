@@ -90,7 +90,7 @@ function equipmentSlotIcon(label:string){
 const categoryFilterLabels:Record<string,string>={
  weapon:'Weapons',shield:'Shields',armor:'Armor',clothing:'Clothing',headgear:'Headgear',
  jewelry:'Jewelry',ring:'Rings',footwear:'Footwear',focus:'Focus items',tool:'Tools',
- wondrous:'Wondrous items',gear:'General gear',container:'Containers',recipe:'Recipes',unknown:'Other'
+ wondrous:'Wondrous items',gear:'General gear',ingredient:'Ingredients',container:'Containers',recipe:'Recipes',unknown:'Other'
 };
 const navigation: {id:InventoryTab; label:string; Icon:typeof UserRound}[] = [
   {id:'character',label:'Character',Icon:UserRound},
