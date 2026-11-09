@@ -23,7 +23,7 @@ for(const [pattern,label] of [
  [/Heal HP/,'healing UI control'],
  [/setHpAdjustFeedback/,'live status feedback'],
  [/await onInventoryChanged\(\)/,'refresh for inventory activity'],
- [/hitPoints.current===0/,'floor disables excess damage'],
+ [/onClick=\{\(\)=>void adjustHitPoints\('damage'\)\}/,'damage remains available at zero HP for death-save rules'],
  [/hitPoints.current===hitPoints.max/,'ceiling disables excess healing']
 ])assert.match(ui,pattern,label);
 console.log('PASS character HP damage and heal controls and audit');
