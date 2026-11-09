@@ -27,7 +27,7 @@ export default function CharacterRestPanel({db,character,inventoryVersion,busy,o
   const close=()=>{if(saving)return;setOpen(false);setEditDice(false);setError('');trigger.current?.focus()};
   useEffect(()=>{
     let cancelled=false;setLoading(true);setError('');
-    void db.rpc('get_character_rest_state',{p_character:character}).then(({data,error:rpcError})=>{
+    void Promise.resolve(db.rpc('get_character_rest_state',{p_character:character})).then(({data,error:rpcError})=>{
       if(rpcError)throw rpcError;
       if(!cancelled){
         const next=data as RestState;setState(next);
