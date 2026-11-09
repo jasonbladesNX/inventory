@@ -40,6 +40,7 @@ check(manager,/save_campaign_item_category/,'create rename deactivate category R
 check(manager,/set_campaign_item_category/,'assign existing custom item category');
 check(manager,/New items stack by default/,'category stacking default setting');
 check(gm,/GmItemCategoryManager/,'GM catalog integrates category manager');
+check(gm,/onChanged=\{\(\)=>refreshItemCatalog\(campaign\)\}/,'category edits refresh catalog in place without leaving dashboard');
 check(gm,/customItemCategories\.filter\(c=>c\.active\)/,'create catalog item exposes active custom types');
 check(gm,/p_stackable:itemStackable/,'per-item stack decision saved');
 check(character,/list_campaign_item_categories/,'player fetches allowed category labels');
