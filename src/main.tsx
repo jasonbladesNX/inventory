@@ -140,6 +140,17 @@ function App(){
       setSlots(equipment.data||[]);
     }finally{setCampaignBusy(false)}
   }
+  async function refreshItemCatalog(id:string){
+    if(!db)return;
+    const [catalog,categoryQuery]=await Promise.all([
+      db.from('item_definitions').select('id,name,category,code,source_info,default_properties,campaign_id').eq('campaign_id',id),
+      db.rpc('list_campaign_item_categories',{p_campaign:id})
+    ]);
+    if(catalog.error)throw catalog.error;
+    if(categoryQuery.error)throw categoryQuery.error;
+    setDefs(catalog.data||[]);
+    setCustomItemCategories((categoryQuery.data||[]) as CampaignItemCategory[]);
+  }
   async function chooseCampaign(id:string){
     setCampaign(id);
     setMsg('');
@@ -409,7 +420,7 @@ function App(){
           <section className="nx-page-card nx-gm-tools">
             <h2><BookOpen size={20}/> GM Item Catalog</h2>
             <GmItemCategoryManager db={db!} campaign={campaign} definitions={defs} categories={customItemCategories}
-              builtInCategories={itemCategories} onChanged={()=>loadCampaign(campaign)}/>
+              builtInCategories={itemCategories} onChanged={()=>refreshItemCatalog(campaign)}/>
             <form className="nx-tool-form" onSubmit={e=>{e.preventDefault();void run(async()=>{
               await rpc('create_campaign_custom_item_with_stacking',{p_campaign:campaign,p_name:itemName,p_category:itemCategory,p_bonus_attribute:itemConsumable||itemCategory==='consumable'?null:attr||null,p_bonus:itemConsumable||itemCategory==='consumable'?null:bonus?Number(bonus):null,p_two_handed:itemCategory==='weapon'&&twoHanded,p_consumable:itemConsumable||itemCategory==='consumable',p_use_effect:itemConsumable||itemCategory==='consumable'?buildUseEffect(newItemUseEffect):null,p_stackable:itemStackable});
               await loadCampaign(campaign);setItemName('');setItemConsumable(false);setItemStackable(itemCategoryDefaultStack(itemCategory));setNewItemUseEffect({...emptyUseEffect});
