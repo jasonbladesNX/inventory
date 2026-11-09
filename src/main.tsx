@@ -17,6 +17,7 @@ import GmLootManager from './GmLootManager';
 import GmCraftingManager from './GmCraftingManager';
 import GmCraftingProfessions from './GmCraftingProfessions';
 import GmItemCategoryManager,{type CampaignItemCategory} from './GmItemCategoryManager';
+import GmBulkGrantItems from './GmBulkGrantItems';
 import GmDashboardCard from './GmDashboardCard';
 import './style.css';
 import './app-pages.css';
@@ -56,8 +57,6 @@ function App(){
   const[chars,setChars]=useState<Row[]>([]);
   const[recipients,setRecipients]=useState<Row[]>([]);
   const[char,setChar]=useState('');
-  const[grantCharacter,setGrantCharacter]=useState('');
-  const[grantDefinition,setGrantDefinition]=useState('');
   const[items,setItems]=useState<any[]>([]);
   const[defs,setDefs]=useState<any[]>([]);
   const[customItemCategories,setCustomItemCategories]=useState<CampaignItemCategory[]>([]);
@@ -113,7 +112,7 @@ function App(){
   async function loadCampaign(id:string){
     if(!db)return;
     setCampaignBusy(true);setGmAccess(false);
-    setChar('');setGrantCharacter('');setGrantDefinition('');setItems([]);setEffects([]);setChars([]);setDefs([]);setCustomItemCategories([]);setSlots([]);
+    setChar('');setItems([]);setEffects([]);setChars([]);setDefs([]);setCustomItemCategories([]);setSlots([]);
     try{
       const [people,catalog,equipment,account,membership,recipientQuery,campaignOwner,categoryQuery]=await Promise.all([
         db.from('characters').select('id,name,member_id').eq('campaign_id',id),
@@ -401,7 +400,7 @@ function App(){
             </form>
           </section>
           </GmDashboardCard>
-          <GmDashboardCard key={'recipes-'+campaign} title="Crafting Skills & Recipes" initiallyOpen>
+          <GmDashboardCard key={'recipes-'+campaign} title="Crafting Skills & Recipes">
             <GmCraftingProfessions db={db!} campaign={campaign} characters={chars}
               onChanged={()=>setCraftingConfigVersion(v=>v+1)}/>
             <GmCraftingManager db={db!} campaign={campaign} definitions={defs} characters={chars}
@@ -564,32 +563,10 @@ function App(){
           <GmDashboardCard key={'grants-'+campaign} title="Grant Item to Character">
           <section className="nx-page-card nx-gm-tools">
             <h2><Plus size={20}/> Grant Item to Character</h2>
-            <form className="nx-tool-form" onSubmit={e=>{e.preventDefault();void run(async()=>{
-              const recipient=chars.find(c=>c.id===grantCharacter);
-              const definition=defs.find(d=>d.id===grantDefinition);
-              if(!recipient)throw Error('Choose a recipient character in this campaign.');
-              if(!definition)throw Error('Choose a catalog item.');
-              await rpc('add_inventory_item',{p_campaign:campaign,p_character:recipient.id,p_definition:definition.id,p_quantity:1});
-              if(char===recipient.id)await loadChar(campaign,recipient.id);
-              setMsg(`Added ${definition.name} to ${recipient.name}'s inventory.`);
-              setGrantDefinition('');
-            })}}>
-              <label className="nx-form-field" htmlFor="nx-grant-recipient">Recipient Character
-                <select id="nx-grant-recipient" required value={grantCharacter} disabled={busy||campaignBusy}
-                  onChange={e=>setGrantCharacter(e.target.value)}>
-                  <option value="">Choose a character…</option>
-                  {chars.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-              </label>
-              <label className="nx-form-field" htmlFor="nx-grant-definition">Catalog Item
-                <select id="nx-grant-definition" required value={grantDefinition} disabled={busy||campaignBusy}
-                  onChange={e=>setGrantDefinition(e.target.value)}>
-                  <option value="">Choose an item…</option>
-                  {defs.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}
-                </select>
-              </label>
-              <button type="submit" disabled={busy||campaignBusy||!grantCharacter||!grantDefinition}>Add to Inventory</button>
-            </form>
+            <GmBulkGrantItems db={db!} campaign={campaign} characters={chars} definitions={defs}
+              disabled={busy||campaignBusy} onGranted={async recipientId=>{
+                if(char===recipientId)await loadChar(campaign,recipientId);
+              }}/>
             {chars.length===0&&<p className="nx-small-note">Create a character above before granting items.</p>}
           </section>
           </GmDashboardCard>
