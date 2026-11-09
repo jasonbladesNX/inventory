@@ -437,11 +437,20 @@ function App(){
             <form className="nx-tool-form" onSubmit={e=>{e.preventDefault();void run(async()=>{
               const choice=defs.find(d=>d.id===editConsumableDefinition);
               if(!choice)throw Error('Select a custom item.');
-              await rpc('update_campaign_custom_item_use_settings',{
-                p_campaign:campaign,p_definition:choice.id,p_consumable:editConsumableValue,
-                p_use_effect:editConsumableValue?buildUseEffect(existingItemUseEffect):null
-              });
-              const stacking=await rpc('set_campaign_item_stackable',{p_campaign:campaign,p_definition:choice.id,p_stackable:editStackableValue});
+               // Enable stacking before turning Use on; turn Use off before disabling stacking.
+               let stacking;
+               if(editConsumableValue){
+                 stacking=await rpc('set_campaign_item_stackable',{p_campaign:campaign,p_definition:choice.id,p_stackable:true});
+                 await rpc('update_campaign_custom_item_use_settings',{
+                   p_campaign:campaign,p_definition:choice.id,p_consumable:true,
+                   p_use_effect:buildUseEffect(existingItemUseEffect)
+                 });
+               }else{
+                 await rpc('update_campaign_custom_item_use_settings',{
+                   p_campaign:campaign,p_definition:choice.id,p_consumable:false,p_use_effect:null
+                 });
+                 stacking=await rpc('set_campaign_item_stackable',{p_campaign:campaign,p_definition:choice.id,p_stackable:editStackableValue});
+               }
               await loadCampaign(campaign);
               setMsg(`${choice.name} settings saved. ${Number(stacking?.merged_stacks??0)} existing compatible stacks merged.`);
             })}}>
