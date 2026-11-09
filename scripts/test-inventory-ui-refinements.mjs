@@ -33,7 +33,7 @@ assert.match(workbench,/status==='favorites'/);
 assert.match(css,/\.mv-inventory-quick-action/);
 assert.doesNotMatch(ui,/window\.prompt\(/);
 // Attribute presentation is uniform even when equipment changes an effective score.
-assert.match(ui,/className="mv-attribute-summary-item"/,'uniform attribute-card class');
+assert.match(ui,/className="mv-attribute-summary-item mv-attribute-summary-button"/,'uniform clickable attribute-card classes');
 assert.doesNotMatch(ui,/has-equipment-bonus/,'no conditional attribute-card highlight');
 assert.doesNotMatch(css,/\.mv-attribute-summary-item\.has-equipment-bonus/,'no highlight override');
 assert.match(ui,/Gear net/,'equipment bonus information preserved');
