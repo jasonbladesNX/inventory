@@ -141,7 +141,7 @@ export default function GmCraftingManager({db,campaign,definitions,characters,co
    </select></label>
    <label>Minutes per craft<input required type="number" min="0" max="10080" step="1" value={minutes} onChange={e=>setMinutes(e.target.value)}/></label>
    <p>Learning and crafting checks use 1d20 + the category skill's attribute modifier + the character's skill bonus. Failed learning leaves the Recipe item intact. Failed crafting consumes the ingredients.</p>
-   <label><input type="checkbox" checked={active} onChange={e=>setActive(e.target.checked)}/> Recipe available to players</label>
+   <label><input type="checkbox" checked={active} onChange={e=>setActive(e.target.checked)}/> Recipe active (players must learn it using a Recipe item)</label>
    <button type="submit" disabled={busy||!name.trim()||!output||!category||ingredients.some(i=>!i.definition_id)||tools.some(t=>!t.definition_id)}>Save Recipe</button>
   </form>
   {recipe&&progressions.find(p=>p.recipe_id===recipe)&&<div className="nx-tool-form">
