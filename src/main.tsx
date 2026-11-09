@@ -16,6 +16,7 @@ import GmMerchantManager from './GmMerchantManager';
 import GmLootManager from './GmLootManager';
 import GmCraftingManager from './GmCraftingManager';
 import GmCraftingProfessions from './GmCraftingProfessions';
+import GmItemCategoryManager,{type CampaignItemCategory} from './GmItemCategoryManager';
 import GmDashboardCard from './GmDashboardCard';
 import './style.css';
 import './app-pages.css';
@@ -59,6 +60,7 @@ function App(){
   const[grantDefinition,setGrantDefinition]=useState('');
   const[items,setItems]=useState<any[]>([]);
   const[defs,setDefs]=useState<any[]>([]);
+  const[customItemCategories,setCustomItemCategories]=useState<CampaignItemCategory[]>([]);
   const[slots,setSlots]=useState<any[]>([]);
   const[effects,setEffects]=useState<any[]>([]);
   const[campaignName,setCampaignName]=useState('');
@@ -87,6 +89,8 @@ function App(){
   const[msg,setMsg]=useState('');
   const[busy,setBusy]=useState(false);
   const[campaignBusy,setCampaignBusy]=useState(false);
+  const isOrdinaryItemCategory=(code:string)=>['gear','ingredient','consumable','ammunition','material','component','misc','supplies'].includes(code)||customItemCategories.some(c=>c.code===code);
+  const itemCategoryDefaultStack=(code:string)=>customItemCategories.find(c=>c.code===code)?.default_stackable??['gear','ingredient','consumable','ammunition','material','component','misc','supplies'].includes(code);
 
   async function run(fn:()=>Promise<unknown>){
     setBusy(true);setMsg('');
@@ -109,18 +113,19 @@ function App(){
   async function loadCampaign(id:string){
     if(!db)return;
     setCampaignBusy(true);setGmAccess(false);
-    setChar('');setGrantCharacter('');setGrantDefinition('');setItems([]);setEffects([]);setChars([]);setDefs([]);setSlots([]);
+    setChar('');setGrantCharacter('');setGrantDefinition('');setItems([]);setEffects([]);setChars([]);setDefs([]);setCustomItemCategories([]);setSlots([]);
     try{
-      const [people,catalog,equipment,account,membership,recipientQuery,campaignOwner]=await Promise.all([
+      const [people,catalog,equipment,account,membership,recipientQuery,campaignOwner,categoryQuery]=await Promise.all([
         db.from('characters').select('id,name,member_id').eq('campaign_id',id),
         db.from('item_definitions').select('id,name,category,code,source_info,default_properties,campaign_id').eq('campaign_id',id),
         db.from('equipment_slot_definitions').select('id,label').eq('campaign_id',id),
         db.auth.getUser(),
         db.from('campaign_members').select('id,user_id,role,status').eq('campaign_id',id),
         db.rpc('list_trade_recipients',{p_campaign:id}),
-        db.from('campaigns').select('owner_user_id').eq('id',id).single()
+        db.from('campaigns').select('owner_user_id').eq('id',id).single(),
+        db.rpc('list_campaign_item_categories',{p_campaign:id})
       ]);
-      for(const result of [people,catalog,equipment,membership,recipientQuery,campaignOwner])if(result.error)throw result.error;
+      for(const result of [people,catalog,equipment,membership,recipientQuery,campaignOwner,categoryQuery])if(result.error)throw result.error;
       if(account.error)throw account.error;
       const me=account.data.user?.id;
       const memberships=(membership.data||[]).filter(m=>m.user_id===me&&m.status==='active');
@@ -131,13 +136,14 @@ function App(){
       setChars((people.data||[]).filter(person=>gm||allowed.has(person.member_id)));
       setRecipients(recipientQuery.data||[]);
       setDefs(catalog.data||[]);
+      setCustomItemCategories((categoryQuery.data||[]) as CampaignItemCategory[]);
       setSlots(equipment.data||[]);
     }finally{setCampaignBusy(false)}
   }
   async function chooseCampaign(id:string){
     setCampaign(id);
     setMsg('');
-    if(!id){setGmAccess(false);setChars([]);setChar('');setGrantCharacter('');setGrantDefinition('');setDefs([]);setSlots([]);return}
+    if(!id){setGmAccess(false);setChars([]);setChar('');setGrantCharacter('');setGrantDefinition('');setDefs([]);setCustomItemCategories([]);setSlots([]);return}
     await run(()=>loadCampaign(id));
   }
   async function loadChar(c:string,ch:string){
@@ -402,22 +408,25 @@ function App(){
           <GmDashboardCard key={'catalog-'+campaign} title="GM Item Catalog">
           <section className="nx-page-card nx-gm-tools">
             <h2><BookOpen size={20}/> GM Item Catalog</h2>
+            <GmItemCategoryManager db={db!} campaign={campaign} definitions={defs} categories={customItemCategories}
+              builtInCategories={itemCategories} onChanged={()=>loadCampaign(campaign)}/>
             <form className="nx-tool-form" onSubmit={e=>{e.preventDefault();void run(async()=>{
               await rpc('create_campaign_custom_item_with_stacking',{p_campaign:campaign,p_name:itemName,p_category:itemCategory,p_bonus_attribute:itemConsumable||itemCategory==='consumable'?null:attr||null,p_bonus:itemConsumable||itemCategory==='consumable'?null:bonus?Number(bonus):null,p_two_handed:itemCategory==='weapon'&&twoHanded,p_consumable:itemConsumable||itemCategory==='consumable',p_use_effect:itemConsumable||itemCategory==='consumable'?buildUseEffect(newItemUseEffect):null,p_stackable:itemStackable});
-              await loadCampaign(campaign);setItemName('');setItemConsumable(false);setItemStackable(true);setNewItemUseEffect({...emptyUseEffect});
+              await loadCampaign(campaign);setItemName('');setItemConsumable(false);setItemStackable(itemCategoryDefaultStack(itemCategory));setNewItemUseEffect({...emptyUseEffect});
             })}}>
               <label>New item name<input required value={itemName} onChange={e=>setItemName(e.target.value)} placeholder="New equipment item"/></label>
-              <label>Equipment category
-                <select value={itemCategory} onChange={e=>{setItemCategory(e.target.value);setItemStackable(['gear','ingredient','consumable','ammunition','material','component','misc','supplies'].includes(e.target.value));if(!['gear','ingredient','consumable','ammunition','material','component','misc','supplies'].includes(e.target.value))setItemConsumable(false)}}>
+              <label>Item category
+                <select value={itemCategory} onChange={e=>{setItemCategory(e.target.value);setItemStackable(itemCategoryDefaultStack(e.target.value));if(!isOrdinaryItemCategory(e.target.value))setItemConsumable(false)}}>
                   {itemCategories.map(([code,label])=><option key={code} value={code}>{label}</option>)}
+                  {customItemCategories.filter(c=>c.active).map(c=><option key={c.code} value={c.code}>{c.name}</option>)}
                 </select>
               </label>
               <label className="nx-checkbox"><input type="checkbox" checked={twoHanded} disabled={itemCategory!=='weapon'} onChange={e=>setTwoHanded(e.target.checked)}/> Two-handed weapon</label>
               <label className="nx-checkbox"><input type="checkbox" checked={itemConsumable||itemCategory==='consumable'}
-                disabled={!['gear','ingredient','consumable','ammunition','material','component','misc','supplies'].includes(itemCategory)||itemCategory==='consumable'}
+                disabled={!isOrdinaryItemCategory(itemCategory)||itemCategory==='consumable'}
                 onChange={e=>{setItemConsumable(e.target.checked);if(e.target.checked){setItemStackable(true);setAttr('');setBonus('')}}}/> Consumable / Usable — deduct one item when used</label>
               <label className="nx-checkbox"><input type="checkbox" checked={itemStackable}
-                disabled={!['gear','ingredient','consumable','ammunition','material','component','misc','supplies'].includes(itemCategory)||itemConsumable||itemCategory==='consumable'}
+                disabled={!isOrdinaryItemCategory(itemCategory)||itemConsumable||itemCategory==='consumable'}
                 onChange={e=>setItemStackable(e.target.checked)}/> Stackable — combine identical items into one quantity</label>
               {(itemConsumable||itemCategory==='consumable')&&<p className="nx-small-note">Usable items deduct one unit from inventory and can apply an optional effect. They must be stackable.</p>}
               <label>Bonus attribute (optional)<input placeholder="e.g. STR" disabled={itemConsumable||itemCategory==='consumable'} value={attr} onChange={e=>setAttr(e.target.value)}/></label>
@@ -440,7 +449,7 @@ function App(){
               <label>Item
                 <select required value={editConsumableDefinition} onChange={e=>{const id=e.target.value;const selected=defs.find(d=>d.id===id);setEditConsumableDefinition(id);setEditConsumableValue(selected?.default_properties?.consumable===true||selected?.category==='consumable');setEditStackableValue(selected?.default_properties?.stackable!=='false'&&selected?.default_properties?.stackable!==false);setExistingItemUseEffect(draftFromEffect(selected?.default_properties?.use_effect))}}>
                   <option value="">Choose an eligible custom item…</option>
-                  {defs.filter(d=>['gear','ingredient','consumable','ammunition','material','component','misc','supplies'].includes(d.category)&&!!d.campaign_id).map(d=><option key={d.id} value={d.id}>{d.name}</option>)}
+                  {defs.filter(d=>isOrdinaryItemCategory(d.category)&&!!d.campaign_id).map(d=><option key={d.id} value={d.id}>{d.name}</option>)}
                 </select>
               </label>
               <label>Usable status
