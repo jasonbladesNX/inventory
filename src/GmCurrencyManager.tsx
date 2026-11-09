@@ -11,7 +11,7 @@ export default function GmCurrencyManager({db,campaign,characters,onChanged}:Pro
  const [character,setCharacter]=useState(''),[currency,setCurrency]=useState(''),[delta,setDelta]=useState(''),[reason,setReason]=useState('');
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const load=async()=>{const {data,error:rpcError}=await db.rpc('list_campaign_currency_definitions',{p_campaign:campaign});if(rpcError)throw rpcError;setCurrencies(data||[])};
- useEffect(()=>{let cancelled=false;setCurrencies([]);setCharacter('');setCurrency('');setError('');void db.rpc('list_campaign_currency_definitions',{p_campaign:campaign}).then(({data,error:rpcError})=>{if(rpcError)throw rpcError;if(!cancelled)setCurrencies(data||[])}).catch(e=>{if(!cancelled)setError(inventoryErrorMessage(e))});return()=>{cancelled=true}},[db,campaign]);
+ useEffect(()=>{let cancelled=false;setCurrencies([]);setCharacter('');setCurrency('');setError('');void Promise.resolve(db.rpc('list_campaign_currency_definitions',{p_campaign:campaign})).then(({data,error:rpcError})=>{if(rpcError)throw rpcError;if(!cancelled)setCurrencies(data||[])}).catch(e=>{if(!cancelled)setError(inventoryErrorMessage(e))});return()=>{cancelled=true}},[db,campaign]);
  const run=async(action:'denomination'|'adjust')=>{
    if(busy)return;setBusy(true);setError('');setNotice('');
    try{
