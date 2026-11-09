@@ -15,7 +15,7 @@ assert.match(player,/list_character_crafting_materials/,'player material availab
 assert.match(player,/list_campaign_crafting_recipes/,'player active recipes loaded');
 assert.match(player,/start_character_crafting/,'crafting executed through secure learned-recipe RPC');
 assert.match(player,/Confirm Craft/,'crafting requires confirmation');
-assert.match(player,/list_character_crafting_history/,'crafting history exposed');
+assert.match(player,/list_character_crafting_jobs/,'crafting history exposed');
 assert.match(player,/onChanged\(\)/,'inventory refreshed after craft');
 assert.match(sql,/enable row level security/,'tables use RLS');
 assert.match(sql,/revoke all on public.campaign_crafting_recipes/,'direct table access denied');
