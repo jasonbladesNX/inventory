@@ -1,0 +1,36 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+
+const gm=readFileSync('src/main.tsx','utf8');
+const card=readFileSync('src/GmDashboardCard.tsx','utf8');
+const bulk=readFileSync('src/GmBulkGrantItems.tsx','utf8');
+const css=readFileSync('src/gm-multi-grants.css','utf8');
+const sql=readFileSync('docs/sql/gm-multi-item-grants-ui.sql','utf8');
+
+assert.match(gm,/title="Crafting Skills & Recipes">/,'crafting dashboard section has normal closed default');
+assert.doesNotMatch(gm,/title="Crafting Skills & Recipes" initiallyOpen/,'crafting must not start expanded');
+assert.match(card,/initiallyOpen=false/,'GM dashboard cards default to closed');
+assert.match(card,/hidden=\{!open\}/,'collapsing retains contents');
+assert.match(gm,/<GmBulkGrantItems db=\{db!\}/,'bulk grant form is in GM grant panel');
+assert.match(gm,/if\(char===recipientId\)await loadChar\(campaign,recipientId\)/,'current GM character preview refreshes');
+assert.match(bulk,/grant_inventory_items_bulk/,'UI calls atomic RPC instead of repeated individual requests');
+assert.match(bulk,/p_items:payload/,'submits full selected list');
+assert.match(bulk,/Add Another Item/,'supports multiple item rows');
+assert.match(bulk,/type="number" min="1" max=\{MAX_TOTAL\} step="1"/,'each item has integer quantity input');
+assert.match(bulk,/each catalog item can appear only once/i,'duplicates guarded');
+assert.match(bulk,/occupied\.has\(d\.id\)/,'already selected items not offered twice');
+assert.match(bulk,/MAX_LINES=25/,'row limit');
+assert.match(bulk,/total>MAX_TOTAL/,'total limit');
+assert.match(bulk,/\{message&&<p className="nx-grant-success" role="status">/,'grant gives success feedback');
+assert.match(bulk,/catch\{setMessage\(/,'preview refresh failure does not misreport committed grant');
+assert.match(css,/@media\(max-width:570px\)/,'bulk grant is mobile-friendly');
+assert.match(sql,/create or replace function public\.grant_inventory_items_bulk/,'RPC exists in migration');
+assert.match(sql,/app_private\.is_gm\(p_campaign\)/,'GM authorization is checked server-side');
+assert.match(sql,/and c\.campaign_id=p_campaign and c\.is_active/,'recipient belongs to campaign and is active');
+assert.match(sql,/jsonb_array_length\(p_items\) not between 1 and 25/,'1–25 line bound');
+assert.match(sql,/v_definition=any\(v_seen\)/,'duplicates rejected server-side');
+assert.match(sql,/v_total>1000000/,'total quantity bound');
+assert.match(sql,/public\.add_inventory_item\(p_campaign,p_character,v_definition,v_quantity\)/,'existing stacking and audit implementation reused');
+assert.match(sql,/revoke all on function public\.grant_inventory_items_bulk\(uuid,uuid,jsonb\) from public,anon/,'anonymous access revoked');
+assert.match(sql,/grant execute on function public\.grant_inventory_items_bulk\(uuid,uuid,jsonb\) to authenticated/,'only authenticated callers');
+console.log('PASS GM crafting collapsed default and bulk grant UI, quantity and RPC contracts');
