@@ -120,6 +120,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const potionEditorCloseRef=useRef<HTMLButtonElement>(null);
   const [validSlots,setValidSlots]=useState<Record<string,string[]>>({});
   const [itemCategories,setItemCategories]=useState<Record<string,string>>({});
+  const [itemCategoryNames,setItemCategoryNames]=useState<Record<string,string>>({});
   const [inventoryIndicators,setInventoryIndicators]=useState<Record<string,WorkbenchIndicator>>({});
   const [favoriteIds,setFavoriteIds]=useState<Set<string>>(new Set());
   const [favoriteBusy,setFavoriteBusy]=useState<string|null>(null);
@@ -232,9 +233,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   useEffect(()=>{
     let cancelled=false;
     async function load(){
-      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setInventoryIndicators({});setUsableItemIds(new Set());setLearnableRecipeItemIds(new Set());setFavoriteIds(new Set());setStorage({});setContainerUsage({});setWeightSummary(null);setCarryProfile(null);setHitPoints(null);setPotionHotbar({slots:[],options:[]});setPotionError('');setActiveTimedEffects([]);setAttributes([]);setDerivedAttributes({});setEffectSources([]);setEffectSourcesError('');setInvalidEquipment([]);setInvalidEquipmentError('');
+      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setItemCategoryNames({});setInventoryIndicators({});setUsableItemIds(new Set());setLearnableRecipeItemIds(new Set());setFavoriteIds(new Set());setStorage({});setContainerUsage({});setWeightSummary(null);setCarryProfile(null);setHitPoints(null);setPotionHotbar({slots:[],options:[]});setPotionError('');setActiveTimedEffects([]);setAttributes([]);setDerivedAttributes({});setEffectSources([]);setEffectSourcesError('');setInvalidEquipment([]);setInvalidEquipmentError('');
       try{
-        const [assignments,currency,compatibility,categories,storageRows,usageRows,weightRows,carryRows,attributeRows,derivedRows,sourceRows,invalidRows,favoriteRows,indicatorRows,usableRows,hpRows,potionRows,recipeItemRows]=await Promise.all([
+        const [assignments,currency,compatibility,categories,storageRows,usageRows,weightRows,carryRows,attributeRows,derivedRows,sourceRows,invalidRows,favoriteRows,indicatorRows,usableRows,hpRows,potionRows,recipeItemRows,customCategoryRows]=await Promise.all([
           db.rpc('list_character_equipped_instances',{p_character:character}),
           db.rpc('list_my_trade_currency',{p_character:character}),
           db.rpc('list_character_valid_equipment_slots',{p_character:character}),
@@ -253,6 +254,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           db.rpc('get_character_hit_points',{p_character:character}),
            db.rpc('get_character_potion_hotbar',{p_character:character}),
            db.rpc('list_character_recipe_items',{p_character:character}),
+           db.rpc('list_campaign_item_categories',{p_campaign:campaign}),
         ]);
         if(assignments.error)throw assignments.error;
         if(currency.error)throw currency.error;
@@ -270,6 +272,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         if(hpRows.error)throw hpRows.error;
          if(potionRows.error)throw potionRows.error;
          if(recipeItemRows.error)throw recipeItemRows.error;
+         if(customCategoryRows.error)throw customCategoryRows.error;
         if(cancelled)return;
         const slotLookup=new Map(slots.map(s=>[s.id,s.label]));
         setEquipped((assignments.data||[]).map(row=>({
@@ -289,6 +292,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           iconsByItem[row.item_id]=row.category;
         }
         setItemCategories(iconsByItem);
+        setItemCategoryNames(Object.fromEntries((customCategoryRows.data||[]).map((row:{code:string;name:string})=>[row.code,row.name])));
         setFavoriteIds(new Set((favoriteRows.data||[]).map((row:{item_id:string})=>row.item_id)));
         const indicators:Record<string,WorkbenchIndicator>={};
         for(const row of indicatorRows.data||[])indicators[row.item_id]=row as WorkbenchIndicator;
@@ -556,7 +560,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const equippedByItem=new Map(equipped.map(row=>[row.itemId,row]));
   const categoryMatches=(item:InventoryItem)=>inventorySlotFilter==='all'||(itemCategories[item.item_id]??'unknown')===inventorySlotFilter;
   const categoryOptions=[...new Set(items.map(item=>itemCategories[item.item_id]??'unknown'))]
-    .sort((a,b)=>(categoryFilterLabels[a]??titleCase(a)).localeCompare(categoryFilterLabels[b]??titleCase(b)));
+    .sort((a,b)=>(itemCategoryNames[a]??categoryFilterLabels[a]??titleCase(a)).localeCompare(itemCategoryNames[b]??categoryFilterLabels[b]??titleCase(b)));
   const carriedItems=items.filter(item=>!storage[item.item_id]?.container_item_id);
   const storedItems=items.filter(item=>Boolean(storage[item.item_id]?.container_item_id));
   const visibleCarried=carriedItems.filter(categoryMatches);
@@ -1071,7 +1075,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         {inventoryWeightPanel}
         {favoriteError&&<p className="mv-error" role="alert">Unable to save favorite: {favoriteError}</p>}
         {items.length===0?<p className="mv-empty">Your inventory is empty. Add an item using the campaign tools above.</p>:
-          <InventoryWorkbench characterName={characterName} items={items} categories={itemCategories}
+          <InventoryWorkbench characterName={characterName} items={items} categories={itemCategories} categoryNames={itemCategoryNames}
             storage={storage} usage={containerUsage} indicators={inventoryIndicators}
             equippedIds={new Set(equipped.map(row=>row.itemId))} favoriteIds={favoriteIds}
             busy={busy||loading||favoriteBusy!==null} renderItem={renderInventoryCard}
