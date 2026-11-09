@@ -7,7 +7,7 @@ const sql=readFileSync('docs/sql/custom-item-use-effects.sql','utf8');
 const update=readFileSync('docs/sql/update-custom-item-use-settings.sql','utf8');
 const consumption=readFileSync('docs/sql/character-combat-integration-7-1-to-7-5.sql','utf8');
 
-assert.match(gm,/create_campaign_custom_item_with_effect/,'new item creation saves use effect');
+assert.match(gm,/create_campaign_custom_item_with_stacking/,'new item creation atomically saves use effect and stacking preference');
 assert.match(gm,/update_campaign_custom_item_use_settings/,'existing item editor saves effect atomically');
 assert.match(gm,/draftFromEffect\(selected\?\.default_properties\?\.use_effect\)/,'existing item effect loaded into editor');
 assert.match(gm,/buildUseEffect\(newItemUseEffect\)/,'new item effect validated');
