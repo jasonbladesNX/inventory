@@ -504,7 +504,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         p_target_item:null,p_container_item:null
       });
       if(rpcError)throw rpcError;
-      closeDetails();await onInventoryChanged();setUseSuccess(`${amount} × ${item.display_name} used. Any configured effects are now active on your character.`);
+      closeDetails();await onInventoryChanged();setUseSuccess(`Split ${qty} × ${item.display_name} into a separate stack.`);
     }catch(e){setSplitError(inventoryErrorMessage(e))}
     finally{setSplitBusy(false)}
   };
