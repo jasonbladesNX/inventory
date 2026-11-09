@@ -17,7 +17,7 @@ type Props={
 const categoryLabels:Record<string,string>={
  weapon:'Weapons',shield:'Shields',armor:'Armor',clothing:'Clothing',headgear:'Headgear',
  jewelry:'Jewelry',ring:'Rings',footwear:'Footwear',focus:'Focus items',tool:'Tools',
- wondrous:'Wondrous items',gear:'General gear',container:'Containers',unknown:'Other'
+ wondrous:'Wondrous items',gear:'General gear',container:'Containers',recipe:'Recipes',unknown:'Other'
 };
 function num(value:number|string|null|undefined):number{
   if(value===null||value===undefined)return 0;
