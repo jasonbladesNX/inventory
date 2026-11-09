@@ -25,7 +25,7 @@ assert.match(sql,/security invoker/,'use RLS under invoking account');
 assert.match(sql,/revoke all on function public.list_my_player_characters\(\) from public,anon/,'anonymous access denied');
 assert.match(css,/nx-player-character-card/,'card styles exist');
 assert.match(css,/nx-password-toggle/,'password toggle styles exist');
-assert.match(ui,/\{campaignSelect\}/,'GM campaign selector remains');
+assert.match(ui,/gmCampaignIds\.includes\(c\.id\)/,'GM campaign selection remains via filtered campaign cards');
 assert.match(ui,/\{characterSelect\}/,'GM character selector remains');
 assert.doesNotMatch(ui,/nx-player-character-avatar/,'player character icon removed');
 assert.doesNotMatch(ui,/nx-player-character-open/,'Open label and icon removed');
