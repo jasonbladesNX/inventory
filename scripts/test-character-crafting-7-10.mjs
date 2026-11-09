@@ -13,7 +13,7 @@ assert.match(gm,/output_quantity/,'GM sets output quantity');
 assert.match(gm,/Recipe available to players/,'GM can disable recipe');
 assert.match(player,/list_character_crafting_materials/,'player material availability loaded');
 assert.match(player,/list_campaign_crafting_recipes/,'player active recipes loaded');
-assert.match(player,/craft_character_recipe/,'crafting executed through secure RPC');
+assert.match(player,/start_character_crafting/,'crafting executed through secure learned-recipe RPC');
 assert.match(player,/Confirm Craft/,'crafting requires confirmation');
 assert.match(player,/list_character_crafting_history/,'crafting history exposed');
 assert.match(player,/onChanged\(\)/,'inventory refreshed after craft');
