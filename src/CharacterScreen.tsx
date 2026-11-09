@@ -1070,7 +1070,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       <p className="mv-inventory-hint">Trading and connection diagnostics remain available below the inventory panel during testing.</p>
     </div>}
     {tab==='shop'&&<CampaignShop db={db} campaign={campaign} character={character} inventoryVersion={inventoryVersion} busy={busy||loading} onChanged={onInventoryChanged}/>}
-    {tab==='craft'&&<CharacterCraftingPanel db={db} campaign={campaign} character={character} inventoryVersion={inventoryVersion} busy={busy||loading} onChanged={onInventoryChanged}/>
+    {tab==='craft'&&<CharacterCraftingPanel db={db} campaign={campaign} character={character} inventoryVersion={inventoryVersion} busy={busy||loading} onChanged={onInventoryChanged}/>}
     {loadoutOpen&&tab==='character'&&createPortal(
       <div className="mv-modal-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget){setLoadoutOpen(false);loadoutTriggerRef.current?.focus()}}}>
         <section className="mv-item-modal mv-loadout-dialog" role="dialog" aria-modal="true" aria-labelledby="mv-loadout-dialog-title">
