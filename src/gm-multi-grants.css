@@ -1,0 +1,24 @@
+/* Compact responsive multi-item GM grant form. */
+.nx-grant-form{min-width:0}
+.nx-grant-lines{display:grid;gap:9px;min-width:0}
+.nx-grant-lines-header{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.nx-grant-lines-header h3{margin:0}
+.nx-grant-lines-header span,.nx-grant-summary{color:#9dc4d2;font-size:12px}
+.nx-grant-line{display:grid;grid-template-columns:minmax(0,1fr) minmax(90px,110px) auto;gap:9px;align-items:end;min-width:0;padding:10px;border:1px solid #285d73;border-radius:9px;background:#082332}
+.nx-grant-line label{min-width:0}
+.nx-gm-tools .nx-grant-line input,.nx-gm-tools .nx-grant-line select{width:100%;min-width:0}
+.nx-grant-line .nx-grant-remove{display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap;min-height:46px}
+.nx-grant-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.nx-gm-tools .nx-grant-add{display:inline-flex;align-items:center;gap:7px}
+.nx-gm-tools .nx-grant-error{margin:0;color:#ffd3ca}
+.nx-gm-tools .nx-grant-success{margin:0;color:#9bf4cf}
+.nx-grant-form>.nx-small-note{margin:0}
+@media(max-width:570px){
+ .nx-grant-line{grid-template-columns:minmax(0,1fr) minmax(85px,98px);gap:8px}
+ .nx-grant-line .nx-grant-remove{grid-column:2;grid-row:2;min-height:38px}
+ .nx-grant-actions{align-items:flex-start;flex-direction:column}
+}
+@media(max-width:365px){
+ .nx-grant-line{grid-template-columns:minmax(0,1fr)}
+ .nx-grant-line .nx-grant-remove{grid-column:1;grid-row:auto}
+}
