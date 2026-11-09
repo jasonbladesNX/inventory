@@ -19,7 +19,7 @@ for(const [pattern,label] of checks)assert.match(sql,pattern,label);
 for(const [pattern,label] of [
  [/db.rpc\('adjust_character_hit_points'/,'HP adjustment UI RPC'],
  [/p_operation:operation,p_amount:amount/,'operation and count passed'],
- [/Take damage/,'damage UI control'],
+ [/onClick=\{\(\)=>void adjustHitPoints\('damage'\)\}>Damage<\/button>/,'damage UI control'],
  [/Heal HP/,'healing UI control'],
  [/setHpAdjustFeedback/,'live status feedback'],
  [/await onInventoryChanged\(\)/,'refresh for inventory activity'],
