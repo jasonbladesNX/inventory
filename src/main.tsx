@@ -208,7 +208,7 @@ function App(){
     if(page!=='player'||!session||!db)return;
     let cancelled=false;
     setPlayerCharactersLoading(true);setPlayerCharactersError('');setPlayerCharacters([]);
-    void db.rpc('list_my_player_characters').then(({data,error})=>{
+    void Promise.resolve(db.rpc('list_my_player_characters')).then(({data,error})=>{
       if(cancelled)return;
       if(error)throw error;
       setPlayerCharacters((data||[]) as PlayerCharacter[]);
