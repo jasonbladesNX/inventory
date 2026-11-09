@@ -60,7 +60,7 @@ const categoryIcons:Record<string,typeof Sword> = {
   weapon:Sword, shield:Shield, armor:ShieldCheck, clothing:Shirt,
   headgear:Crown, jewelry:Gem, ring:CircleDot, footwear:Footprints,
   focus:WandSparkles, tool:Wrench, wondrous:Sparkles,
-  gear:Backpack, container:Backpack, unknown:PackageOpen,
+  gear:Backpack,container:Backpack,recipe:ScrollText,unknown:PackageOpen,
 };
 
 // Slot identity drives the equipment-row icon. Item categories use the
@@ -90,7 +90,7 @@ function equipmentSlotIcon(label:string){
 const categoryFilterLabels:Record<string,string>={
  weapon:'Weapons',shield:'Shields',armor:'Armor',clothing:'Clothing',headgear:'Headgear',
  jewelry:'Jewelry',ring:'Rings',footwear:'Footwear',focus:'Focus items',tool:'Tools',
- wondrous:'Wondrous items',gear:'General gear',container:'Containers',unknown:'Other'
+ wondrous:'Wondrous items',gear:'General gear',container:'Containers',recipe:'Recipes',unknown:'Other'
 };
 const navigation: {id:InventoryTab; label:string; Icon:typeof UserRound}[] = [
   {id:'character',label:'Character',Icon:UserRound},
@@ -191,6 +191,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [useBusy,setUseBusy]=useState(false);
   const [useError,setUseError]=useState('');
   const [usableItemIds,setUsableItemIds]=useState<Set<string>>(new Set());
+  const [learnableRecipeItemIds,setLearnableRecipeItemIds]=useState<Set<string>>(new Set());
   const [quickUseBusy,setQuickUseBusy]=useState<string|null>(null);
   const [quickUseError,setQuickUseError]=useState('');
   const [detailsLoading,setDetailsLoading]=useState(false);
@@ -231,9 +232,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   useEffect(()=>{
     let cancelled=false;
     async function load(){
-      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setInventoryIndicators({});setUsableItemIds(new Set());setFavoriteIds(new Set());setStorage({});setContainerUsage({});setWeightSummary(null);setCarryProfile(null);setHitPoints(null);setPotionHotbar({slots:[],options:[]});setPotionError('');setActiveTimedEffects([]);setAttributes([]);setDerivedAttributes({});setEffectSources([]);setEffectSourcesError('');setInvalidEquipment([]);setInvalidEquipmentError('');
+      setLoading(true);setError('');setEquipped([]);setWallet([]);setValidSlots({});setItemCategories({});setInventoryIndicators({});setUsableItemIds(new Set());setLearnableRecipeItemIds(new Set());setFavoriteIds(new Set());setStorage({});setContainerUsage({});setWeightSummary(null);setCarryProfile(null);setHitPoints(null);setPotionHotbar({slots:[],options:[]});setPotionError('');setActiveTimedEffects([]);setAttributes([]);setDerivedAttributes({});setEffectSources([]);setEffectSourcesError('');setInvalidEquipment([]);setInvalidEquipmentError('');
       try{
-        const [assignments,currency,compatibility,categories,storageRows,usageRows,weightRows,carryRows,attributeRows,derivedRows,sourceRows,invalidRows,favoriteRows,indicatorRows,usableRows,hpRows,potionRows]=await Promise.all([
+        const [assignments,currency,compatibility,categories,storageRows,usageRows,weightRows,carryRows,attributeRows,derivedRows,sourceRows,invalidRows,favoriteRows,indicatorRows,usableRows,hpRows,potionRows,recipeItemRows]=await Promise.all([
           db.rpc('list_character_equipped_instances',{p_character:character}),
           db.rpc('list_my_trade_currency',{p_character:character}),
           db.rpc('list_character_valid_equipment_slots',{p_character:character}),
@@ -251,6 +252,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           db.rpc('list_character_usable_items',{p_character:character}),
           db.rpc('get_character_hit_points',{p_character:character}),
            db.rpc('get_character_potion_hotbar',{p_character:character}),
+           db.rpc('list_character_recipe_items',{p_character:character}),
         ]);
         if(assignments.error)throw assignments.error;
         if(currency.error)throw currency.error;
@@ -267,6 +269,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         if(usableRows.error)throw usableRows.error;
         if(hpRows.error)throw hpRows.error;
          if(potionRows.error)throw potionRows.error;
+         if(recipeItemRows.error)throw recipeItemRows.error;
         if(cancelled)return;
         const slotLookup=new Map(slots.map(s=>[s.id,s.label]));
         setEquipped((assignments.data||[]).map(row=>({
@@ -291,6 +294,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         for(const row of indicatorRows.data||[])indicators[row.item_id]=row as WorkbenchIndicator;
         setInventoryIndicators(indicators);
         setUsableItemIds(new Set((usableRows.data||[]).map((row:{item_id:string})=>row.item_id)));
+        setLearnableRecipeItemIds(new Set((recipeItemRows.data||[]).map((row:{item_id:string})=>row.item_id)));
          setPotionHotbar((potionRows.data??{slots:[],options:[]}) as PotionHotbar);
         const hp=(hpRows.data??{configured:false}) as {configured:boolean;current?:number;max?:number};
         setHitPoints(hp);
@@ -616,15 +620,24 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     finally{setPotionUseBusy(null)}
   };
   const quickUseItem=async(itemId:string)=>{
-    if(busy||loading||quickUseBusy||!usableItemIds.has(itemId))return;
+    if(busy||loading||quickUseBusy||!(usableItemIds.has(itemId)||learnableRecipeItemIds.has(itemId)))return;
     setQuickUseBusy(itemId);setQuickUseError('');
     try{
-      const {error:rpcError}=await db.rpc('use_character_inventory_item',{
-        p_character:character,p_item:itemId,p_quantity:1
-      });
-      if(rpcError)throw rpcError;
-      await onInventoryChanged();
-      setUseSuccess(`Item used. Check Combat Status for any active effects.`);
+      if(learnableRecipeItemIds.has(itemId)){
+        const {data,error:learnError}=await db.rpc('learn_character_crafting_recipe',{p_character:character,p_item:itemId});
+        if(learnError)throw learnError;
+        await onInventoryChanged();
+        setUseSuccess(data.success?
+          'Learned '+data.recipe_name+'! Study check '+data.roll+' + '+data.modifier+' = '+data.total+' vs DC '+data.dc+'.':
+          'Study check failed: '+data.total+' vs DC '+data.dc+'. Recipe item retained.');
+      }else{
+        const {error:rpcError}=await db.rpc('use_character_inventory_item',{
+          p_character:character,p_item:itemId,p_quantity:1
+        });
+        if(rpcError)throw rpcError;
+        await onInventoryChanged();
+        setUseSuccess(`Item used. Check Combat Status for any active effects.`);
+      }
     }catch(e){setQuickUseError(inventoryErrorMessage(e))}
     finally{setQuickUseBusy(null)}
   };
@@ -674,9 +687,10 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         disabled={busy||favoriteBusy!==null} onClick={()=>{void toggleFavorite(item.item_id)}}>
         <span aria-hidden="true">{favoriteIds.has(item.item_id)?'★':'☆'}</span>
       </button>
-      {usableItemIds.has(item.item_id)&&!equippedRow&&<button type="button" className="mv-inventory-quick-action nx-inventory-use-button"
+      {(learnableRecipeItemIds.has(item.item_id)||(usableItemIds.has(item.item_id)&&itemCategories[item.item_id]!=='recipe'))&&!equippedRow&&<button type="button" className="mv-inventory-quick-action nx-inventory-use-button"
         disabled={busy||loading||quickUseBusy!==null}
-        aria-label={`Use one ${item.display_name}`} onClick={()=>void quickUseItem(item.item_id)}>{quickUseBusy===item.item_id?'Using…':'Use'}</button>}
+        aria-label={learnableRecipeItemIds.has(item.item_id)?`Study ${item.display_name} to learn recipe`:`Use one ${item.display_name}`}
+        onClick={()=>void quickUseItem(item.item_id)}>{quickUseBusy===item.item_id?'Using…':learnableRecipeItemIds.has(item.item_id)?'Learn':'Use'}</button>}
       {isContainer?
         <button type="button" className="mv-browse-container" onClick={()=>onBrowseContainer(item.item_id)} aria-label={`View contents of ${item.display_name}`}>View contents</button>:
         <button type="button" className="mv-inventory-quick-action"
