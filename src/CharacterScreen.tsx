@@ -60,7 +60,7 @@ const categoryIcons:Record<string,typeof Sword> = {
   weapon:Sword, shield:Shield, armor:ShieldCheck, clothing:Shirt,
   headgear:Crown, jewelry:Gem, ring:CircleDot, footwear:Footprints,
   focus:WandSparkles, tool:Wrench, wondrous:Sparkles,
-  gear:Backpack,container:Backpack,recipe:ScrollText,unknown:PackageOpen,
+  gear:Backpack,ingredient:PackageOpen,container:Backpack,recipe:ScrollText,unknown:PackageOpen,
 };
 
 // Slot identity drives the equipment-row icon. Item categories use the
