@@ -35,7 +35,7 @@ const character=readFileSync('src/CharacterScreen.tsx','utf8');
 const combat=readFileSync('src/CombatStatusPanel.tsx','utf8');
 assert.match(character,/setActiveTimedEffects\(state\.effects\.filter\(effect=>effect\.kind==='bonus'\)/,'active timed bonus feed from combat status');
 assert.match(character,/className="mv-attribute-summary-item mv-attribute-summary-button"/,'attribute cards are clickable');
-assert.match(character,/className="mv-attribute-details-modal"/,'attribute bonus popup is available');
+assert.match(character,/className="mv-item-modal mv-attribute-details-modal"/,'attribute bonus popup is available');
 assert.match(character,/selectedTimedBonuses\.map/,'attribute popup lists timed effects');
 assert.match(character,/selectedEquipmentSources\.map/,'attribute popup lists equipment effect sources');
 assert.match(character,/setUseSuccess\(\`Item used/,'inventory quick use feedback');
