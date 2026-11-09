@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const app=readFileSync('src/main.tsx','utf8');
+const grant=readFileSync('src/GmBulkGrantItems.tsx','utf8');
 const styles=readFileSync('src/app-pages.css','utf8');
 for(const route of ["landing","player","gm","create","play"]){
   assert.match(app,new RegExp("page==='"+route+"'"),"missing "+route+" page");
@@ -15,9 +16,10 @@ assert.match(app,/Request Character Transfer/);
 assert.match(app,/Coming soon from the landing screen/);
 assert.match(styles,/\.nx-app-playing \.mv-tabs\{position:fixed/);
 assert.match(styles,/env\(safe-area-inset-bottom\)/);
-assert.match(app,/id="nx-grant-recipient"/);
-assert.match(app,/value=\{grantCharacter\}/);
-assert.match(app,/p_character:recipient.id/);
-assert.match(app,/if\(!recipient\)throw Error\('Choose a recipient character/);
+assert.match(app,/<GmBulkGrantItems db=\{db!\}/,'GM dashboard renders grant controls');
+assert.match(grant,/id="nx-grant-recipient"/,'grant recipient remains a labeled select');
+assert.match(grant,/value=\{recipient\}/,'recipient choice remains controlled');
+assert.match(grant,/p_character:recipient,p_items:payload/,'grant targets selected character with item payload');
+assert.match(grant,/if\(!character\)\{setError\('Select a recipient character/,'character required before grant');
 assert.doesNotMatch(app,/window\.prompt\(/);
 console.log('PASS separate landing/player/GM/setup/play routes, role gating, iPhone fixed navigation, in-page GM controls');
