@@ -1,6 +1,6 @@
-import React,{useEffect,useMemo,useState} from 'react';
+import React,{useEffect,useMemo,useRef,useState} from 'react';
 import type {SupabaseClient} from '@supabase/supabase-js';
-import {BookOpen,Clock3,FlaskConical,RefreshCw} from 'lucide-react';
+import {BookOpen,Clock3,FlaskConical,RefreshCw,X} from 'lucide-react';
 import {inventoryErrorMessage} from './inventoryErrors';
 import './crafting.css';
 type Ingredient={definition_id:string;name:string;quantity:number};
@@ -22,6 +22,9 @@ export default function CharacterCraftingPanel({db,campaign,character,inventoryV
  const [loading,setLoading]=useState(true),[working,setWorking]=useState(false);
  const [error,setError]=useState(''),[notice,setNotice]=useState('');
  const [review,setReview]=useState<{recipe:Recipe;count:number}|null>(null);
+ const [selectedRecipeId,setSelectedRecipeId]=useState<string|null>(null);
+ const modalCloseRef=useRef<HTMLButtonElement>(null);
+ const recipeTriggerRef=useRef<HTMLButtonElement|null>(null);
  const [clock,setClock]=useState(()=>Date.now());
  const load=async()=>{
   const names=['list_campaign_crafting_recipes','list_character_crafting_materials','list_campaign_crafting_tools',
@@ -37,11 +40,30 @@ export default function CharacterCraftingPanel({db,campaign,character,inventoryV
   setScrolls(rows[6].data||[]);setSkills(rows[7].data||[]);setJobs(rows[8].data||[]);
   setClock(Date.now());
  };
- useEffect(()=>{let alive=true;setLoading(true);setError('');setReview(null);
+ useEffect(()=>{let alive=true;setLoading(true);setError('');setReview(null);setSelectedRecipeId(null);
   void load().catch(e=>{if(alive)setError(inventoryErrorMessage(e))}).finally(()=>{if(alive)setLoading(false)});
   return()=>{alive=false};
  },[db,campaign,character,inventoryVersion]);
  useEffect(()=>{const id=window.setInterval(()=>setClock(Date.now()),1000);return()=>window.clearInterval(id)},[]);
+ const closeRecipeDetails=()=>{setSelectedRecipeId(null);setReview(null);};
+ useEffect(()=>{
+  if(!selectedRecipeId)return;
+  const focusRequest=window.requestAnimationFrame(()=>modalCloseRef.current?.focus());
+  const onKey=(event:KeyboardEvent)=>{
+   if(event.key==='Escape'){event.preventDefault();closeRecipeDetails();recipeTriggerRef.current?.focus();}
+   if(event.key==='Tab'){
+    const dialog=modalCloseRef.current?.closest('[role="dialog"]');
+    const focusable=dialog?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),[tabindex="0"]');
+    if(!focusable?.length)return;
+    const first=focusable[0],last=focusable[focusable.length-1];
+    if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+    else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+   }
+  };
+  document.addEventListener('keydown',onKey);
+  return()=>{window.cancelAnimationFrame(focusRequest);document.removeEventListener('keydown',onKey)};
+ },[selectedRecipeId]);
+
  const reload=async()=>{setLoading(true);setError('');try{await load()}catch(e){setError(inventoryErrorMessage(e))}finally{setLoading(false)}};
  const skillFor=(id:string)=>skills.find(s=>s.skill_id===progression.find(p=>p.recipe_id===id)?.skill_id);
  const settingFor=(id:string)=>progression.find(p=>p.recipe_id===id);
@@ -70,7 +92,7 @@ export default function CharacterCraftingPanel({db,campaign,character,inventoryV
   if(!review||!canCraft(review.recipe,review.count))throw Error('Recipe requirements are not met.');
   const {data,error:rpcError}=await db.rpc('start_character_crafting',{
    p_character:character,p_recipe:review.recipe.id,p_crafts:review.count});
-  if(rpcError)throw rpcError;setReview(null);
+  if(rpcError)throw rpcError;setReview(null);setSelectedRecipeId(null);
   await onChanged();await load();
   if(!data.success)setNotice('Crafting failed: '+data.roll+' + '+data.modifier+' = '+data.total+' vs DC '+data.dc+'. Materials consumed; no item produced.');
   else if(data.status==='pending')setNotice('Craft started. Materials consumed. Finish after '+data.minutes+' real-world minutes.');
@@ -110,37 +132,64 @@ export default function CharacterCraftingPanel({db,campaign,character,inventoryV
   </section>
   <h4>Learned Recipes</h4>
   {!loading&&visible.length===0&&<p className="mv-empty">No learned recipes yet. Consume a Recipe item above to learn one.</p>}
-  <div className="mv-crafting-recipes">{visible.map(r=>{
-   const count=Number(counts[r.id]??'1'),setting=settingFor(r.id),skill=skillFor(r.id),eligible=canCraft(r,count);
-   return <div className="mv-crafting-recipe" key={r.id}>
-    <h4>{r.name}</h4>
-    <p>{setting?.category_name} · {setting?.skill_name} ({setting?.attribute_code})</p>
-    {r.description&&<p>{r.description}</p>}
-    <p className="mv-crafting-output">Produces {r.output_quantity} × {r.output_name} per craft</p>
-    <p>Check DC {setting?.craft_dc} · Your skill modifier {skill?.total_modifier??0}</p>
-    <p>{setting?.time_mode==='realtime'?'Real time':'In-game time'}: {(setting?.minutes_per_craft??0)*Math.max(Number.isInteger(count)&&count>0?count:1,1)} minutes</p>
-    <div className="mv-crafting-ingredients"><strong>Consumed ingredients (including on failure)</strong>
-     {r.ingredients.map(i=><div key={i.definition_id}>
-      <span>{i.name} × {i.quantity*Math.max(Number.isInteger(count)&&count>0?count:1,1)}</span>
-      <span className={owned(i.definition_id)>=i.quantity*count?'mv-crafting-ok':'mv-crafting-missing'}>Have {owned(i.definition_id)}</span>
-     </div>)}
-    </div>
-    {toolsFor(r.id).length>0&&<div className="mv-crafting-ingredients">
-     <strong>Required tools (not consumed)</strong>
-     {toolsFor(r.id).map(t=><div key={t.definition_id}>
-      <span>{t.name} × {t.quantity}</span><span className={toolCount(t.definition_id)>=t.quantity?'mv-crafting-ok':'mv-crafting-missing'}>Have {toolCount(t.definition_id)}</span>
-     </div>)}
-    </div>}
-    <label>Craft count<input type="number" min="1" max="100" step="1" value={counts[r.id]??'1'} onChange={e=>{setCounts(old=>({...old,[r.id]:e.target.value}));setReview(null)}}/></label>
-    <button type="button" disabled={loading||working||busy||!eligible} onClick={()=>setReview({recipe:r,count})}>Craft</button>
+  <div className="mv-crafting-recipe-list">{visible.map(r=>{
+   const count=Number(counts[r.id]??'1'),eligible=canCraft(r,count);
+   return <div className="mv-crafting-recipe-row" key={r.id}>
+    <button type="button" className="mv-crafting-recipe-name" aria-haspopup="dialog"
+     onClick={event=>{recipeTriggerRef.current=event.currentTarget;setSelectedRecipeId(r.id);setReview(null)}}>{r.name}</button>
+    <label className="mv-crafting-row-count">Craft Count
+     <input type="number" min="1" max="100" step="1" value={counts[r.id]??'1'}
+      onChange={e=>{setCounts(old=>({...old,[r.id]:e.target.value}));setReview(null)}}/>
+    </label>
+    <button type="button" className="mv-crafting-row-action" disabled={loading||working||busy||!eligible}
+     onClick={()=>{setReview({recipe:r,count});setSelectedRecipeId(r.id)}}>Craft</button>
    </div>;
   })}</div>
-  {review&&<div className="mv-crafting-review" role="group" aria-label="Confirm crafting">
-   <strong>Confirm Crafting</strong>
-   <p>Spend the ingredients for {review.count} craft(s) of {review.recipe.name}? The {settingFor(review.recipe.id)?.skill_name} check may fail, in which case you lose the ingredients without producing an item. {settingFor(review.recipe.id)?.time_mode==='realtime'?'Successful crafting will have a real-time completion delay.':''}</p>
-   <div><button type="button" disabled={working} onClick={()=>setReview(null)}>Cancel</button>
-    <button type="button" disabled={working||busy||!canCraft(review.recipe,review.count)} onClick={craft}>Confirm Craft</button></div>
-  </div>}
+  {selectedRecipeId&&visible.some(r=>r.id===selectedRecipeId)&&(()=>{
+   const r=visible.find(r=>r.id===selectedRecipeId)!;
+   const count=Number(counts[r.id]??'1'),setting=settingFor(r.id),skill=skillFor(r.id),eligible=canCraft(r,count);
+   return <div className="mv-crafting-modal-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)closeRecipeDetails()}}>
+    <section className="mv-crafting-modal" role="dialog" aria-modal="true" aria-labelledby="mv-crafting-modal-title">
+     <header className="mv-crafting-modal-header">
+      <h3 id="mv-crafting-modal-title">{r.name}</h3>
+      <button type="button" className="mv-crafting-modal-close" aria-label="Close recipe details"
+       ref={modalCloseRef} onClick={closeRecipeDetails}><X size={20}/></button>
+     </header>
+     <div className="mv-crafting-modal-body">
+      <p>{setting?.category_name} · {setting?.skill_name} ({setting?.attribute_code})</p>
+      {r.description&&<p>{r.description}</p>}
+      <p className="mv-crafting-output">Produces {r.output_quantity} × {r.output_name} per craft</p>
+      <p>Check DC {setting?.craft_dc} · Your skill modifier {skill?.total_modifier??0}</p>
+      <p>{setting?.time_mode==='realtime'?'Real time':'In-game time'}: {(setting?.minutes_per_craft??0)*Math.max(Number.isInteger(count)&&count>0?count:1,1)} minutes</p>
+      <div className="mv-crafting-ingredients"><strong>Consumed ingredients (including on failure)</strong>
+       {r.ingredients.map(i=><div key={i.definition_id}>
+        <span>{i.name} × {i.quantity*Math.max(Number.isInteger(count)&&count>0?count:1,1)}</span>
+        <span className={owned(i.definition_id)>=i.quantity*count?'mv-crafting-ok':'mv-crafting-missing'}>Have {owned(i.definition_id)}</span>
+       </div>)}
+      </div>
+      {toolsFor(r.id).length>0&&<div className="mv-crafting-ingredients">
+       <strong>Required tools (not consumed)</strong>
+       {toolsFor(r.id).map(t=><div key={t.definition_id}>
+        <span>{t.name} × {t.quantity}</span>
+        <span className={toolCount(t.definition_id)>=t.quantity?'mv-crafting-ok':'mv-crafting-missing'}>Have {toolCount(t.definition_id)}</span>
+       </div>)}
+      </div>}
+      <div className="mv-crafting-modal-actions">
+       <label>Craft Count<input type="number" min="1" max="100" step="1" value={counts[r.id]??'1'}
+        onChange={e=>{setCounts(old=>({...old,[r.id]:e.target.value}));setReview(null)}}/></label>
+       <button type="button" disabled={loading||working||busy||!eligible}
+        onClick={()=>setReview({recipe:r,count})}>Craft</button>
+      </div>
+      {review?.recipe.id===r.id&&<div className="mv-crafting-review" role="group" aria-label="Confirm crafting">
+       <strong>Confirm Crafting</strong>
+       <p>Spend the ingredients for {review.count} craft(s) of {r.name}? The {setting?.skill_name} check may fail, in which case you lose the ingredients without producing an item. {setting?.time_mode==='realtime'?'Successful crafting will have a real-time completion delay.':''}</p>
+       <div><button type="button" disabled={working} onClick={()=>setReview(null)}>Cancel</button>
+        <button type="button" disabled={working||busy||!canCraft(r,review.count)} onClick={craft}>Confirm Craft</button></div>
+      </div>}
+     </div>
+    </section>
+   </div>;
+  })()}
   {error&&<p role="alert" className="mv-storage-error">{error}</p>}
   {notice&&<p role="status" className="mv-crafting-success">{notice}</p>}
   <section className="mv-crafting-history">
