@@ -10,7 +10,7 @@ assert.match(character,/tab==='craft'&&<CharacterCraftingPanel/,'craft tab activ
 assert.match(gm,/save_campaign_crafting_recipe/,'GM saves crafting recipe');
 assert.match(gm,/Add Ingredient/,'GM can configure variable ingredients');
 assert.match(gm,/output_quantity/,'GM sets output quantity');
-assert.match(gm,/Recipe available to players/,'GM can disable recipe');
+assert.match(gm,/Recipe active \(players must learn it/,'GM can disable recipe without granting automatic knowledge');
 assert.match(player,/list_character_crafting_materials/,'player material availability loaded');
 assert.match(player,/list_campaign_crafting_recipes/,'player active recipes loaded');
 assert.match(player,/start_character_crafting/,'crafting executed through secure learned-recipe RPC');
