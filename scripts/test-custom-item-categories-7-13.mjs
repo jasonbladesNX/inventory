@@ -3,6 +3,7 @@ import {readFileSync} from 'node:fs';
 
 const schema=readFileSync('docs/sql/custom-item-categories-7-13.sql','utf8');
 const compat=readFileSync('docs/sql/custom-item-category-compat-7-13.sql','utf8');
+const useToggle=readFileSync('docs/sql/custom-item-category-use-toggle-7-13.sql','utf8');
 const manager=readFileSync('src/GmItemCategoryManager.tsx','utf8');
 const gm=readFileSync('src/main.tsx','utf8');
 const character=readFileSync('src/CharacterScreen.tsx','utf8');
@@ -28,6 +29,10 @@ check(compat,/if p_stackable and \(/,'equipment constraints apply when enabling 
 check(compat,/item_effects/,'persistent effects block stacking');
 check(compat,/set_campaign_item_consumable/,'custom category consumable setting');
 check(compat,/set_campaign_item_use_effect/,'custom category use-effect setting');
+check(useToggle,/if p_consumable then/,'enable-use validations separate from disable path');
+check(useToggle,/Keep the explicit stackable flag unchanged/,'turning off Use preserves nonstackable setting');
+check(gm,/if\(editConsumableValue\)\{/,'GM editor selects safe save ordering');
+
 check(compat,/public\.campaign_item_categories/,'custom categories recognized throughout item functions');
 assert.doesNotMatch(schema,/alter table public\.crafting_categories/i,'crafting recipe categories are not modified');
 check(manager,/Manage Item Categories/,'GM category manager');
