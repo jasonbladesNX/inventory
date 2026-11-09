@@ -44,7 +44,7 @@ export default function CombatStatusPanel({db,character,inventoryVersion,busy,hp
   const close=()=>{if(acting||healing)return;setDialog(null);onCloseTemp()};
   useEffect(()=>{
     let cancelled=false;setLoading(true);setError('');setState(initial);
-    void db.rpc('get_character_combat_state',{p_character:character}).then(({data,error:rpcError})=>{
+    void Promise.resolve(db.rpc('get_character_combat_state',{p_character:character})).then(({data,error:rpcError})=>{
       if(rpcError)throw rpcError;
       if(!cancelled){const value=data as CombatState;setState(value);setTemp(String(value.temporary_hp));setTempUnit(value.temporary_hp_duration?.unit??'permanent');setTempDuration(String(value.temporary_hp_duration?.remaining??1));onCombatLoaded?.(value)}
     }).catch(e=>{if(!cancelled)setError(inventoryErrorMessage(e))})
