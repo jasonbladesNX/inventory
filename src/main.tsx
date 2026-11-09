@@ -28,7 +28,7 @@ type Row={id:string;name:string;[key:string]:any};
 type PlayerCharacter={character_id:string;character_name:string;campaign_id:string;campaign_name:string};
 type Page='landing'|'player'|'gm-select'|'gm'|'create'|'play';
 type Entry='player'|'gm'|'create';
-const itemCategories=[['gear','General Gear'],['consumable','Consumable'],['weapon','Weapon'],['shield','Shield'],['armor','Armor'],['clothing','Clothing'],['jewelry','Jewelry'],['ring','Ring'],['headgear','Headgear'],['footwear','Footwear'],['focus','Spellcasting Focus'],['tool','Tool'],['wondrous','Wondrous Item']];
+const itemCategories=[['gear','General Gear'],['ingredient','Ingredient'],['consumable','Consumable'],['weapon','Weapon'],['shield','Shield'],['armor','Armor'],['clothing','Clothing'],['jewelry','Jewelry'],['ring','Ring'],['headgear','Headgear'],['footwear','Footwear'],['focus','Spellcasting Focus'],['tool','Tool'],['wondrous','Wondrous Item']];
 
 function App(){
   const[page,setPage]=useState<Page>('landing');
