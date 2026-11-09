@@ -28,7 +28,7 @@ assert.match(player,/start_character_crafting/,'player crafting uses revised sta
 assert.match(player,/complete_character_crafting_job/,'player claims completed jobs');
 assert.match(player,/Materials consumed; no item produced/,'failed crafting consumes ingredients');
 assert.match(player,/setInterval/,'real-time countdown refreshes');
-assert.match(schema,/category,'recipe'/,'recipe item definition category');
+assert.match(schema,/,'recipe','Consume to learn the crafting recipe'/,'recipe item definition category');
 assert.match(schema,/character_crafting_skill_bonuses/,'skill proficiency persists');
 assert.match(schema,/character_learned_crafting_recipes/,'learning status stored per character');
 assert.match(schema,/learn_dc integer/,'learning DC persists');
