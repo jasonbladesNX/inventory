@@ -33,7 +33,7 @@ export default function GmMerchantManager({db,campaign,definitions}:{db:Supabase
  },[db,campaign,definitions.length]);
  useEffect(()=>{if(!merchant){setListings([]);return}let cancelled=false;
   setListingBusy(true);
-  void db.rpc('list_merchant_stock',{p_merchant:merchant}).then(({data,error:rpcError})=>{
+  void Promise.resolve(db.rpc('list_merchant_stock',{p_merchant:merchant})).then(({data,error:rpcError})=>{
    if(rpcError)throw rpcError;if(!cancelled)setListings(data||[]);
   }).catch(e=>{if(!cancelled)setError(inventoryErrorMessage(e))})
   .finally(()=>{if(!cancelled)setListingBusy(false)});
