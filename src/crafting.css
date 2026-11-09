@@ -45,3 +45,69 @@
 .mv-crafting-history>div button{margin-top:5px}
 .mv-crafting-history>p{margin:0;color:#9fc6d3;font-size:12px}
 .mv-crafting-recipe>.mv-crafting-ingredients{border-top:1px solid #356879}
+
+
+/* Compact GM recipe editor. Explicit spans preserve a clean, full-width form. */
+.nx-crafting-editor{
+ display:grid;
+ grid-template-columns:repeat(12,minmax(0,1fr));
+ column-gap:12px;
+ row-gap:10px;
+ align-items:end;
+}
+.nx-crafting-editor>h3,.nx-crafting-editor>h4,
+.nx-crafting-editor>.nx-crafting-ingredient-editor,
+.nx-crafting-editor>p,
+.nx-crafting-editor>label:not(.nx-craft-field){
+ grid-column:1/-1;
+}
+.nx-crafting-editor>h3{margin:0 0 2px}
+.nx-crafting-editor>h4{margin:10px 0 0}
+.nx-crafting-editor>p{margin:0;font-size:12px;line-height:1.5}
+.nx-crafting-editor>.nx-craft-field{display:grid;gap:5px;min-width:0;align-self:stretch;align-content:end}
+.nx-crafting-editor>.nx-craft-field input,
+.nx-crafting-editor>.nx-craft-field select{
+ min-width:0;
+ width:100%;
+ box-sizing:border-box;
+ min-height:40px;
+}
+.nx-craft-name{grid-column:span 5}
+.nx-craft-description{grid-column:span 7}
+.nx-craft-output{grid-column:span 9}
+.nx-craft-output-qty{grid-column:span 3}
+.nx-craft-category{grid-column:span 6}
+.nx-craft-learn-dc,.nx-craft-craft-dc{grid-column:span 3}
+.nx-craft-time-mode{grid-column:span 8}
+.nx-craft-minutes{grid-column:span 4}
+.nx-crafting-editor>button{grid-column:1/-1;justify-self:start}
+.nx-crafting-editor>.nx-crafting-ingredient-editor{
+ grid-template-columns:minmax(0,1fr) 100px auto;
+ max-width:100%;
+ gap:10px;
+ padding:8px 10px;
+}
+.nx-crafting-editor>.nx-crafting-ingredient-editor>button{
+ align-self:end;
+ white-space:nowrap;
+}
+@media(max-width:740px){
+ .nx-craft-name,.nx-craft-description{grid-column:span 6}
+ .nx-craft-output{grid-column:span 8}
+ .nx-craft-output-qty{grid-column:span 4}
+ .nx-craft-category{grid-column:span 12}
+ .nx-craft-learn-dc,.nx-craft-craft-dc{grid-column:span 6}
+ .nx-craft-time-mode{grid-column:span 8}
+ .nx-craft-minutes{grid-column:span 4}
+}
+@media(max-width:480px){
+ .nx-craft-name,.nx-craft-description,.nx-craft-output,.nx-craft-category,
+ .nx-craft-time-mode{grid-column:span 12}
+ .nx-craft-output-qty,.nx-craft-learn-dc,.nx-craft-craft-dc,.nx-craft-minutes{grid-column:span 6}
+ .nx-crafting-editor>.nx-crafting-ingredient-editor{
+  grid-template-columns:minmax(0,1fr) 88px;
+ }
+ .nx-crafting-editor>.nx-crafting-ingredient-editor>button{
+  grid-column:1/-1;justify-self:start;min-height:34px;
+ }
+}
