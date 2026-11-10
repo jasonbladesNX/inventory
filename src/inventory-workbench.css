@@ -64,3 +64,29 @@
   body:has(.nx-inventory-print-report) .nx-inventory-report-dialog{position:static!important;overflow:visible!important;max-height:none!important;width:100%!important;max-width:none!important;border:0!important;background:white!important}
   body:has(.nx-inventory-print-report) .nx-inventory-report-dialog-body{overflow:visible!important;padding:0!important}
 }
+
+
+/* Inventory 7.13 UI review — search and category share the first filter row.
+   Grouping stays in the compact second row. */
+.nx-inventory-workbench{gap:11px}
+.nx-inventory-filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px;align-items:end}
+.nx-inventory-filters>label,.nx-inventory-filters>.nx-inventory-search,.nx-inventory-filters>.nx-inventory-group-toolbar{min-width:0}
+.nx-inventory-search>label{display:block;font-size:11px;font-weight:700;color:#b7e6f0;margin-bottom:6px}
+.nx-inventory-search>div{box-sizing:border-box;min-height:38px}
+.nx-inventory-search input{min-width:0}
+.nx-inventory-group-toolbar{display:grid;align-self:stretch;gap:6px;align-items:end}
+.nx-inventory-group-toolbar label{min-height:14px}
+.nx-inventory-group-toolbar select{width:100%}
+.nx-inventory-group-heading{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap}
+.nx-inventory-group-heading h4{margin-right:auto}
+.nx-inventory-sort-options{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.nx-inventory-sort-options button{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:31px;padding:4px 8px;border:1px solid transparent;border-radius:6px;background:transparent;color:#9fc6d5;cursor:pointer;font-size:11px;letter-spacing:.3px;font-weight:800}
+.nx-inventory-sort-options button.is-active{border-color:#3c91aa;background:#0d3a4f;color:#9af4ff}
+.nx-inventory-sort-options button:hover,.nx-inventory-sort-options button:focus-visible{border-color:#68b6cf;color:#e4fcff}
+.nx-inventory-toolbar>button:last-child{width:39px;padding:7px}
+@media(max-width:430px){
+ .nx-inventory-filters{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:7px}
+ .nx-inventory-sort-options{gap:1px}
+ .nx-inventory-sort-options button{padding:4px 5px;font-size:10px}
+ .nx-inventory-group-heading h4{font-size:13px}
+}
