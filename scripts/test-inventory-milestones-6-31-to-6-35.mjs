@@ -42,7 +42,7 @@ try{
     equippedIds:new Set(),favoriteIds:new Set(),busy:false,
     renderItem:entry=>React.createElement('span',null,entry.display_name)
   }));
-  for(const label of ['Pouch','Group results','NAME','VALUE','WEIGHT','Open inventory report']){
+  for(const label of ['Pouch','Group Results','NAME','VALUE','WEIGHT','Open inventory report']){
     assert.ok(markup.includes(label),'missing visible workbench element: '+label);
   }
 }finally{await unlink(out).catch(()=>{})}
