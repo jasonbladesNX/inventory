@@ -131,6 +131,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [inventoryLocation,setInventoryLocation]=useState<string>('all');
   const [inventorySlotFilter,setInventorySlotFilter]=useState('all');
   const [equipSlotPicker,setEquipSlotPicker]=useState<string|null>(null);
+  const [detailEquipSlot,setDetailEquipSlot]=useState('');
   const [equipSlotError,setEquipSlotError]=useState('');
   const equipPickerCloseRef=useRef<HTMLButtonElement>(null);
   const [capacityDetailsOpen,setCapacityDetailsOpen]=useState(false);
@@ -494,6 +495,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   };
   const closeDetails=()=>{
     setSplitItemId(null);setSplitError('');setSplitQuantity('1');setMergeTarget('');setMergeError('');setMergeQuantity('1');
+    setDetailEquipSlot('');
     setTrashItemId(null);setTrashError('');setTrashQuantity('1');
     setUseItemId(null);setUseQuantity('1');setUseError('');
     setPendingStorageMove(null);setStorageActionError('');setStorageMoveQuantity('1');
@@ -502,10 +504,12 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   };
   const openDetails=(itemId:string,event:React.MouseEvent<HTMLButtonElement>)=>{
     setSplitItemId(null);setSplitError('');setSplitQuantity('1');setMergeTarget('');setMergeError('');setMergeQuantity('1');
+    setDetailEquipSlot('');
     setTrashItemId(null);setTrashError('');setTrashQuantity('1');
     setUseItemId(null);setUseQuantity('1');setUseError('');
     setPendingStorageMove(null);setStorageActionError('');setStorageMoveQuantity('1');
     previousFocusRef.current=event.currentTarget;
+    setDetailEquipSlot(validSlots[itemId]?.[0]??'');
     setExpandedItem(itemId);
   };
   const splitSelectedStack=async()=>{
@@ -679,22 +683,14 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     const equippedRow=equippedByItem.get(item.item_id);
     const storedIn=storage[item.item_id]?.container_item_id;
     const isContainer=Boolean(storage[item.item_id]?.is_container);
-    const allowed=validSlots[item.item_id]??[];
-    const quickAction=(event:React.MouseEvent<HTMLButtonElement>)=>{
-      if(equippedRow){void requestUnequip(equippedRow);return;}
-      if(!storedIn&&item.eligible&&allowed.length===1){
-        onEquip(item.item_id,allowed[0]);return;
-      }
-      // Multiple slots or blocked prerequisites require the full authoritative
-      // slot/requirement explanation. Stored items must be taken out first.
-      openDetails(item.item_id,event);
-    };
     return <article className={'mv-inventory-item'+(equippedRow?' is-equipped':'')} key={item.item_id}>
       <button type="button" className="mv-item-icon mv-item-icon-button" aria-label={`View details for ${item.display_name}`} aria-haspopup="dialog" onClick={event=>openDetails(item.item_id,event)}>{renderItemIcon(item.item_id,25)}</button>
       <div className="mv-item-info">
-        <strong>{item.display_name}</strong>
-        <div className="nx-inventory-inline-meta">
+        <div className="mv-item-title-line">
+          <strong>{item.display_name}</strong>
           {equippedRow&&<span className="mv-equipped-indicator"><Shield size={13} aria-hidden="true"/> Equipped · {equippedRow.slot}</span>}
+        </div>
+        <div className="nx-inventory-inline-meta">
           <span className="nx-inventory-quantity">Qty {numberText(item.quantity)}</span>
           {inventoryIndicators[item.item_id]&&<span className="nx-inventory-condition">Condition: {titleCase(inventoryIndicators[item.item_id].condition_code||'unknown')}</span>}
           {inventoryIndicators[item.item_id]?.unit_weight_lb!=null&&<span className="nx-inventory-unit-weight">{numberText(inventoryIndicators[item.item_id].unit_weight_lb??0,2)} lb each</span>}
@@ -721,16 +717,8 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         disabled={busy||favoriteBusy!==null} onClick={()=>{void toggleFavorite(item.item_id)}}>
         <Star size={19} fill={favoriteIds.has(item.item_id)?'currentColor':'none'} aria-hidden="true"/>
       </button>
-      {(learnableRecipeItemIds.has(item.item_id)||(usableItemIds.has(item.item_id)&&itemCategories[item.item_id]!=='recipe'))&&!equippedRow&&<button type="button" className="mv-inventory-quick-action nx-inventory-use-button"
-        disabled={busy||loading||quickUseBusy!==null}
-        aria-label={learnableRecipeItemIds.has(item.item_id)?`Study ${item.display_name} to learn recipe`:`Use one ${item.display_name}`}
-        onClick={()=>void quickUseItem(item.item_id)}>{quickUseBusy===item.item_id?'Using…':learnableRecipeItemIds.has(item.item_id)?'Learn':'Use'}</button>}
-      {isContainer?
-        <button type="button" className="mv-browse-container" onClick={()=>onBrowseContainer(item.item_id)} aria-label={`View contents of ${item.display_name}`}>View contents</button>:
-        <button type="button" className="mv-inventory-quick-action"
-          disabled={busy||loading||unequipCheckPending}
-          aria-haspopup={!equippedRow&&(storedIn||allowed.length!==1)?'dialog':undefined}
-          onClick={quickAction}>{equippedRow?'Unequip':'Equip'}</button>}
+      {isContainer&&<button type="button" className="mv-browse-container" onClick={()=>onBrowseContainer(item.item_id)}
+        aria-label={`View contents of ${item.display_name}`}>View contents</button>}
     </article>;
   };
   const canShowCarryCapacity=carryProfile?.ruleset_code==='dnd5e'&&carryProfile.capacity_mode==='weight';
@@ -1072,10 +1060,13 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
               return <div className="mv-equipment-row" key={slot.id}>
                 <SlotIcon size={18} aria-hidden="true"/>
                 <span>{slot.label}</span>
-                <strong>{occupied?.name??'Empty'}</strong>
+                <strong>{occupied?.name??'-'}</strong>
                 <button type="button" className="mv-slot-equip-button" disabled={busy||loading||unequipCheckPending}
-                  aria-haspopup="dialog" aria-label={`Choose equipment for ${slot.label}`}
-                  onClick={()=>{setEquipSlotError('');setEquipSlotPicker(slot.id)}}>Equip</button>
+                  aria-haspopup={occupied?undefined:'dialog'}
+                  aria-label={occupied?`Unequip ${occupied.name} from ${slot.label}`:`Choose equipment for ${slot.label}`}
+                  onClick={()=>{if(occupied)void requestUnequip(occupied);else{setEquipSlotError('');setEquipSlotPicker(slot.id)}}}>
+                  {occupied?'Unequip':'Equip'}
+                </button>
               </div>;
             })}
           </div>}
@@ -1271,11 +1262,20 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
               selectedItem.eligible&&!loading&&(validSlots[selectedItem.item_id]||[]).length>0?
                 <div className="mv-modal-action-field">
                   <label htmlFor="mv-detail-equip">Equip to slot</label>
-                  <select id="mv-detail-equip" aria-label={`Equip ${selectedItem.display_name}`} value="" disabled={busy} onChange={event=>{const slotId=event.target.value;if(slotId)onEquip(selectedItem.item_id,slotId)}}>
+                  <select id="mv-detail-equip" aria-label={`Equipment slot for ${selectedItem.display_name}`}
+                    value={detailEquipSlot} disabled={busy||loading} onChange={event=>setDetailEquipSlot(event.target.value)}>
                     <option value="">Choose equipment slot…</option>
                     {slots.filter(slot=>(validSlots[selectedItem.item_id]||[]).includes(slot.id)).map(slot=><option key={slot.id} value={slot.id}>{slot.label}</option>)}
                   </select>
+                  <button type="button" className="mv-modal-action-button" disabled={busy||loading||!detailEquipSlot||
+                    !(validSlots[selectedItem.item_id]||[]).includes(detailEquipSlot)}
+                    onClick={()=>{const slot=detailEquipSlot;closeDetails();onEquip(selectedItem.item_id,slot)}}>Equip</button>
                 </div>:null}
+            {!detailsLoading&&learnableRecipeItemIds.has(selectedItem.item_id)&&
+              <button type="button" className="mv-modal-action-button" disabled={busy||loading||quickUseBusy!==null}
+                onClick={()=>{const itemId=selectedItem.item_id;closeDetails();void quickUseItem(itemId)}}>
+                {quickUseBusy===selectedItem.item_id?'Learning…':'Learn Recipe'}
+              </button>}
             {!detailsLoading&&itemDetails?.item_id===selectedItem.item_id&&itemDetails.can_consume&&!equippedByItem.has(selectedItem.item_id)&&
               <div className="mv-modal-action-field">
                 <button type="button" className="mv-modal-action-button" disabled={busy||useBusy}
