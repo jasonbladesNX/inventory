@@ -62,6 +62,8 @@ export default function ClaimLootPanel({db,character,busy,onChanged}:Props){
   const request=cameraRequest.current;
   const reader=new BrowserQRCodeReader();
   const video=videoRef.current;
+  // The claim panel can sit below the fold on an iPhone. Reveal the live preview.
+  window.requestAnimationFrame(()=>video.scrollIntoView({block:'center',behavior:'smooth'}));
   void reader.decodeFromStream(streamRef.current,video,(result,_err,controls)=>{
    if(!active||!result)return;
    const found=qrToken(result.getText());
