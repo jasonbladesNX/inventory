@@ -796,37 +796,42 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     finally{setTempHpClearing(false)}
   };
   const hitPointPanel=<section className="mv-panel mv-hp-panel" aria-labelledby="mv-hp-heading">
-    <div className="mv-equipped-heading">
-      <h3 id="mv-hp-heading"><HeartPulse size={20}/> Hit Points</h3>
-      <div className="mv-hp-title-actions">
-        {!hpEditing&&<button type="button" className="mv-attributes-edit-trigger" disabled={busy||loading}
-          onClick={()=>{setHpCurrent(hitPoints?.configured?String(hitPoints.current):'');setHpMax(hitPoints?.configured?String(hitPoints.max):'');setHpError('');setHpEditing(true)}}>{hitPoints?.configured?'Edit HP':'Set HP'}</button>}
-        <button type="button" className="mv-attributes-edit-trigger" disabled={busy||loading||tempHpClearing}
-          onClick={()=>{if(tempHpValue>0)void clearTemporaryHitPoints();else setTempHpOpen(true)}}>
-          {tempHpValue>0?'Clear temp HP':'Temp HP'}
-        </button>
-      </div>
-    </div>
-    {!hpEditing&&<div className="mv-hp-summary">
-      {hitPoints?.configured?<><strong>{hitPoints.current} / {hitPoints.max} HP</strong>
-        <div className="mv-container-meter" role="progressbar" aria-label="Current hit points"
-          aria-valuemin={0} aria-valuemax={hitPoints.max??1} aria-valuenow={hitPoints.current??0}>
-          <span style={{width:`${Math.max(0,Math.min(100,100*(hitPoints.current??0)/(hitPoints.max??1)))}%`}}/>
+    <div className="mv-hp-main">
+      <div className="mv-hp-main-content">
+        <div className="mv-hp-inline">
+          <h3 id="mv-hp-heading"><HeartPulse size={20}/> Hit Points</h3>
+          {hitPoints?.configured&&<strong className="mv-hp-inline-count">{hitPoints.current} / {hitPoints.max} HP</strong>}
+          {hitPoints?.configured&&<div className="mv-container-meter" role="progressbar" aria-label="Current hit points"
+            aria-valuemin={0} aria-valuemax={hitPoints.max??1} aria-valuenow={hitPoints.current??0}>
+            <span style={{width:`${Math.max(0,Math.min(100,100*(hitPoints.current??0)/(hitPoints.max??1)))}%`}}/>
+          </div>}
         </div>
-        <div className="mv-hp-quick-adjust" aria-label="Quick hit point adjustment">
-          <button type="button" className="mv-hp-damage-button" disabled={busy||loading||hpAdjustBusy||!Number.isSafeInteger(Number(hpAdjustAmount))||Number(hpAdjustAmount)<1||Number(hpAdjustAmount)>100000}
-            onClick={()=>void adjustHitPoints('damage')}>Damage</button>
-          <label htmlFor="mv-hp-adjust-amount">Amount
-            <input id="mv-hp-adjust-amount" type="number" min="1" max="100000" step="1" inputMode="numeric"
-              value={hpAdjustAmount} disabled={busy||hpAdjustBusy} onChange={e=>{setHpAdjustAmount(e.target.value);setHpAdjustFeedback('')}}/>
-          </label>
-          <button type="button" className="mv-hp-heal-button" disabled={busy||loading||hpAdjustBusy||!Number.isSafeInteger(Number(hpAdjustAmount))||Number(hpAdjustAmount)<1||Number(hpAdjustAmount)>100000||hitPoints.current===hitPoints.max}
-            onClick={()=>void adjustHitPoints('heal')}>Heal HP</button>
+        <div className="mv-hp-title-actions">
+          {!hpEditing&&<button type="button" className="mv-attributes-edit-trigger" disabled={busy||loading}
+            onClick={()=>{setHpCurrent(hitPoints?.configured?String(hitPoints.current):'');setHpMax(hitPoints?.configured?String(hitPoints.max):'');setHpError('');setHpEditing(true)}}>{hitPoints?.configured?'Edit HP':'Set HP'}</button>}
+          <button type="button" className="mv-attributes-edit-trigger" disabled={busy||loading||tempHpClearing}
+            onClick={()=>{if(tempHpValue>0)void clearTemporaryHitPoints();else setTempHpOpen(true)}}>
+            {tempHpValue>0?'Clear temp HP':'Temp HP'}
+          </button>
         </div>
+        {!hpEditing&&!hitPoints?.configured&&<p className="mv-empty">Set current and maximum HP before using a healing potion.</p>}
         {hpAdjustFeedback&&<p className="mv-hp-feedback" role="status">{hpAdjustFeedback}</p>}
-        {hpError&&<p className="mv-storage-error" role="alert">{hpError}</p>}
-        </>:<p>Hit points not configured. Set current and maximum HP before using a healing potion.</p>}
-    </div>}
+        {!hpEditing&&hpError&&<p className="mv-storage-error" role="alert">{hpError}</p>}
+      </div>
+      {!hpEditing&&hitPoints?.configured&&<div className="mv-hp-quick-adjust" aria-label="Quick hit point adjustment">
+        <button type="button" className="mv-hp-heal-button"
+          disabled={busy||loading||hpAdjustBusy||!Number.isSafeInteger(Number(hpAdjustAmount))||Number(hpAdjustAmount)<1||Number(hpAdjustAmount)>100000||hitPoints.current===hitPoints.max}
+          onClick={()=>void adjustHitPoints('heal')}>Heal HP</button>
+        <label className="mv-hp-adjust-label" htmlFor="mv-hp-adjust-amount">
+          <span className="mv-visually-hidden">HP amount</span>
+          <input id="mv-hp-adjust-amount" aria-label="HP adjustment amount" type="number" min="1" max="100000" step="1" inputMode="numeric"
+            value={hpAdjustAmount} disabled={busy||hpAdjustBusy} onChange={e=>{setHpAdjustAmount(e.target.value);setHpAdjustFeedback('')}}/>
+        </label>
+        <button type="button" className="mv-hp-damage-button"
+          disabled={busy||loading||hpAdjustBusy||!Number.isSafeInteger(Number(hpAdjustAmount))||Number(hpAdjustAmount)<1||Number(hpAdjustAmount)>100000}
+          onClick={()=>void adjustHitPoints('damage')}>Damage</button>
+      </div>}
+    </div>
     {hpEditing&&<form className="mv-hp-form" onSubmit={event=>{void saveHitPoints(event)}}>
       <label>Current HP <input type="number" min="0" max="100000" step="1" required
         value={hpCurrent} onChange={event=>setHpCurrent(event.target.value)}/></label>
