@@ -37,9 +37,9 @@ has(character,/onEquip\(item\.item_id,slotId\)/,'slot picker retains secured equ
 lacks(character,/LoadoutHealthPanel|mv-loadout-launch/,'loadout health action removed');
 has(character,/setPotionEditorSlot\(slot\);setPotionEditorOpen\(true\)/,'empty potion slots open their individual picker');
 has(claim,/navigator\.mediaDevices\.getUserMedia/,'claim loot requests camera with user action');
-has(claim,/BarcodeDetector/,'camera reads QR codes when browser supports it');
+has(claim,/BrowserQRCodeReader/,'ZXing reads QR codes in Safari and other mobile browsers');
 has(claim,/QR code scanned\. Review the claim before confirming/,'scan does not automatically claim loot');
-has(claim,/not supported in this browser/,'camera fallback is informative');
+has(claim,/Camera access requires HTTPS/,'camera permissions fallback is informative');
 lacks(character,/Known weights only/,'old weight caption removed');
 has(character,/aria-label="Open carrying capacity details"/,'weight details launch in heading');
 has(character,/className="mv-item-modal mv-capacity-dialog"/,'carrying detail dialog');
