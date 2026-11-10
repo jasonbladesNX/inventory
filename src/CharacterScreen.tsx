@@ -10,6 +10,7 @@ import CampaignShop from './CampaignShop';
 import ClaimLootPanel from './ClaimLootPanel';
 import CharacterCraftingPanel from './CharacterCraftingPanel';
 import InventoryWorkbench,{type WorkbenchIndicator} from './InventoryWorkbench';
+import StackManagement from './StackManagement';
 import './character-screen.css';
 
 export type InventoryTab = 'character' | 'inventory' | 'shop' | 'craft';
@@ -1139,6 +1140,10 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         {slots.length===0&&<p className="mv-empty">No equipment slots have been configured for this campaign yet.</p>}
       </section>
       {quickUseError&&<p className="mv-storage-error" role="alert">Unable to use item: {quickUseError}</p>}
+      <StackManagement historyOnly db={db} character={character} inventoryVersion={inventoryVersion}
+        items={items} storage={storage} categories={itemCategories}
+        equippedIds={new Set(equipped.map(row=>row.itemId))}
+        busy={busy||loading} onChanged={onInventoryChanged}/>
     </div>}
     {tab==='shop'&&<CampaignShop db={db} campaign={campaign} character={character} inventoryVersion={inventoryVersion} busy={busy||loading} onChanged={onInventoryChanged}/>}
     {tab==='craft'&&<CharacterCraftingPanel db={db} campaign={campaign} character={character} inventoryVersion={inventoryVersion} busy={busy||loading} onChanged={onInventoryChanged}/>}
