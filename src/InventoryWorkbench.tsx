@@ -1,6 +1,6 @@
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
-import {Download,Search,Scale,ShieldAlert,X,Printer,Layers} from 'lucide-react';
+import {ArrowDown,ArrowUp,Download,Search,X,Printer,Layers} from 'lucide-react';
 import './inventory-workbench.css';
 
 export type WorkbenchItem={item_id:string;display_name:string;quantity:number|string;eligible:boolean};
@@ -11,6 +11,7 @@ type Props={
   characterName:string;items:WorkbenchItem[];
   categories:Record<string,string>;categoryNames?:Record<string,string>;storage:Record<string,WorkbenchStorage>;
   usage:Record<string,WorkbenchUsage>;indicators:Record<string,WorkbenchIndicator>;
+  sortMetadata:Record<string,{unit_value:string|null;stackable:boolean;definition_id:string}>;
   equippedIds:Set<string>;favoriteIds:Set<string>;busy:boolean;
   renderItem:(item:WorkbenchItem,onBrowseContainer:(id:string)=>void)=>React.ReactNode;
 };
@@ -29,12 +30,23 @@ function csvCell(value:unknown):string{
   if(/^[\s]*[=+@-]/.test(v))v="'"+v;
   return '"'+v.replace(/"/g,'""')+'"';
 }
-export default function InventoryWorkbench({characterName,items,categories,categoryNames={},storage,usage,indicators,equippedIds,favoriteIds,busy,renderItem}:Props){
+// Sort common D&D denominations on a shared GP scale. Generic numeric values
+// are supported; unspecified and unrecognized values always sort last.
+function valueInGp(raw:string|null|undefined):number|null{
+  if(!raw)return null;
+  const m=raw.replace(/,/g,'').trim().match(/^([0-9]+(?:\.[0-9]+)?)\s*(pp|gp|ep|sp|cp)?$/i);
+  if(!m)return null;
+  const unit=(m[2]||'gp').toLowerCase();
+  const factor:Record<string,number>={pp:10,gp:1,ep:.5,sp:.1,cp:.01};
+  const n=Number(m[1])*factor[unit];
+  return Number.isFinite(n)?n:null;
+}
+export default function InventoryWorkbench({characterName,items,categories,categoryNames={},storage,usage,indicators,sortMetadata,equippedIds,favoriteIds,busy,renderItem}:Props){
   const [search,setSearch]=useState('');
   const [category,setCategory]=useState('all');
   const [location,setLocation]=useState('all');
-  const [status,setStatus]=useState('all');
-  const [sort,setSort]=useState('name_asc');
+  const [sortField,setSortField]=useState<'name'|'value'|'weight'>('name');
+  const [sortDirection,setSortDirection]=useState<'asc'|'desc'>('asc');
   const [exportMessage,setExportMessage]=useState('');
   const [viewMode,setViewMode]=useState<'location'|'category'|'flat'>('location');
   const [reportOpen,setReportOpen]=useState(false);
@@ -66,24 +78,24 @@ export default function InventoryWorkbench({characterName,items,categories,categ
     if(category!=='all'&&actualCategory!==category)return false;
     if(location==='carried'&&where)return false;
     if(location!=='all'&&location!=='carried'&&where!==location)return false;
-    if(status==='favorites'&&!favoriteIds.has(id))return false;
-    if(status==='equipped'&&!equippedIds.has(id))return false;
-    if(status==='unequipped'&&(equippedIds.has(id)||where||storage[id]?.is_container))return false;
-    if(status==='stored'&&!where)return false;
-    if(status==='unknown_weight'&&indicators[id]?.unit_weight_lb!==null&&indicators[id]?.unit_weight_lb!==undefined)return false;
     return true;
   }).sort((a,b)=>{
-    const weight=(item:WorkbenchItem)=>indicators[item.item_id]?.unit_weight_lb;
-    const aw=weight(a)==null?Number.POSITIVE_INFINITY:num(weight(a)),bw=weight(b)==null?Number.POSITIVE_INFINITY:num(weight(b));
-    switch(sort){
-      case 'name_desc':return b.display_name.localeCompare(a.display_name);
-      case 'quantity_desc':return num(b.quantity)-num(a.quantity)||a.display_name.localeCompare(b.display_name);
-      case 'quantity_asc':return num(a.quantity)-num(b.quantity)||a.display_name.localeCompare(b.display_name);
-      case 'weight_desc':return (weight(b)==null?Number.NEGATIVE_INFINITY:num(weight(b)))-(weight(a)==null?Number.NEGATIVE_INFINITY:num(weight(a)))||a.display_name.localeCompare(b.display_name);
-      case 'weight_asc':return aw-bw||a.display_name.localeCompare(b.display_name);
-      default:return a.display_name.localeCompare(b.display_name);
-    }
-  }),[items,categories,storage,indicators,equippedIds,favoriteIds,search,category,location,status,sort]);
+    const direction=sortDirection==='asc'?1:-1;
+    if(sortField==='name')return direction*a.display_name.localeCompare(b.display_name);
+    const metric=(item:WorkbenchItem)=>{
+      if(sortField==='value'){
+        const value=valueInGp(sortMetadata[item.item_id]?.unit_value);
+        return value===null?null:value*num(item.quantity);
+      }
+      const unit=indicators[item.item_id]?.unit_weight_lb;
+      return unit==null?null:num(unit)*num(item.quantity);
+    };
+    const av=metric(a),bv=metric(b);
+    if(av===null&&bv!==null)return 1;
+    if(bv===null&&av!==null)return -1;
+    if(av===null&&bv===null)return a.display_name.localeCompare(b.display_name);
+    return direction*((av??0)-(bv??0))||a.display_name.localeCompare(b.display_name);
+  }),[items,categories,storage,indicators,sortMetadata,search,category,location,sortField,sortDirection]);
   const filteredUnits=matches.reduce((sum,item)=>sum+num(item.quantity),0);
   const knownFilteredWeight=matches.reduce((sum,item)=>{
     const unit=indicators[item.item_id]?.unit_weight_lb;
@@ -108,7 +120,8 @@ export default function InventoryWorkbench({characterName,items,categories,categ
     document.body.appendChild(anchor);anchor.click();anchor.remove();URL.revokeObjectURL(url);
     setExportMessage('Exported '+rows.length+' visible items to CSV.');
   }
-  const clear=()=>{setSearch('');setCategory('all');setLocation('all');setStatus('all');setSort('name_asc');setViewMode('location')};
+  const clear=()=>{setSearch('');setCategory('all');setLocation('all');setSortField('name');setSortDirection('asc');setViewMode('location')};
+  const toggleSort=(field:'name'|'value'|'weight')=>{if(field===sortField)setSortDirection(v=>v==='asc'?'desc':'asc');else{setSortField(field);setSortDirection('asc')}};
   const printableSummary=[
     'Nexus Multiverse Inventory Report',
     'Character: '+characterName,
@@ -124,7 +137,19 @@ export default function InventoryWorkbench({characterName,items,categories,categ
   const showList=(list:WorkbenchItem[],label:string)=>{
     if(!list.length)return null;
     return <section className="mv-inventory-group" aria-label={label} key={label}>
-      <div className="mv-inventory-group-heading"><h4>{label}</h4><span>{list.length} items</span></div>
+      <div className="mv-inventory-group-heading nx-inventory-group-heading">
+        <h4>{label}</h4>
+        <div className="nx-inventory-sort-options" role="group" aria-label="Sort inventory items">
+          {(['name','value','weight'] as const).map(field=><button type="button" key={field}
+            className={sortField===field?'is-active':''}
+            aria-pressed={sortField===field}
+            aria-label={`Sort by ${field}, ${sortField===field?(sortDirection==='asc'?'descending':'ascending'):'ascending'}`}
+            onClick={()=>toggleSort(field)}>
+            {field.toUpperCase()}
+            {sortField===field&&(sortDirection==='asc'?<ArrowUp size={14} aria-hidden="true"/>:<ArrowDown size={14} aria-hidden="true"/>)}
+          </button>)}
+        </div>
+      </div>
       <div className="mv-inventory-items">{list.map(item=><div className="nx-workbench-row" key={item.item_id}>
         {renderItem(item,setLocation)}
       </div>)}</div>
@@ -138,6 +163,11 @@ export default function InventoryWorkbench({characterName,items,categories,categ
           {availableCategories.map(c=><option key={c} value={c}>{categoryNames[c]??categoryLabels[c]??c} ({items.filter(item=>(categories[item.item_id]??'unknown')===c).length})</option>)}
         </select>
       </label>
+      <div className="nx-inventory-search">
+        <label htmlFor="nx-inventory-search">Search inventory</label>
+        <div><Search size={17} aria-hidden="true"/><input id="nx-inventory-search" type="search" value={search}
+          onChange={e=>setSearch(e.target.value)} placeholder="Item name…"/></div>
+      </div>
       <label>Where
         <select value={location} onChange={e=>setLocation(e.target.value)}>
           <option value="all">All locations</option>
@@ -145,51 +175,19 @@ export default function InventoryWorkbench({characterName,items,categories,categ
           {containers.map(item=><option key={item.item_id} value={item.item_id}>Inside {item.display_name}</option>)}
         </select>
       </label>
-      <label>Show
-        <select value={status} onChange={e=>setStatus(e.target.value)}>
-          <option value="all">All statuses</option>
-          <option value="equipped">Equipped only</option>
-          <option value="unequipped">Loose, not equipped</option>
-          <option value="stored">Inside containers</option>
-          <option value="favorites">Favorites only</option>
-          <option value="unknown_weight">Missing weight</option>
+      <div className="nx-inventory-group-toolbar">
+        <label htmlFor="nx-workbench-grouping"><Layers size={16} aria-hidden="true"/> Group results</label>
+        <select id="nx-workbench-grouping" value={viewMode} onChange={e=>setViewMode(e.target.value as 'location'|'category'|'flat')}>
+          <option value="location">By storage location</option>
+          <option value="category">By item type</option>
+          <option value="flat">One list</option>
         </select>
-      </label>
-      <label>Sort
-        <select value={sort} onChange={e=>setSort(e.target.value)}>
-          <option value="name_asc">Name A → Z</option>
-          <option value="name_desc">Name Z → A</option>
-          <option value="quantity_desc">Quantity (most)</option>
-          <option value="quantity_asc">Quantity (least)</option>
-          <option value="weight_asc">Unit weight (lightest)</option>
-          <option value="weight_desc">Unit weight (heaviest)</option>
-        </select>
-      </label>
-    </div>
-    <div className="nx-inventory-top-controls">
-    <div className="nx-inventory-search">
-      <label htmlFor="nx-inventory-search">Search inventory</label>
-      <div><Search size={17} aria-hidden="true"/><input id="nx-inventory-search" type="search" value={search}
-        onChange={e=>setSearch(e.target.value)} placeholder="Item name…"/></div>
-    </div>
-    <div className="nx-inventory-group-toolbar">
-      <label htmlFor="nx-workbench-grouping"><Layers size={16} aria-hidden="true"/> Group results</label>
-      <select id="nx-workbench-grouping" value={viewMode} onChange={e=>setViewMode(e.target.value as 'location'|'category'|'flat')}>
-        <option value="location">By storage location</option>
-        <option value="category">By item type</option>
-        <option value="flat">One list</option>
-      </select>
-    </div>
-    </div>
-    <div className="nx-inventory-weight-overview" role="status">
-      <Scale size={17} aria-hidden="true"/>
-      <span>{filteredUnits.toLocaleString()} visible units · At least {knownFilteredWeight.toFixed(2)} lb</span>
-      {filteredUnknownWeight>0&&<span className="nx-inventory-weight-warning">{filteredUnknownWeight} entries with unknown weight</span>}
+      </div>
     </div>
     <div className="nx-inventory-toolbar">
       <span>{matches.length} of {items.length} item entries shown</span>
       <button type="button" onClick={clear}><X size={15}/> Reset filters</button>
-      <button type="button" onClick={()=>setReportOpen(v=>!v)}><Printer size={15}/> {reportOpen?'Close report':'Report'}</button>
+      <button type="button" aria-label={reportOpen?'Close inventory report':'Open inventory report'} title="Inventory report" onClick={()=>setReportOpen(v=>!v)}><Printer size={17} aria-hidden="true"/></button>
     </div>
     {reportOpen&&createPortal(<div className="mv-modal-backdrop">
       <section className="mv-item-modal nx-inventory-report-dialog" role="dialog" aria-modal="true" aria-labelledby="nx-inventory-report-heading">
@@ -222,8 +220,8 @@ export default function InventoryWorkbench({characterName,items,categories,categ
         showList(matches.filter(item=>(categories[item.item_id]??'unknown')===code),categoryNames[code]??categoryLabels[code]??code)
       ):
       location==='all'?<>
-        {showList(matches.filter(item=>!storage[item.item_id]?.container_item_id),'Carried & Equipped')}
+        {showList(matches.filter(item=>!storage[item.item_id]?.container_item_id),'Carried and equipped')}
         {containers.map(container=>showList(matches.filter(item=>storage[item.item_id]?.container_item_id===container.item_id),'Inside '+container.display_name))}
-      </>:showList(matches,location==='carried'?'Carried & Equipped':'Container contents')}
+      </>:showList(matches,location==='carried'?'Carried and equipped':'Container contents')}
   </div>;
 }
