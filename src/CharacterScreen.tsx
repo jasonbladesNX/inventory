@@ -1032,13 +1032,23 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       <section className="mv-panel" aria-labelledby="mv-equipped-title">
         <div className="mv-equipped-heading">
           <h3 id="mv-equipped-title"><Sword size={20}/> Equipped Items</h3>
-          <button type="button" className="mv-loadout-launch" ref={loadoutTriggerRef}
-            aria-label="Open loadout health" aria-haspopup="dialog" onClick={()=>setLoadoutOpen(true)}>
-            <HeartPulse size={21} aria-hidden="true"/><span>Loadout Health</span>
-          </button>
         </div>
-        {loading?<p className="mv-empty">Loading equipment…</p>:equipped.length===0?<p className="mv-empty">No equipped items yet. Equip an item from Inventory to see it here.</p>:
-          <div className="mv-rows">{equipped.map(row=>{const SlotIcon=equipmentSlotIcon(row.slot);return <div className="mv-equipment-row" key={row.id}><SlotIcon size={18} aria-hidden="true"/><span>{row.slot}</span><strong>{row.name}</strong><button type="button" className="mv-unequip-button" disabled={busy||loading||unequipCheckPending} onClick={()=>{void requestUnequip(row)}} aria-label={`Unequip ${row.name} from ${row.slot}`}>{unequipCheckPending?'Checking…':'Unequip'}</button></div>;})}</div>}
+        {loading?<p className="mv-empty">Loading equipment…</p>:slots.length===0?
+          <p className="mv-empty">No equipment slots have been configured for this campaign.</p>:
+          <div className="mv-rows">
+            {slots.map(slot=>{
+              const occupied=equipped.find(row=>row.slotId===slot.id);
+              const SlotIcon=equipmentSlotIcon(slot.code??slot.label);
+              return <div className="mv-equipment-row" key={slot.id}>
+                <SlotIcon size={18} aria-hidden="true"/>
+                <span>{slot.label}</span>
+                <strong>{occupied?.name??'Empty'}</strong>
+                <button type="button" className="mv-slot-equip-button" disabled={busy||loading||unequipCheckPending}
+                  aria-haspopup="dialog" aria-label={`Choose equipment for ${slot.label}`}
+                  onClick={()=>{setEquipSlotError('');setEquipSlotPicker(slot.id)}}>Equip</button>
+              </div>;
+            })}
+          </div>}
         {unequipCheckError&&<p className="mv-storage-error" role="alert">Unable to check equipment dependencies: {unequipCheckError}. No equipment was changed.</p>}
         {invalidEquipmentError&&<p className="mv-storage-error" role="alert">Unable to check equipment requirements: {invalidEquipmentError}</p>}
         {invalidEquipment.length>0&&<div className="mv-invalid-loadout" role="status">
@@ -1103,25 +1113,37 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     </div>}
     {tab==='shop'&&<CampaignShop db={db} campaign={campaign} character={character} inventoryVersion={inventoryVersion} busy={busy||loading} onChanged={onInventoryChanged}/>}
     {tab==='craft'&&<CharacterCraftingPanel db={db} campaign={campaign} character={character} inventoryVersion={inventoryVersion} busy={busy||loading} onChanged={onInventoryChanged}/>}
-    {loadoutOpen&&tab==='character'&&createPortal(
-      <div className="mv-modal-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget){setLoadoutOpen(false);loadoutTriggerRef.current?.focus()}}}>
-        <section className="mv-item-modal mv-loadout-dialog" role="dialog" aria-modal="true" aria-labelledby="mv-loadout-dialog-title">
+    {tab==='character'&&equipSlotPicker&&createPortal(
+      <div className="mv-modal-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)setEquipSlotPicker(null)}}>
+        <section className="mv-item-modal mv-slot-picker-dialog" role="dialog" aria-modal="true" aria-labelledby="mv-slot-picker-title">
           <div className="mv-modal-header">
-            <div className="mv-modal-heading"><HeartPulse size={24} aria-hidden="true"/><div>
-              <span className="mv-modal-eyebrow">Character equipment</span>
-              <h3 id="mv-loadout-dialog-title">Loadout Health</h3>
+            <div className="mv-modal-heading"><Sword size={22} aria-hidden="true"/><div>
+              <span className="mv-modal-eyebrow">Equipment slot</span>
+              <h3 id="mv-slot-picker-title">{slots.find(slot=>slot.id===equipSlotPicker)?.label??'Equip item'}</h3>
             </div></div>
-            <button type="button" ref={loadoutCloseRef} className="mv-modal-close"
-              aria-label="Close loadout health" onClick={()=>{setLoadoutOpen(false);loadoutTriggerRef.current?.focus()}}><X size={22}/></button>
+            <button type="button" ref={equipPickerCloseRef} className="mv-modal-close" aria-label="Close equipment picker"
+              onClick={()=>setEquipSlotPicker(null)}><X size={21}/></button>
           </div>
-          <div className="mv-loadout-dialog-body">
-            <LoadoutHealthPanel db={db} character={character} characterName={characterName}
-              inventoryVersion={inventoryVersion} busy={busy||loading||unequipCheckPending}
-              onReviewRemoval={assignmentId=>{
-                const row=equipped.find(candidate=>candidate.id===assignmentId);
-                setLoadoutOpen(false);
-                if(row)void requestUnequip(row);
-              }}/>
+          <div className="mv-modal-body mv-slot-picker-body">
+            {equipped.find(row=>row.slotId===equipSlotPicker)&&<div className="mv-slot-picker-current">
+              <span>Currently equipped</span><strong>{equipped.find(row=>row.slotId===equipSlotPicker)?.name}</strong>
+              <button type="button" disabled={busy||loading||unequipCheckPending} onClick={()=>{
+                const current=equipped.find(row=>row.slotId===equipSlotPicker);
+                if(current){setEquipSlotPicker(null);void requestUnequip(current)}
+              }}>Unequip current item</button>
+            </div>}
+            <h4>Available items</h4>
+            {items.filter(item=>item.eligible&&!storage[item.item_id]?.container_item_id&&!equipped.some(row=>row.itemId===item.item_id)&&validSlots[item.item_id]?.includes(equipSlotPicker)).length===0?
+              <p className="mv-empty">No compatible unequipped items are available in carried inventory for this slot.</p>:
+              <div className="mv-slot-picker-options">
+                {items.filter(item=>item.eligible&&!storage[item.item_id]?.container_item_id&&!equipped.some(row=>row.itemId===item.item_id)&&validSlots[item.item_id]?.includes(equipSlotPicker))
+                  .map(item=><button type="button" key={item.item_id} disabled={busy||loading}
+                    onClick={()=>{const slotId=equipSlotPicker;setEquipSlotPicker(null);onEquip(item.item_id,slotId)}}>
+                    {renderItemIcon(item.item_id,18)}<span>{item.display_name}</span><strong>Equip</strong>
+                  </button>)}
+              </div>}
+            {equipSlotError&&<p className="mv-storage-error" role="alert">{equipSlotError}</p>}
+            <p className="mv-small-note">Equipping automatically replaces conflicting gear. Eligibility and attribute requirements remain enforced by the campaign rules.</p>
           </div>
         </section>
       </div>,document.body)}
