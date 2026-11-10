@@ -28,7 +28,7 @@ for(const [rule,name] of [
  [/manage_character_item_stack/,'authorized RPC'],[/list_character_inventory_activity/,'scoped history'],
  [/onChanged\(\)/,'post-transaction refresh']
 ])assert.match(ui,rule,name);
-assert.match(parent,/<StackManagement/);
+assert.match(parent,/<StackManagement historyOnly/,'activity history preserved without redundant quantity panel');
 assert.match(parent,/value="__trash__">Trash \/ Discard/);
 assert.match(parent,/setTrashItemId\(selectedItem.item_id\)/);
 assert.match(parent,/Quantity to discard/);
