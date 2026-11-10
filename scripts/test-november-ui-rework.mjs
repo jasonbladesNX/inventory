@@ -42,7 +42,7 @@ has(claim,/QR code scanned\. Review the claim before confirming/,'scan does not 
 has(claim,/not supported in this browser/,'camera fallback is informative');
 lacks(character,/Known weights only/,'old weight caption removed');
 has(character,/aria-label="Open carrying capacity details"/,'weight details launch in heading');
-has(character,/className="mv-capacity-dialog"/,'carrying detail dialog');
+has(character,/className="mv-item-modal mv-capacity-dialog"/,'carrying detail dialog');
 lacks(character,/<details className="mv-carry-capacity-help">/,'old weight detail expander removed');
 has(inventory,/className="nx-inventory-filters"/,'compact inventory filters');
 has(inventory,/className="nx-inventory-search"/,'search alongside item type');
