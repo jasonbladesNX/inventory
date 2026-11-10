@@ -72,7 +72,6 @@ export default function CharacterRestPanel({db,character,inventoryVersion,busy,o
   return <>
     <div className="mv-rest-toolbar">
       <button ref={trigger} type="button" disabled={busy||loading} onClick={()=>{setOpen(true);setError('')}}><Moon size={16}/> Rest</button>
-      {state&&<span>Hit Dice: {state.hit_dice.remaining}/{state.hit_dice.max} (d{state.hit_dice.sides})</span>}
     </div>
     {feedback&&<p className="mv-rest-feedback" role="status">{feedback}</p>}
     {error&&!open&&<p className="mv-storage-error" role="alert">{error}</p>}
