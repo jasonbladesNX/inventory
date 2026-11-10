@@ -55,7 +55,7 @@ has(camera,/navigator\.mediaDevices\.getUserMedia/,'camera opened from user tap'
 has(camera,/const startCamera=async\(\)=>\{/,'camera tap handler exists');
 has(camera,/new BrowserQRCodeReader\(\)/,'live camera QR decoding implemented');
 has(camera,/reader\.decodeFromStream\(streamRef\.current,video/,'existing camera stream decoded');
-has(camera,/controls\.stop\(\);stopCamera\(\)/,'camera stops after success');
+has(camera,/controls\.stop\(\);closeCamera\(\)/,'camera stops and closes modal after a valid scan');
 has(camera,/Review the claim before confirming/,'QR success requires explicit claim confirmation');
 has(camera,/if\(!navigator\.mediaDevices\?\.getUserMedia\)/,'browser capability fallback');
 lacks(camera,/if\(!Detector\)/,'no iPhone failure due to missing native BarcodeDetector');
