@@ -1,10 +1,10 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {PackageOpen,CheckCircle2,Camera,CameraOff} from 'lucide-react';
 import type {SupabaseClient} from '@supabase/supabase-js';
+import {BrowserQRCodeReader} from '@zxing/browser';
 import {inventoryErrorMessage} from './inventoryErrors';
 import './qr-loot.css';
 type Props={db:SupabaseClient;character:string;busy:boolean;onChanged:()=>Promise<void>};
-type QRDetectorCtor=new (options:{formats:string[]})=>{detect:(source:HTMLVideoElement)=>Promise<{rawValue:string}[]>};
 const qrToken=(raw:string)=>{
   let value=raw.trim();
   try{const url=new URL(value);value=url.searchParams.get('loot')??''}catch{}
@@ -20,57 +20,63 @@ export default function ClaimLootPanel({db,character,busy,onChanged}:Props){
  const [cameraError,setCameraError]=useState('');
  const videoRef=useRef<HTMLVideoElement>(null);
  const streamRef=useRef<MediaStream|null>(null);
- const scanFrameRef=useRef<number|null>(null);
- const cameraRequestRef=useRef(0);
+ const scannerControls=useRef<{stop:()=>void}|null>(null);
+ const cameraRequest=useRef(0);
  const stopCamera=()=>{
-  cameraRequestRef.current++;
-  if(scanFrameRef.current!==null){window.cancelAnimationFrame(scanFrameRef.current);scanFrameRef.current=null}
+  cameraRequest.current++;
+  scannerControls.current?.stop();scannerControls.current=null;
   streamRef.current?.getTracks().forEach(track=>track.stop());
   streamRef.current=null;
   if(videoRef.current)videoRef.current.srcObject=null;
   setCameraActive(false);
  };
  const startCamera=async()=>{
-  setOpen(true);setCameraError('');
-  const Detector=(window as Window & {BarcodeDetector?:QRDetectorCtor}).BarcodeDetector;
-  if(!Detector){setCameraError('Live QR scanning is not supported in this browser. Use your phone camera app to scan the QR link, or paste the claim token below.');return;}
-  if(!navigator.mediaDevices?.getUserMedia){setCameraError('Device camera access requires a supported secure browser. Paste a QR claim link below instead.');return;}
-  const request=++cameraRequestRef.current;
+  // getUserMedia is invoked directly from the user tap. Do not await a library
+  // import first: iOS Safari requires the user-gesture camera permission flow.
+  setOpen(true);setCameraError('');setNotice('');
+  if(!navigator.mediaDevices?.getUserMedia){
+   setCameraError('Camera access requires HTTPS and a compatible browser. Use Safari or paste a claim link.');
+   return;
+  }
+  const request=++cameraRequest.current;
   try{
-   const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
-   if(request!==cameraRequestRef.current){stream.getTracks().forEach(track=>track.stop());return}
+   const stream=await navigator.mediaDevices.getUserMedia({
+     video:{facingMode:{ideal:'environment'}},audio:false
+   });
+   if(request!==cameraRequest.current){stream.getTracks().forEach(track=>track.stop());return}
    streamRef.current=stream;
    setCameraActive(true);
-  }catch(e){if(request===cameraRequestRef.current)setCameraError('Unable to open camera. Allow camera permission in your browser or paste the QR claim link below. '+inventoryErrorMessage(e))}
+  }catch(e){
+   if(request===cameraRequest.current)setCameraError('Unable to open the camera. Allow access in iPhone Settings → Safari → Camera, or paste a loot QR link. '+inventoryErrorMessage(e));
+  }
  };
  useEffect(()=>{stopCamera();setCameraError('')},[character]);
  useEffect(()=>()=>{
-  cameraRequestRef.current++;
-  if(scanFrameRef.current!==null)window.cancelAnimationFrame(scanFrameRef.current);
+  cameraRequest.current++;
+  scannerControls.current?.stop();
   streamRef.current?.getTracks().forEach(track=>track.stop());
  },[]);
  useEffect(()=>{
   if(!cameraActive||!videoRef.current||!streamRef.current)return;
-  const video=videoRef.current;
-  video.srcObject=streamRef.current;
-  void video.play().catch(()=>setCameraError('Camera preview could not start. Use the normal phone camera app or paste the claim link.'));
-  const Detector=(window as Window & {BarcodeDetector?:QRDetectorCtor}).BarcodeDetector;
-  if(!Detector)return;
-  const detector=new Detector({formats:['qr_code']});
   let active=true;
-  const detect=async()=>{
-   if(!active)return;
-   if(video.readyState>=2){
-    try{
-     const results=await detector.detect(video);
-     const found=results.map(value=>qrToken(value.rawValue)).find(Boolean);
-     if(found){setToken(found);setConfirm(false);setNotice('QR code scanned. Review the claim before confirming.');stopCamera();return;}
-    }catch{/* A frame may be unusable while the camera is adjusting focus. */}
-   }
-   if(active)scanFrameRef.current=window.requestAnimationFrame(()=>{void detect()});
-  };
-  scanFrameRef.current=window.requestAnimationFrame(()=>{void detect()});
-  return()=>{active=false;if(scanFrameRef.current!==null)window.cancelAnimationFrame(scanFrameRef.current)};
+  const request=cameraRequest.current;
+  const reader=new BrowserQRCodeReader();
+  const video=videoRef.current;
+  void reader.decodeFromStream(streamRef.current,video,(result,_err,controls)=>{
+   if(!active||!result)return;
+   const found=qrToken(result.getText());
+   if(found){
+    setToken(found);setConfirm(false);setCameraError('');
+    setNotice('QR code scanned. Review the claim before confirming.');
+    controls.stop();stopCamera();
+   }else setCameraError('That QR is not a Nexus loot claim. Point the camera at the GM loot QR code.');
+  }).then(controls=>{
+   if(active&&request===cameraRequest.current)scannerControls.current=controls;
+   else controls.stop();
+  }).catch(e=>{
+   if(active)setCameraError('Camera scanning failed. Try the phone Camera app or paste the claim link. '+inventoryErrorMessage(e));
+  });
+  return()=>{active=false;scannerControls.current?.stop();scannerControls.current=null};
  },[cameraActive]);
  useEffect(()=>{const t=initialToken();if(t){setToken(t);setOpen(true);setConfirm(false)}},[character]);
  const claim=async()=>{
@@ -95,11 +101,11 @@ export default function ClaimLootPanel({db,character,busy,onChanged}:Props){
  };
  return <div className="mv-loot-claim">
   <button type="button" className="mv-loot-claim-trigger" disabled={busy}
-   onClick={()=>{if(open){stopCamera();setOpen(false)}else{setOpen(true);void startCamera()}}}>
+   onClick={()=>{if(cameraActive){stopCamera()}else{setOpen(true);void startCamera()}}}>
    <PackageOpen size={24}/><strong>Claim Loot</strong><small>Enter or scan a GM loot QR</small>
   </button>
   {open&&<div className="mv-loot-claim-form">
-   <p>Use the camera to scan the GM's loot QR, or paste its claim link. The loot is not awarded until you review and confirm. Campaign membership is still required.</p>
+   <p>Scan the GM's loot QR using your iPhone camera or paste its claim link. Loot is only awarded after you review and confirm.</p>
    <button type="button" className="mv-loot-camera-button" disabled={working||busy||cameraActive}
      onClick={()=>void startCamera()}><Camera size={17} aria-hidden="true"/> {cameraActive?'Camera scanning…':'Open Camera'}</button>
    {cameraActive&&<div className="mv-loot-camera">
