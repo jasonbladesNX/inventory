@@ -133,3 +133,17 @@
  .nx-inventory-list-heading .nx-inventory-group-toolbar select{min-width:105px;max-width:130px;font-size:11px}
  .nx-inventory-list-controls{flex-wrap:wrap}
 }
+
+
+/* Label-free search stays left of Item Type, aligned with the selector bottom. */
+.nx-inventory-filters>.nx-inventory-search{
+  min-width:0;align-self:end;display:flex;flex-direction:column;
+  justify-content:flex-end
+}
+.nx-inventory-filters>.nx-inventory-search>div{
+  min-height:44px;box-sizing:border-box
+}
+.nx-inventory-filters>.nx-inventory-search input{
+  min-height:42px;padding:9px 0;font-size:16px
+}
+.nx-inventory-toolbar{justify-content:flex-end}
