@@ -114,6 +114,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [useSuccess,setUseSuccess]=useState('');
   const [activeTimedEffects,setActiveTimedEffects]=useState<{code:string;value:number;unit:string;remaining:number|null;source?:string}[]>([]);
   const [potionEditorOpen,setPotionEditorOpen]=useState(false);
+  const [potionEditorSlot,setPotionEditorSlot]=useState<number|null>(null);
   const potionEditorTriggerRef=useRef<HTMLButtonElement>(null);
   const potionEditorCloseRef=useRef<HTMLButtonElement>(null);
   const [validSlots,setValidSlots]=useState<Record<string,string[]>>({});
@@ -1065,7 +1066,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           <button ref={potionEditorTriggerRef} type="button" className="mv-potions-edit-launch"
             aria-label="Edit potion assignments" aria-haspopup="dialog"
             disabled={loading||busy||potionSlotBusy!==null||potionUseBusy!==null}
-            onClick={()=>{setPotionError('');setPotionEditorOpen(true)}}>Edit</button>
+            onClick={()=>{setPotionError('');setPotionEditorSlot(null);setPotionEditorOpen(true)}}>Edit</button>
         </div>
         <div className="mv-potion-slots">
           {[1,2,3,4].map(slot=>{
@@ -1075,9 +1076,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
             const potionName=option?.name??assignment?.name??'Unavailable potion';
             return <div className="mv-potion-slot" key={slot}>
               <button type="button" className="mv-potion-use"
-                disabled={!option||Number(count)<1||loading||busy||potionSlotBusy!==null||potionUseBusy!==null}
+                disabled={loading||busy||potionSlotBusy!==null||potionUseBusy!==null||(Boolean(assignment?.definition_id)&&(!option||Number(count)<1))}
                 aria-label={assignment?.definition_id?`Use one ${potionName} (${count} remaining)`:`Empty potion slot ${slot}`}
-                onClick={()=>void usePotionSlot(slot)}>
+                onClick={()=>{if(!assignment?.definition_id){setPotionError('');setPotionEditorSlot(slot);setPotionEditorOpen(true)}else void usePotionSlot(slot)}}>
                 {potionUseBusy===slot?'Using…':assignment?.definition_id?`${potionName} (${count})`:'Empty'}
               </button>
             </div>;
@@ -1158,15 +1159,15 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
           <div className="mv-modal-header">
             <div className="mv-modal-heading"><FlaskConical size={24} aria-hidden="true"/><div>
               <span className="mv-modal-eyebrow">Character quick access</span>
-              <h3 id="mv-potion-dialog-title">Edit Potions</h3>
+              <h3 id="mv-potion-dialog-title">{potionEditorSlot===null?'Edit Potions':`Assign Potion — Slot ${potionEditorSlot}`}</h3>
             </div></div>
             <button type="button" ref={potionEditorCloseRef} className="mv-modal-close"
               aria-label="Close potion editor" disabled={potionSlotBusy!==null}
               onClick={()=>{setPotionEditorOpen(false);potionEditorTriggerRef.current?.focus()}}><X size={22}/></button>
           </div>
           <div className="mv-modal-body mv-potion-dialog-body">
-            <p>Choose which potion type belongs in each quick-access slot. Assigning or clearing a slot does not consume a potion.</p>
-            {[1,2,3,4].map(slot=>{
+            <p>Choose an available potion for the selected quick-access slot. Assigning or clearing a slot does not consume a potion.</p>
+            {[1,2,3,4].filter(slot=>potionEditorSlot===null||slot===potionEditorSlot).map(slot=>{
               const assignment=potionHotbar.slots.find(row=>row.slot===slot);
               const assignedOption=potionHotbar.options.find(row=>row.definition_id===assignment?.definition_id);
               return <label key={slot} htmlFor={`mv-potion-slot-${slot}`} className="mv-potion-dialog-field">
@@ -1333,18 +1334,6 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
               <small>For {equipRequirements[0]?.slot_label}: currently {equipRequirements.map(rule=>`${rule.attribute_code} ${rule.current_score??'unset'}`).join(', ')}. Projected scores remove bonuses from items that would be replaced.</small>
             </div>}
             {requirementsError&&<p className="mv-storage-error" role="alert">Cannot load equipment requirements: {requirementsError}</p>}
-            {!detailsLoading&&equipPreview.length>0&&!equippedByItem.has(selectedItem.item_id)&&<details className="mv-equip-preview">
-              <summary>Equip Preview <small>Check slots and replacements</small></summary>
-              <p className="mv-equip-preview-note">Read-only preview. No equipment will be changed until you select an eligible slot above.</p>
-              {equipPreview.map(option=><div key={option.slot_id} className="mv-equip-preview-option">
-                <div className="mv-equip-preview-heading">
-                  <strong>{option.slot_label}</strong>
-                  <span className={option.can_equip?'mv-equip-preview-yes':'mv-equip-preview-no'}>{option.can_equip?'Eligible':'Blocked'}</span>
-                </div>
-                <p>{option.reason}</p>
-                {option.can_equip&&option.replaced_items.length>0&&<p className="mv-equip-preview-replace">Would unequip: {option.replaced_items.join(', ')}</p>}
-              </div>)}
-            </details>}
             {equipPreviewError&&<p className="mv-storage-error" role="alert">Equip preview unavailable: {equipPreviewError}</p>}
 
             {!loading&&!equippedByItem.has(selectedItem.item_id)&&selectedItem.eligible&&(validSlots[selectedItem.item_id]||[]).length===0&&
