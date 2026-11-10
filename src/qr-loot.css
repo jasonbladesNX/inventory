@@ -38,3 +38,42 @@
 .mv-loot-camera video{display:block;width:100%;min-height:180px;max-height:280px;object-fit:cover;border:1px solid #4aa7c4;border-radius:9px;background:#010d14}
 .mv-loot-camera button{display:inline-flex;align-items:center;gap:6px;justify-content:center}
 .mv-loot-claim-form .mv-loot-camera-help{color:#ffcfab;font-size:11px}
+
+
+/* Full-size modal scanner: keeps the live iPhone camera visible and centered. */
+.mv-loot-camera-dialog{
+  width:min(96vw,650px);max-width:650px;max-height:calc(100dvh - 24px);
+  display:flex;flex-direction:column;overflow:hidden
+}
+.mv-loot-camera-dialog .mv-modal-header,
+.mv-loot-camera-dialog .mv-modal-footer{flex:0 0 auto}
+.mv-loot-camera-dialog .mv-modal-body{
+  display:grid;gap:12px;min-height:0;overflow-y:auto;overscroll-behavior:contain
+}
+.mv-loot-camera-dialog .mv-loot-camera{display:grid;justify-items:stretch;gap:9px;min-width:0}
+.mv-loot-camera-dialog .mv-loot-camera video{
+  display:block;width:100%;height:min(56dvh,530px);min-height:250px;
+  max-height:min(56dvh,530px);object-fit:cover;
+  border:1px solid #4aa7c4;border-radius:11px;background:#03131b;
+  box-sizing:border-box
+}
+.mv-loot-camera-dialog-body>p,
+.mv-loot-camera-dialog .mv-loot-camera-status{
+  margin:0;font-size:12px;line-height:1.5;color:#b9e5f1
+}
+.mv-loot-camera-dialog .mv-loot-camera-help{
+  color:#ffd5b1;font-size:12px;line-height:1.5
+}
+.mv-loot-camera-dialog .mv-loot-camera-close{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  min-height:42px;padding:9px 16px;border-radius:8px;
+  border:1px solid #5897ac;background:#12506a;color:#d5f5ff;
+  cursor:pointer;font-weight:700
+}
+@media(max-width:600px){
+ .mv-loot-camera-dialog{width:calc(100vw - 20px);max-height:calc(100dvh - 20px)}
+ .mv-loot-camera-dialog .mv-loot-camera video{
+   height:min(60dvh,510px);max-height:min(60dvh,510px);
+   min-height:min(260px,44dvh)
+ }
+}
