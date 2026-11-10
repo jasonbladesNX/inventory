@@ -14,7 +14,7 @@ const contracts=[
   [/onEquip\(selectedItem.item_id,slot\)/,'modal equip uses existing secured callback'],
   [/void requestUnequip\(row\)/,'equipped slot unequip uses dependency preview'],
   [/aria-label=\{`View details for/,'item icon opens details'],
-  [/isContainer&&<button/,'containers still offer View contents'],
+  [/storage\[selectedItem.item_id\]\?\.is_container&&<div className="mv-container-contents"/,'containers show contents inside item details'],
   [/Stored in \{storage\[item.item_id\].location_name\}/,'stored-in tag'],
   [/InventoryWorkbench/,'inventory workbench integration'],
   [/favoriteIds/,'saved favorites state'],
