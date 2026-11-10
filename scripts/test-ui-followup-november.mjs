@@ -23,7 +23,10 @@ has(card,/className="mv-item-title-line"/,'equipped status remains beside name')
 lacks(card,/mv-inventory-quick-action/,'no direct card equip or consumable buttons');
 lacks(card,/onEquip\(/,'equipping only through popup or equipment slot picker');
 has(card,/className=\{'nx-favorite-button'/,'favorite star remains in item card');
-has(card,/mv-browse-container/,'containers retain browse action');
+lacks(card,/mv-browse-container|View contents/,'container list does not show redundant browse action');
+has(char,/storage\[selectedItem.item_id\]\?\.is_container&&<div className="mv-container-contents"/,
+  'item popup contains container contents even without usage metrics');
+has(char,/containedItems.map\(item=>/,'contained entries appear inside popup');
 has(char,/onEquip\(selectedItem\.item_id,slot\)/,'item details now has Equip button callback');
 has(char,/onClick=\{\(\)=>\{const slot=detailEquipSlot;closeDetails\(\);onEquip/,'Equip action explicitly in details modal');
 has(char,/Use \/ Consume…/,'consumable Use action remains in details modal');
