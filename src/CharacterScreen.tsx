@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import type {SupabaseClient} from '@supabase/supabase-js';
-import {Backpack, CircleDot, Coins, Crown, FlaskConical, Footprints, Gem, Hand, HeartPulse, PackageOpen, ScrollText, Shield, ShieldCheck, Shirt, ShoppingBag, Sparkles, Star, Sword, Trash2, UserRound, WandSparkles, Wrench, X} from 'lucide-react';
+import {Backpack, CircleDot, Coins, Crown, FlaskConical, Footprints, Gem, Hand, HeartPulse, PackageOpen, ScrollText, Scale, Shield, ShieldCheck, Shirt, ShoppingBag, Sparkles, Star, Sword, Trash2, UserRound, WandSparkles, Wrench, X} from 'lucide-react';
 import {inventoryErrorMessage} from './inventoryErrors';
 import CombatStatusPanel from './CombatStatusPanel';
 import CharacterRestPanel from './CharacterRestPanel';
