@@ -24,8 +24,8 @@ const checks=[
   [/downloadCsv/,ui,'6.30 filtered CSV export'],
   [/csvCell/,ui,'spreadsheet formula injection avoidance'],
   [/renderItem\(item,setLocation\)/,ui,'container browse navigation'],
-  [/onEquip\(item.item_id,allowed\[0\]\)/,parent,'existing authorized equip'],
-  [/void requestUnequip\(equippedRow\)/,parent,'existing dependency safe unequip'],
+  [/onEquip\(selectedItem.item_id,slot\)/,parent,'modal uses authorized equip callback'],
+  [/void requestUnequip\(row\)/,parent,'existing dependency safe unequip'],
   [/create table if not exists app_private.character_item_favorites/,sql,'private favorites table'],
   [/revoke all on table app_private.character_item_favorites/,sql,'no direct client table access'],
   [/set search_path TO ''|SET search_path TO ''|set search_path=''/,sql,'privileged function controlled search path'],
@@ -57,7 +57,7 @@ try{
     renderItem:(row)=>React.createElement('span',null,row.display_name),
     onOpenDetails:()=>{}
   }));
-  for(const label of ['Search inventory','Item type','Where','NAME','VALUE','WEIGHT','Test Blade','Open inventory report']){
+  for(const label of ['Search inventory','Item type','ITEMS AND EQUIPMENT','Group Results','NAME','VALUE','WEIGHT','Test Blade','Open inventory report']){
     assert.ok(markup.includes(label),'missing workbench markup: '+label);
   }
 }finally{
