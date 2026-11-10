@@ -26,9 +26,9 @@ assert.match(quickReader,/m.user_id=\(select auth.uid\(\)\)/,'usable-item reader
 assert.match(quickReader,/app_private.item_can_auto_stack/,'equipment exclusion');
 assert.match(quickReader,/revoke all on function public.list_character_usable_items/,'anonymous reader revoked');
 assert.match(ui,/db.rpc\('list_character_usable_items'/,'eligible item reader wired');
-assert.match(ui,/Use one \$\{item\.display_name\}/,'normal consumable Use button remains');
-assert.match(ui,/Study \$\{item\.display_name\} to learn recipe/,'Recipe items offer specialized Learn action');
+assert.match(ui,/Use \/ Consume…/,'normal consumable Use action lives inside item popup');
+assert.match(ui,/Learn Recipe/,'recipe item popup retains specialized Learn action');
 assert.match(ui,/p_character:character,p_item:itemId,p_quantity:1/,'exactly one consumed');
-assert.match(ui,/usableItemIds.has\(item.item_id\)/,'card eligibility gate');
+assert.match(ui,/itemDetails\.can_consume/,'item details checks server-authorized consumability');
 assert.match(ui,/quickUseBusy!==null/,'double click protection');
 console.log('PASS consumable use access, quantities, history and UI contracts');
