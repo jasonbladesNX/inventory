@@ -946,15 +946,24 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     </div>,document.body
   );
   const inventoryWeightPanel=weightSummary&&<section className="mv-weight-summary" aria-label="Inventory weight overview">
-    <div className="mv-weight-summary-heading"><Backpack size={17} aria-hidden="true"/><strong>Inventory Weight</strong><span>Known weights only</span></div>
+    <div className="mv-weight-summary-heading"><Backpack size={17} aria-hidden="true"/><strong>Inventory Weight</strong>
+      <button type="button" className="mv-capacity-info-trigger" aria-label="Open carrying capacity details" aria-haspopup="dialog"
+        onClick={()=>setCapacityDetailsOpen(true)}><Scale size={17} aria-hidden="true"/></button>
+    </div>
     {canShowCarryCapacity&&<div className="mv-carry-capacity">
       <div className="mv-carry-capacity-heading"><strong>D&amp;D 5e Carrying Capacity</strong>{carryLimit!==null&&<span>{numberText(weightSummary.known_weight_lb,2)} / {numberText(carryLimit,2)} lb</span>}</div>
       {carryLimit!==null&&carryLimit>0&&<div className="mv-container-meter" role="progressbar" aria-label="Known weight against carrying capacity" aria-valuemin={0} aria-valuemax={carryLimit} aria-valuenow={Math.min(knownTotal,carryLimit)}>
         <span style={{width:`${carryPercent}%`}}/>
       </div>}
     </div>}
-    <details className="mv-carry-capacity-help">
-      <summary>Carrying capacity details</summary>
+    {capacityDetailsOpen&&createPortal(<div className="mv-modal-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)setCapacityDetailsOpen(false)}}>
+      <section role="dialog" aria-modal="true" aria-labelledby="mv-capacity-modal-title" className="mv-item-modal mv-capacity-dialog">
+        <div className="mv-modal-header">
+          <div className="mv-modal-heading"><Scale size={22} aria-hidden="true"/><h3 id="mv-capacity-modal-title">Carrying Capacity Details</h3></div>
+          <button type="button" ref={capacityCloseRef} className="mv-modal-close" aria-label="Close carrying capacity details"
+            onClick={()=>setCapacityDetailsOpen(false)}><X size={21}/></button>
+        </div>
+        <div className="mv-modal-body mv-carry-capacity-help">
       <div className="mv-weight-breakdown">
         <div><span>Total</span><strong>{numberText(weightSummary.known_weight_lb,2)} lb</strong></div>
         <div><span>Loose &amp; equipped</span><strong>{numberText(weightSummary.carried_weight_lb,2)} lb</strong></div>
@@ -966,7 +975,9 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       {!canShowCarryCapacity&&carryProfile&&<p className="mv-weight-note">This campaign's ruleset has no carrying-capacity formula configured yet.</p>}
       {Number(weightSummary.unknown_item_count)>0&&<p className="mv-weight-unknown"><PackageOpen size={15} aria-hidden="true"/> {weightSummary.unknown_item_count} {Number(weightSummary.unknown_item_count)===1?'item has':'items have'} no recorded weight. The actual total may be higher.</p>}
       <p className="mv-weight-note">Stored items count toward total carried weight while you carry their containers. Missing weights make the remaining-capacity estimate incomplete.</p>
-    </details>
+        </div>
+      </section>
+    </div>,document.body)}
   </section>;
   const walletOrder=(code:string)=>({PP:0,GP:1,EP:2,SP:3,CP:4}[code.toUpperCase()]??5);
   return <div className="multiverse">
