@@ -147,20 +147,19 @@ export default function InventoryWorkbench({characterName,items,categories,categ
   };
   return <div className="nx-inventory-workbench">
     <div className="nx-inventory-filters">
+      <div className="nx-inventory-search">
+        <div><Search size={17} aria-hidden="true"/><input id="nx-inventory-search" type="search"
+          aria-label="Search inventory" value={search} onChange={e=>setSearch(e.target.value)}
+          placeholder="Search here..."/></div>
+      </div>
       <label>Item type
         <select value={category} onChange={e=>setCategory(e.target.value)}>
           <option value="all">All item types ({items.length})</option>
           {availableCategories.map(c=><option key={c} value={c}>{categoryNames[c]??categoryLabels[c]??c} ({items.filter(item=>(categories[item.item_id]??'unknown')===c).length})</option>)}
         </select>
       </label>
-      <div className="nx-inventory-search">
-        <label htmlFor="nx-inventory-search">Search inventory</label>
-        <div><Search size={17} aria-hidden="true"/><input id="nx-inventory-search" type="search" value={search}
-          onChange={e=>setSearch(e.target.value)} placeholder="Item name…"/></div>
-      </div>
     </div>
     <div className="nx-inventory-toolbar">
-      <span>{matches.length} of {items.length} item entries shown</span>
       {location!=='all'&&<button type="button" onClick={()=>setLocation('all')}>All locations</button>}
       <button type="button" onClick={clear}><X size={15}/> Reset filters</button>
       <button type="button" className={'nx-favorites-only'+(favoritesOnly?' is-active':'')}
