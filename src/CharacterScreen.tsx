@@ -1290,8 +1290,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
                 </div>}
               </div>}
             {!loading&&!equippedByItem.has(selectedItem.item_id)&&storage[selectedItem.item_id]&&!storage[selectedItem.item_id].is_container&&
-              ['gear','consumable','ammunition','material','component','misc','supplies'].includes(itemCategories[selectedItem.item_id]??'')&&
-              Number(selectedItem.quantity)>1&&<div className="mv-modal-action-field">
+              inventorySortMetadata[selectedItem.item_id]?.stackable&&Number(selectedItem.quantity)>1&&<div className="mv-modal-action-field">
                 <button type="button" className="mv-modal-action-button" disabled={busy||splitBusy}
                   onClick={()=>{setSplitItemId(selectedItem.item_id);setSplitQuantity('1');setSplitError('')}}>Split stack…</button>
                 {splitItemId===selectedItem.item_id&&<div className="mv-stack-split-confirm">
@@ -1308,6 +1307,28 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
                   </div>
                 </div>}
               </div>}
+            {!loading&&!equippedByItem.has(selectedItem.item_id)&&mergeCandidates.length>0&&<div className="mv-modal-action-field">
+              <button type="button" className="mv-modal-action-button" disabled={busy||mergeBusy}
+                onClick={()=>{setMergeTarget(mergeCandidates[0]?.item_id??'');setMergeQuantity(String(selectedItem.quantity));setMergeError('')}}>Combine stacks…</button>
+              {mergeTarget&&<div className="mv-stack-split-confirm" role="group" aria-label="Combine matching item stacks">
+                <label htmlFor="mv-merge-target">Combine into</label>
+                <select id="mv-merge-target" value={mergeTarget} disabled={mergeBusy} onChange={event=>setMergeTarget(event.target.value)}>
+                  {mergeCandidates.map(candidate=><option key={candidate.item_id} value={candidate.item_id}>
+                    {candidate.display_name} · Qty {numberText(candidate.quantity)}
+                  </option>)}
+                </select>
+                <label htmlFor="mv-merge-quantity">Quantity to combine</label>
+                <input id="mv-merge-quantity" type="number" min="1" max={Number(selectedItem.quantity)} step="1"
+                  value={mergeQuantity} disabled={mergeBusy} onChange={event=>setMergeQuantity(event.target.value)}/>
+                <p>Only matching items in the same storage location can be merged. The server checks all item properties before combining.</p>
+                {mergeError&&<p className="mv-storage-error" role="alert">{mergeError}</p>}
+                <div className="mv-trash-confirm-actions">
+                  <button type="button" disabled={mergeBusy} onClick={()=>{setMergeTarget('');setMergeError('')}}>Cancel</button>
+                  <button type="button" disabled={busy||mergeBusy||!Number.isSafeInteger(Number(mergeQuantity))||Number(mergeQuantity)<1||Number(mergeQuantity)>Number(selectedItem.quantity)}
+                    onClick={()=>void mergeSelectedStack()}>{mergeBusy?'Combining…':'Confirm combine'}</button>
+                </div>
+              </div>}
+            </div>}
             {!loading&&!equippedByItem.has(selectedItem.item_id)&&storage[selectedItem.item_id]&&!storage[selectedItem.item_id].is_container&&<>
               {storage[selectedItem.item_id].container_item_id&&
                 <button type="button" className="mv-modal-action-button" disabled={busy} onClick={()=>chooseStorageMove(selectedItem.item_id,null)}>Take out</button>}
