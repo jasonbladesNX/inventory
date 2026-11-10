@@ -679,7 +679,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     }catch(e){setQuickUseError(inventoryErrorMessage(e))}
     finally{setQuickUseBusy(null)}
   };
-  const renderInventoryCard=(item:InventoryItem,onBrowseContainer:(id:string)=>void)=>{
+  const renderInventoryCard=(item:InventoryItem)=>{
     const equippedRow=equippedByItem.get(item.item_id);
     const storedIn=storage[item.item_id]?.container_item_id;
     const isContainer=Boolean(storage[item.item_id]?.is_container);
@@ -717,8 +717,6 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         disabled={busy||favoriteBusy!==null} onClick={()=>{void toggleFavorite(item.item_id)}}>
         <Star size={19} fill={favoriteIds.has(item.item_id)?'currentColor':'none'} aria-hidden="true"/>
       </button>
-      {isContainer&&<button type="button" className="mv-browse-container" onClick={()=>onBrowseContainer(item.item_id)}
-        aria-label={`View contents of ${item.display_name}`}>View contents</button>}
     </article>;
   };
   const canShowCarryCapacity=carryProfile?.ruleset_code==='dnd5e'&&carryProfile.capacity_mode==='weight';
