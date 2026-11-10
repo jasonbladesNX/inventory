@@ -31,3 +31,10 @@
 .nx-qr-loot-currency-list>p{margin:0;font-size:12px;color:#a8cbd7}
 .nx-qr-loot-currency-list>div{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px;border:1px solid #275b6e;border-radius:7px;font-size:12px;color:#cce7ef}
 .nx-qr-loot-currency-list button{padding:7px 10px;background:#174257;color:#e2f7fa;border:1px solid #547f94;border-radius:7px;cursor:pointer}
+
+/* QR claim camera is started by the user-initiated Claim Loot action. */
+.mv-loot-claim-form>.mv-loot-camera-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;background:#12516b;border-color:#53bbd0}
+.mv-loot-camera{display:grid;gap:8px;min-width:0}
+.mv-loot-camera video{display:block;width:100%;min-height:180px;max-height:280px;object-fit:cover;border:1px solid #4aa7c4;border-radius:9px;background:#010d14}
+.mv-loot-camera button{display:inline-flex;align-items:center;gap:6px;justify-content:center}
+.mv-loot-claim-form .mv-loot-camera-help{color:#ffcfab;font-size:11px}
