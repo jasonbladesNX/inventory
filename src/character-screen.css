@@ -668,3 +668,37 @@
 .mv-capacity-dialog .mv-carry-capacity-help{margin:0;padding:17px;border:0;background:transparent}
 .mv-capacity-dialog .mv-carry-capacity-help p{font-size:12px;line-height:1.5}
 .mv-capacity-dialog .mv-weight-breakdown{margin:0 0 12px}
+
+
+/* Item cards: only the details icon and favorite star remain as card actions. */
+.nx-workbench-row .mv-inventory-item{
+  display:grid;grid-template-columns:48px minmax(0,1fr) 44px;
+  align-items:center;gap:7px 10px;padding:10px 12px;min-width:0
+}
+.nx-workbench-row .mv-item-icon-button{grid-column:1;grid-row:1;align-self:center}
+.nx-workbench-row .mv-item-info{
+  grid-column:2;grid-row:1;min-width:0;align-self:center;
+  flex-basis:auto!important
+}
+.mv-item-title-line{display:flex;align-items:center;gap:5px 9px;flex-wrap:wrap;min-width:0}
+.mv-item-title-line>strong{min-width:0;overflow-wrap:anywhere}
+.mv-item-title-line .mv-equipped-indicator{
+  display:inline-flex;align-items:center;gap:4px;margin:0;max-width:100%;
+  padding:3px 7px;white-space:normal;line-height:1.3
+}
+.nx-workbench-row .nx-favorite-button{
+  grid-column:3;grid-row:1;align-self:center;justify-self:end;
+  margin:0!important;width:40px;height:40px
+}
+.nx-workbench-row .mv-browse-container{
+  grid-column:2 / 4;grid-row:2;justify-self:start;
+  margin:0;min-height:38px
+}
+@media(max-width:450px){
+  .nx-workbench-row .mv-inventory-item{
+    grid-template-columns:39px minmax(0,1fr) 38px;gap:7px;padding:9px 8px
+  }
+  .nx-workbench-row .mv-item-icon-button{width:39px;min-width:39px}
+  .nx-workbench-row .nx-favorite-button{width:38px;height:39px}
+  .mv-item-title-line .mv-equipped-indicator{font-size:10px}
+}
