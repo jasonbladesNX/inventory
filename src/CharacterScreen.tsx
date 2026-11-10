@@ -1,9 +1,8 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import type {SupabaseClient} from '@supabase/supabase-js';
-import {Backpack, CircleDot, Coins, Crown, FlaskConical, Footprints, Gem, Hand, HeartPulse, PackageOpen, ScrollText, Shield, ShieldCheck, Shirt, ShoppingBag, Sparkles, Sword, Trash2, UserRound, WandSparkles, Wrench, X} from 'lucide-react';
+import {Backpack, CircleDot, Coins, Crown, FlaskConical, Footprints, Gem, Hand, HeartPulse, PackageOpen, ScrollText, Shield, ShieldCheck, Shirt, ShoppingBag, Sparkles, Star, Sword, Trash2, UserRound, WandSparkles, Wrench, X} from 'lucide-react';
 import {inventoryErrorMessage} from './inventoryErrors';
-import LoadoutHealthPanel from './LoadoutHealthPanel';
 import CombatStatusPanel from './CombatStatusPanel';
 import CharacterRestPanel from './CharacterRestPanel';
 import CharacterCurrencyPanel from './CharacterCurrencyPanel';
@@ -11,13 +10,12 @@ import CampaignShop from './CampaignShop';
 import ClaimLootPanel from './ClaimLootPanel';
 import CharacterCraftingPanel from './CharacterCraftingPanel';
 import InventoryWorkbench,{type WorkbenchIndicator} from './InventoryWorkbench';
-import StackManagement from './StackManagement';
 import './character-screen.css';
 
 export type InventoryTab = 'character' | 'inventory' | 'shop' | 'craft';
 type Slot = {id:string; label:string; code?:string};
 type Effect = {attribute_code:string; total_bonus:number|string};
-type Equipped = {id:string; itemId:string; slot:string; name:string};
+type Equipped = {id:string; itemId:string; slotId:string; slot:string; name:string};
 type Money = {currency_id:string; code:string; name:string; available:number|string; precision_digits:number};
 type InventoryItem = {item_id:string; display_name:string; quantity:number|string; eligible:boolean};
 type StorageEntry = {item_id:string;container_item_id:string|null;is_container:boolean;location_name:string};
@@ -128,9 +126,15 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const [storage,setStorage]=useState<Record<string,StorageEntry>>({});
   const [inventoryLocation,setInventoryLocation]=useState<string>('all');
   const [inventorySlotFilter,setInventorySlotFilter]=useState('all');
-  const [loadoutOpen,setLoadoutOpen]=useState(false);
-  const loadoutTriggerRef=useRef<HTMLButtonElement>(null);
-  const loadoutCloseRef=useRef<HTMLButtonElement>(null);
+  const [equipSlotPicker,setEquipSlotPicker]=useState<string|null>(null);
+  const [equipSlotError,setEquipSlotError]=useState('');
+  const equipPickerCloseRef=useRef<HTMLButtonElement>(null);
+  const [capacityDetailsOpen,setCapacityDetailsOpen]=useState(false);
+  const capacityCloseRef=useRef<HTMLButtonElement>(null);
+  const [mergeTarget,setMergeTarget]=useState('');
+  const [mergeQuantity,setMergeQuantity]=useState('1');
+  const [mergeBusy,setMergeBusy]=useState(false);
+  const [mergeError,setMergeError]=useState('');
   const [containerUsage,setContainerUsage]=useState<Record<string,ContainerUsage>>({});
   const [weightSummary,setWeightSummary]=useState<WeightSummary|null>(null);
   const [carryProfile,setCarryProfile]=useState<CarryProfile|null>(null);
@@ -278,6 +282,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         setEquipped((assignments.data||[]).map(row=>({
           id:row.assignment_id,
           itemId:row.item_id,
+          slotId:row.slot_id,
           slot:slotLookup.get(row.slot_id)||'Equipment',
           name:row.item_name,
         })));
@@ -396,26 +401,21 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
 
   useEffect(()=>{setStorageActionError('')},[expandedItem,inventoryVersion]);
   useEffect(()=>{setInventoryLocation('all')},[character,campaign]);
-  useEffect(()=>{setInventorySlotFilter('all');setLoadoutOpen(false)},[character,campaign]);
+  useEffect(()=>{setInventorySlotFilter('all');setEquipSlotPicker(null);setCapacityDetailsOpen(false)},[character,campaign]);
   useEffect(()=>{
-    if(!loadoutOpen)return;
-    const frame=window.requestAnimationFrame(()=>loadoutCloseRef.current?.focus());
-    const onKey=(event:KeyboardEvent)=>{
-      if(event.key==='Escape'){
-        event.preventDefault();setLoadoutOpen(false);loadoutTriggerRef.current?.focus();
-      }
-      if(event.key==='Tab'){
-        const modal=loadoutCloseRef.current?.closest('[role="dialog"]');
-        const controls=modal?.querySelectorAll<HTMLElement>('button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled)');
-        if(!controls?.length)return;
-        const first=controls[0],last=controls[controls.length-1];
-        if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}
-        else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}
-      }
-    };
+    if(!equipSlotPicker)return;
+    equipPickerCloseRef.current?.focus();
+    const onKey=(event:KeyboardEvent)=>{if(event.key==='Escape'){event.preventDefault();setEquipSlotPicker(null)}};
     document.addEventListener('keydown',onKey);
-    return()=>{window.cancelAnimationFrame(frame);document.removeEventListener('keydown',onKey)};
-  },[loadoutOpen]);
+    return()=>document.removeEventListener('keydown',onKey);
+  },[equipSlotPicker]);
+  useEffect(()=>{
+    if(!capacityDetailsOpen)return;
+    capacityCloseRef.current?.focus();
+    const onKey=(event:KeyboardEvent)=>{if(event.key==='Escape'){event.preventDefault();setCapacityDetailsOpen(false)}};
+    document.addEventListener('keydown',onKey);
+    return()=>document.removeEventListener('keydown',onKey);
+  },[capacityDetailsOpen]);
   useEffect(()=>{setAttributeEditorOpen(false)},[character,campaign]);
   useEffect(()=>{
     if(!attributeEditorOpen)return;
@@ -486,7 +486,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     finally{setStorageMoveBusy(false)}
   };
   const closeDetails=()=>{
-    setSplitItemId(null);setSplitError('');setSplitQuantity('1');
+    setSplitItemId(null);setSplitError('');setSplitQuantity('1');setMergeTarget('');setMergeError('');setMergeQuantity('1');
     setTrashItemId(null);setTrashError('');setTrashQuantity('1');
     setUseItemId(null);setUseQuantity('1');setUseError('');
     setPendingStorageMove(null);setStorageActionError('');setStorageMoveQuantity('1');
@@ -494,7 +494,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     previousFocusRef.current?.focus();
   };
   const openDetails=(itemId:string,event:React.MouseEvent<HTMLButtonElement>)=>{
-    setSplitItemId(null);setSplitError('');setSplitQuantity('1');
+    setSplitItemId(null);setSplitError('');setSplitQuantity('1');setMergeTarget('');setMergeError('');setMergeQuantity('1');
     setTrashItemId(null);setTrashError('');setTrashQuantity('1');
     setUseItemId(null);setUseQuantity('1');setUseError('');
     setPendingStorageMove(null);setStorageActionError('');setStorageMoveQuantity('1');
@@ -689,7 +689,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         aria-label={(favoriteIds.has(item.item_id)?'Remove favorite ':'Save favorite ')+item.display_name}
         aria-pressed={favoriteIds.has(item.item_id)} title={favoriteIds.has(item.item_id)?'Remove favorite':'Add to favorites'}
         disabled={busy||favoriteBusy!==null} onClick={()=>{void toggleFavorite(item.item_id)}}>
-        <span aria-hidden="true">{favoriteIds.has(item.item_id)?'★':'☆'}</span>
+        <Star size={19} fill={favoriteIds.has(item.item_id)?'currentColor':'none'} aria-hidden="true"/>
       </button>
       {(learnableRecipeItemIds.has(item.item_id)||(usableItemIds.has(item.item_id)&&itemCategories[item.item_id]!=='recipe'))&&!equippedRow&&<button type="button" className="mv-inventory-quick-action nx-inventory-use-button"
         disabled={busy||loading||quickUseBusy!==null}
@@ -966,18 +966,19 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
   const walletOrder=(code:string)=>({PP:0,GP:1,EP:2,SP:3,CP:4}[code.toUpperCase()]??5);
   return <div className="multiverse">
     <div className="mv-hero">
-      <div className="mv-eyebrow">NEXUS MULTIVERSE</div>
       <div className="mv-campaign">{campaignName}</div>
       <h2>{characterName}</h2>
       <div className="mv-ornament" aria-hidden="true">✦</div>
     </div>
     {tab==='character'&&<div className="mv-panels">
       {useSuccess&&<p className="mv-use-success" role="status">{useSuccess}</p>}
+      <div className="mv-character-action-row">
       <CombatStatusPanel db={db} character={character} inventoryVersion={inventoryVersion}
         busy={busy||loading} hpCurrent={hitPoints?.configured?(hitPoints.current??null):null}
         tempOpen={tempHpOpen} onCloseTemp={()=>setTempHpOpen(false)}
         onChanged={onInventoryChanged} onCombatLoaded={state=>{setTempHpValue(state.temporary_hp);setActiveTimedEffects(state.effects.filter(effect=>effect.kind==='bonus').map(effect=>({code:effect.code,value:Number(effect.value??0),unit:effect.unit,remaining:effect.remaining,source:effect.source})))}}/>
       <CharacterRestPanel db={db} character={character} inventoryVersion={inventoryVersion} busy={busy||loading} onChanged={onInventoryChanged}/>
+      </div>
       {hitPointPanel}
       {attributePanel}
       {attributeDetailsModal}
@@ -1083,9 +1084,6 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
         {slots.length===0&&<p className="mv-empty">No equipment slots have been configured for this campaign yet.</p>}
       </section>
       {quickUseError&&<p className="mv-storage-error" role="alert">Unable to use item: {quickUseError}</p>}
-      <StackManagement db={db} character={character} inventoryVersion={inventoryVersion} items={items} storage={storage} categories={itemCategories}
-        equippedIds={new Set(equipped.map(row=>row.itemId))} busy={busy||loading} onChanged={onInventoryChanged}/>
-      <p className="mv-inventory-hint">Trading and connection diagnostics remain available below the inventory panel during testing.</p>
     </div>}
     {tab==='shop'&&<CampaignShop db={db} campaign={campaign} character={character} inventoryVersion={inventoryVersion} busy={busy||loading} onChanged={onInventoryChanged}/>}
     {tab==='craft'&&<CharacterCraftingPanel db={db} campaign={campaign} character={character} inventoryVersion={inventoryVersion} busy={busy||loading} onChanged={onInventoryChanged}/>}
