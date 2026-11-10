@@ -8,8 +8,8 @@ type Item={item_id:string;display_name:string;quantity:number|string;eligible:bo
 type Storage={item_id:string;container_item_id:string|null;is_container:boolean;location_name:string};
 type Activity={event_id:string;action:string;item_name:string;quantity:number|string|null;occurred_at:string;description:string};
 type Action='split'|'move_quantity'|'discard';
-type Props={db:SupabaseClient;character:string;inventoryVersion:number;items:Item[];storage:Record<string,Storage>;categories:Record<string,string>;equippedIds:Set<string>;busy:boolean;onChanged:()=>Promise<void>};
-export default function StackManagement({db,character,inventoryVersion,items,storage,categories,equippedIds,busy,onChanged}:Props){
+type Props={db:SupabaseClient;character:string;inventoryVersion:number;items:Item[];storage:Record<string,Storage>;categories:Record<string,string>;equippedIds:Set<string>;busy:boolean;onChanged:()=>Promise<void>;historyOnly?:boolean};
+export default function StackManagement({db,character,inventoryVersion,items,storage,categories,equippedIds,busy,onChanged,historyOnly=false}:Props){
  const [itemId,setItemId]=useState('');
  const [action,setAction]=useState<Action>('split');
  const [quantity,setQuantity]=useState('1');
@@ -67,7 +67,7 @@ export default function StackManagement({db,character,inventoryVersion,items,sto
   finally{setWorking(false)}
  }
  return <section className="nx-stack-panel" aria-labelledby="nx-stack-heading">
-  <details>
+  {!historyOnly&&<details>
    <summary id="nx-stack-heading"><Layers2 size={18}/> Item quantities & storage</summary>
    <div className="nx-stack-controls">
     <label>Item
@@ -105,7 +105,7 @@ export default function StackManagement({db,character,inventoryVersion,items,sto
       {working?'Working…':action==='discard'?'Confirm discard':action==='split'?'Split stack':'Move quantity'}
     </button>
    </div>
-  </details>
+  </details>}
   <details className="nx-stack-history">
    <summary><History size={18}/> Inventory activity {historyLoading?'(loading…)':`(${history.length})`}</summary>
    {historyError?<p className="nx-stack-error" role="alert">Unable to load inventory activity: {historyError}</p>:
