@@ -13,14 +13,14 @@ const css=readFileSync('src/inventory-workbench.css','utf8');
 const sql=readFileSync('docs/sql/milestones-6-21-to-6-30-inventory-workbench.sql','utf8');
 const checks=[
   [/type="search"/,ui,'6.21 name search'],
-  [/name_asc/,ui,'6.22 sorting'],
+  [/sortField/,ui,'reversible NAME/VALUE/WEIGHT sorting'],
   [/categoryLabels/,ui,'6.23 category counts'],
   [/set_my_character_item_favorite/,parent,'6.24 saved favorites'],
-  [/status==='favorites'/,ui,'6.25 favorites-only filter'],
+  [/favoriteIds/,ui,'saved favorites used in report and export'],
   [/list_character_inventory_indicators/,parent,'6.26 authorized condition and weight'],
   [/nx-card-container-usage/,parent,'6.27 inline container fullness indicators'],
   [/nx-inventory-inline-meta/,parent,'compact horizontal item status and quantity'],
-  [/nx-inventory-top-controls/,ui,'compact search and grouping'],
+  [/nx-inventory-filters/,ui,'compact search and item type filter row'],
   [/downloadCsv/,ui,'6.30 filtered CSV export'],
   [/csvCell/,ui,'spreadsheet formula injection avoidance'],
   [/renderItem\(item,setLocation\)/,ui,'container browse navigation'],
@@ -52,11 +52,12 @@ try{
   const markup=renderToStaticMarkup(React.createElement(mod.default,{
     characterName:'Test Barbarian',items:[item],categories:{a:'weapon'},storage:{},usage:{},
     indicators:{a:{item_id:'a',condition_code:'normal',identified:true,unit_weight_lb:2}},
+    sortMetadata:{a:{unit_value:'2 GP',stackable:false,definition_id:'d'}},
     equippedIds:new Set(),favoriteIds:new Set(),busy:false,
     renderItem:(row)=>React.createElement('span',null,row.display_name),
     onOpenDetails:()=>{}
   }));
-  for(const label of ['Search inventory','Item type','Where','Show','Sort','Test Blade','Report']){
+  for(const label of ['Search inventory','Item type','Where','NAME','VALUE','WEIGHT','Test Blade','Open inventory report']){
     assert.ok(markup.includes(label),'missing workbench markup: '+label);
   }
 }finally{
