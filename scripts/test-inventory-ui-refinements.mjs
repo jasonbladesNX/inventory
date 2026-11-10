@@ -10,12 +10,11 @@ const contracts=[
   [/mv-slot-equip-button/,'equip action beside every configured slot'],
   [/equipSlotPicker&&createPortal/,'equip slot picker is modal'],
   [/preview_character_unequip_dependencies/,'dependency-aware unequip retained'],
-  [/mv-inventory-quick-action/,'direct inventory equip action'],
-  [/void requestUnequip\(equippedRow\)/,'quick unequip uses dependency preview'],
-  [/allowed.length===1/,'single eligible slot shortcut'],
-  [/onEquip\(item.item_id,allowed\[0\]\)/,'authorized equip callback'],
-  [/openDetails\(item.item_id,event\)/,'blocked and multiple-slot item details'],
-  [/isContainer\?/,'containers kept to view contents'],
+  [/className="mv-modal-action-button" disabled=\{busy\|\|loading\|\|!detailEquipSlot/,'Equip button inside item popup'],
+  [/onEquip\(selectedItem.item_id,slot\)/,'modal equip uses existing secured callback'],
+  [/void requestUnequip\(row\)/,'equipped slot unequip uses dependency preview'],
+  [/aria-label=\{`View details for/,'item icon opens details'],
+  [/isContainer&&<button/,'containers still offer View contents'],
   [/Stored in \{storage\[item.item_id\].location_name\}/,'stored-in tag'],
   [/InventoryWorkbench/,'inventory workbench integration'],
   [/favoriteIds/,'saved favorites state'],
@@ -27,10 +26,10 @@ for(const [pattern,label] of contracts) assert.match(ui,pattern,String(label));
 assert.match(css,/\.mv-slot-picker-body/);
 assert.match(css,/\.mv-stored-tag/);
 assert.match(workbench,/Item type/);
-assert.match(workbench,/Where/);
+assert.doesNotMatch(workbench,/<label>Where/,'Where dropdown removed');
 assert.match(workbench,/setLocation/);
 assert.doesNotMatch(workbench,/<label>Show/,'Show filter removed as requested');
-assert.match(css,/\.mv-inventory-quick-action/);
+assert.match(css,/\.mv-item-title-line/,'equipped state beside item name');
 assert.doesNotMatch(ui,/window\.prompt\(/);
 // Attribute presentation is uniform even when equipment changes an effective score.
 assert.match(ui,/className="mv-attribute-summary-item mv-attribute-summary-button"/,'uniform clickable attribute-card classes');
@@ -46,4 +45,4 @@ assert.doesNotMatch(weightPanel,/<details className="mv-carry-capacity-help">/);
 assert.equal((weightPanel.match(/className="mv-weight-breakdown"/g)||[]).length,1,'weight breakdown is only rendered once');
 for(const label of ['Total','Loose &amp; equipped','Inside containers'])assert.ok(weightPanel.includes(label),'weight label retained: '+label);
 assert.match(weightPanel,/Known weight against carrying capacity/,'capacity progress bar retained');
-console.log('PASS 7 requested UI changes, secure equip and unequip handoff, loadout modal and storage filtering');
+console.log('PASS inventory cards, modal actions, equip dependency safeguards and capacity popup');
