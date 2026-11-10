@@ -591,3 +591,80 @@
 .mv-attribute-effect-row{display:grid;gap:5px;padding:10px 12px;border:1px solid #2e6175;border-radius:8px;background:#0c3042}
 .mv-attribute-effect-row strong{font-size:12px;color:#cff0f7}
 .mv-attribute-effect-row span{font-size:11px;line-height:1.5;color:#a2cedd;overflow-wrap:anywhere}
+
+
+/* 2026 GM/player UI review: compact character actions on one equal-width row. */
+.mv-hero{padding-top:19px}
+.mv-character-action-row{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;min-width:0}
+.mv-character-action-row>.mv-combat-toolbar,.mv-character-action-row>.mv-rest-toolbar{display:contents}
+.mv-character-action-row>.mv-combat-toolbar>button,.mv-character-action-row>.mv-rest-toolbar>button{
+  flex:1 1 0;min-width:0;width:0;min-height:42px;padding:8px 6px;
+  justify-content:center;text-align:center;font-size:12px;line-height:1.3;white-space:normal}
+.mv-character-action-row>.mv-combat-toolbar>button.mv-death-open{flex:1 1 100%;width:100%}
+.mv-character-action-row>.mv-combat-active,.mv-character-action-row>.mv-combat-temp-indicator,
+.mv-character-action-row>.mv-rest-feedback,.mv-character-action-row>.mv-storage-error{flex:0 0 100%;min-width:0}
+@media(max-width:450px){
+ .mv-character-action-row{gap:5px}
+ .mv-character-action-row>.mv-combat-toolbar>button,.mv-character-action-row>.mv-rest-toolbar>button{font-size:10px;min-height:43px;padding:6px 3px;gap:3px}
+ .mv-character-action-row svg{width:13px;height:13px;flex:none}
+}
+/* Hit Points: title, current/maximum and meter in a row. Action stack on right. */
+.mv-hp-main{display:grid;grid-template-columns:minmax(0,1fr) 110px;align-items:start;gap:10px;min-width:0}
+.mv-hp-main-content{display:grid;gap:10px;min-width:0}
+.mv-hp-inline{display:grid;grid-template-columns:auto auto minmax(50px,1fr);align-items:center;gap:9px;min-width:0;padding:4px 0 12px;border-bottom:1px solid #316c81}
+.mv-hp-panel .mv-hp-inline h3{margin:0;padding:0;border:0;font-size:clamp(14px,2.2vw,20px);white-space:nowrap}
+.mv-hp-inline-count{color:#ebfbff;white-space:nowrap;font-size:clamp(15px,2.7vw,23px);font-weight:750;font-variant-numeric:tabular-nums}
+.mv-hp-inline .mv-container-meter{width:100%;max-width:none;min-width:0;height:9px;margin:0}
+.mv-hp-title-actions{justify-content:flex-start;flex-wrap:wrap;margin:0;padding-top:3px}
+.mv-hp-quick-adjust{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;width:110px;max-width:100%;margin:0;padding:0 0 0 9px;border-left:1px solid #32687e;box-sizing:border-box}
+.mv-hp-quick-adjust button{width:100%;min-height:36px;padding:6px 7px;font-size:11px}
+.mv-hp-quick-adjust input{width:100%;min-height:36px;box-sizing:border-box;text-align:center;padding:6px 5px}
+.mv-hp-adjust-label{display:block;min-width:0}
+.mv-visually-hidden{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;clip-path:inset(50%)}
+.mv-hp-feedback{font-size:11px}
+@media(max-width:640px){
+ .mv-hp-main{grid-template-columns:minmax(0,1fr) 91px;gap:7px}
+ .mv-hp-quick-adjust{width:91px;padding-left:6px}
+ .mv-hp-inline{grid-template-columns:auto auto;gap:5px 9px}
+ .mv-hp-inline .mv-container-meter{grid-column:1/-1}
+ .mv-hp-title-actions button{font-size:11px}
+}
+@media(max-width:390px){
+ .mv-hp-inline{grid-template-columns:minmax(0,1fr)}
+ .mv-hp-inline .mv-container-meter{grid-column:1}
+ .mv-hp-inline-count{font-size:18px}
+}
+/* Always display a row for every configured equipment slot. */
+.mv-equipment-row{display:grid;grid-template-columns:20px minmax(80px,.8fr) minmax(0,1.4fr) auto;gap:8px;align-items:center}
+.mv-equipment-row>span{overflow-wrap:anywhere}
+.mv-equipment-row>strong{overflow-wrap:anywhere}
+.mv-equipment-row>.mv-slot-equip-button{grid-column:4;grid-row:1;min-width:67px;min-height:38px;border:1px solid #4dbbd5;background:#0d4861;color:#ddfaff;border-radius:8px;font-weight:750;font-size:12px;padding:7px 10px;cursor:pointer}
+.mv-slot-equip-button:disabled{opacity:.5;cursor:not-allowed}
+.mv-slot-equip-button:hover:not(:disabled){background:#16647a}
+@media(max-width:500px){
+ .mv-equipment-row{grid-template-columns:20px minmax(0,1fr) auto;gap:5px 8px;padding:10px 0}
+ .mv-equipment-row>span{grid-column:2;grid-row:1}
+ .mv-equipment-row>strong{grid-column:2;grid-row:2}
+ .mv-equipment-row>.mv-slot-equip-button{grid-column:3;grid-row:1/span 2;align-self:center;min-width:63px}
+}
+.mv-slot-picker-dialog{width:min(100%,520px)}
+.mv-slot-picker-body{display:grid;gap:12px}
+.mv-slot-picker-body h4{margin:0;color:#beeafa;font-size:13px}
+.mv-slot-picker-current{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px;border:1px solid #386981;border-radius:9px;background:#092738;font-size:12px}
+.mv-slot-picker-current span{color:#a9d4e2}
+.mv-slot-picker-current strong{flex:1;color:#e5f9ff}
+.mv-slot-picker-current button{min-height:36px;padding:8px;border:1px solid #bd8571;border-radius:8px;background:#663f36;color:#ffe7dc;cursor:pointer}
+.mv-slot-picker-options{display:grid;gap:7px}
+.mv-slot-picker-options button{display:flex;align-items:center;gap:9px;text-align:left;min-height:48px;padding:10px 12px;border:1px solid #326a81;background:#0c3446;border-radius:8px;color:#dbf7ff;cursor:pointer}
+.mv-slot-picker-options button:hover:not(:disabled){background:#14546a;border-color:#7ee8ff}
+.mv-slot-picker-options button span{flex:1;min-width:0}
+.mv-slot-picker-options button strong{font-size:11px;color:#83f0d6}
+.mv-slot-picker-body .mv-small-note{font-size:11px;color:#a8cdda;line-height:1.5;margin:0}
+/* Carry details move to modal; the overview remains a single compact card. */
+.mv-weight-summary-heading{display:flex;align-items:center;gap:8px}
+.mv-capacity-info-trigger{margin-left:auto;min-width:37px;min-height:36px;display:inline-grid;place-items:center;border:1px solid #438ea4;border-radius:8px;background:#0d3d52;color:#b9ecf8;cursor:pointer}
+.mv-capacity-info-trigger:hover{background:#175871}
+.mv-capacity-dialog{width:min(100%,540px)}
+.mv-capacity-dialog .mv-carry-capacity-help{margin:0;padding:17px;border:0;background:transparent}
+.mv-capacity-dialog .mv-carry-capacity-help p{font-size:12px;line-height:1.5}
+.mv-capacity-dialog .mv-weight-breakdown{margin:0 0 12px}
