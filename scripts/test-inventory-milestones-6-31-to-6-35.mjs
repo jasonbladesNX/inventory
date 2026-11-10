@@ -20,7 +20,7 @@ const contracts=[
   [/printableSummary/, 'report generated from filtered authorized items'],
   [/renderItem\(item,setLocation\)/, 'existing view contents navigation'],
   [/downloadCsv/, 'CSV remains available inside report'],
-  [/nx-inventory-top-controls/, 'search and grouping share a row'],
+  [/nx-inventory-filters/, 'search and item type share a row'],
 ];
 for(const [regex,label] of contracts) assert.match(ui,regex,String(label));
 assert.match(css,/@media print/);
@@ -38,10 +38,11 @@ try{
     storage:{item1:{item_id:'item1',container_item_id:null,is_container:true,location_name:'Carried'}},
     usage:{item1:{container_item_id:'item1',used_weight_lb:0,capacity_weight_lb:6,item_count:0,unknown_weight_count:0}},
     indicators:{item1:{item_id:'item1',condition_code:'normal',identified:true,unit_weight_lb:1}},
+    sortMetadata:{item1:{unit_value:'1 GP',stackable:false,definition_id:'d'}},
     equippedIds:new Set(),favoriteIds:new Set(),busy:false,
     renderItem:entry=>React.createElement('span',null,entry.display_name)
   }));
-  for(const label of ['Pouch','Group results','Missing weight','Report','At least 2.00 lb']){
+  for(const label of ['Pouch','Group results','NAME','VALUE','WEIGHT','Open inventory report']){
     assert.ok(markup.includes(label),'missing visible workbench element: '+label);
   }
 }finally{await unlink(out).catch(()=>{})}
