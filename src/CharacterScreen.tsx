@@ -1233,17 +1233,18 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
               </>}
             </>:<p>Details are unavailable.</p>}
           </div>
-          {selectedUsage&&<div className="mv-container-contents">
+          {storage[selectedItem.item_id]?.is_container&&<div className="mv-container-contents"
+            aria-label={`Contents of ${selectedItem.display_name}`}>
             <h4><Backpack size={18} aria-hidden="true"/> Contents</h4>
-            <div className="mv-container-capacity" role="status">
+            {selectedUsage&&<div className="mv-container-capacity" role="status">
               <span>{numberText(selectedUsage.used_weight_lb,2)} / {selectedUsage.capacity_weight_lb===null?'?':numberText(selectedUsage.capacity_weight_lb,2)} lb used</span>
               <span>{selectedUsage.item_count} {Number(selectedUsage.item_count)===1?'item':'items'}</span>
-            </div>
-            {selectedUsage.capacity_weight_lb!==null&&Number(selectedUsage.capacity_weight_lb)>0&&
+            </div>}
+            {selectedUsage&&selectedUsage.capacity_weight_lb!==null&&Number(selectedUsage.capacity_weight_lb)>0&&
               <div className="mv-container-meter" role="progressbar" aria-label="Container weight capacity" aria-valuemin={0} aria-valuemax={Number(selectedUsage.capacity_weight_lb)} aria-valuenow={Math.min(Number(selectedUsage.used_weight_lb),Number(selectedUsage.capacity_weight_lb))}>
                 <span style={{width:`${Math.min(100,Math.max(0,100*Number(selectedUsage.used_weight_lb)/Number(selectedUsage.capacity_weight_lb)))}%`}}/>
               </div>}
-            {Number(selectedUsage.unknown_weight_count)>0&&<p className="mv-container-warning">Some stored items have unknown weights. Additional storage is restricted until their weights are configured.</p>}
+            {selectedUsage&&Number(selectedUsage.unknown_weight_count)>0&&<p className="mv-container-warning">Some stored items have unknown weights. Additional storage is restricted until their weights are configured.</p>}
             {containedItems.length===0?<p className="mv-container-empty">This container is empty.</p>:
               <div className="mv-container-contents-list">
                 {containedItems.map(item=><button key={item.item_id} className="mv-container-content-row" type="button" onClick={()=>setExpandedItem(item.item_id)}>
