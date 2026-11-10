@@ -289,7 +289,10 @@ function App(){
   return <div className={'nx-app'+(isPlay?' nx-app-playing':'')}>
     <header className="nx-app-header">
       <button type="button" className="nx-app-brand" onClick={()=>navigate('landing')} aria-label="Return to Nexus Multiverse landing page">NEXUS <span>MULTIVERSE</span></button>
-      {session&&<button type="button" className="nx-header-exit" onClick={()=>{void db?.auth.signOut();navigate('landing')}}>Sign out</button>}
+      <div className="nx-header-actions">
+        {isPlay&&<button type="button" className="nx-header-back" onClick={()=>navigate(entry==='gm'?'gm':'player')}><ChevronLeft size={17}/>{entry==='gm'?'GM Dashboard':'Player Portal'}</button>}
+        {session&&<button type="button" className="nx-header-exit" onClick={()=>{void db?.auth.signOut();navigate('landing')}}>Sign out</button>}
+      </div>
     </header>
     <main className="nx-page-content">
       {!ready?<section className="nx-page-card"><h1>Setup required</h1><p>Set the Supabase connection values for this deployment.</p></section>:
@@ -336,7 +339,7 @@ function App(){
         </div>
         <button type="button" className="nx-create-shortcut" onClick={()=>navigate('create')}><Plus size={18}/> Set Up New Campaign</button>
       </section>:
-      page==='player'?<section className="nx-page-card nx-select-page">
+      page==='player'?<section className="nx-page-card nx-select-page nx-player-portal">
         <button type="button" className="nx-back-link" onClick={()=>navigate('landing')}><ChevronLeft size={17}/> Landing</button>
         <div className="nx-page-icon"><UserRound/></div><h1>Player Portal</h1>
         <p>Choose one of your assigned characters to enter its campaign.</p>
@@ -573,10 +576,6 @@ function App(){
         </>}
       </section>:
       page==='play'&&campaign&&char?<div className="nx-play-page">
-        <div className="nx-play-heading">
-          <button type="button" className="nx-back-link" onClick={()=>navigate(entry==='gm'?'gm':'player')}><ChevronLeft size={17}/>{entry==='gm'?'GM Dashboard':'Player Portal'}</button>
-          <span>{displayName} · {current?.name||'Character'}</span>
-        </div>
         <CharacterScreen db={db!} campaign={campaign} campaignName={displayName} character={char}
           characterName={current?.name||'Character'} slots={slots} effects={effects} inventoryVersion={inventoryVersion}
           items={items} busy={busy}
