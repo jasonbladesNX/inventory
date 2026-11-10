@@ -1,5 +1,6 @@
 import React,{useEffect,useRef,useState} from 'react';
-import {PackageOpen,CheckCircle2,Camera,CameraOff} from 'lucide-react';
+import {createPortal} from 'react-dom';
+import {PackageOpen,CheckCircle2,Camera,CameraOff,X} from 'lucide-react';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {BrowserQRCodeReader} from '@zxing/browser';
 import {inventoryErrorMessage} from './inventoryErrors';
@@ -17,8 +18,11 @@ export default function ClaimLootPanel({db,character,busy,onChanged}:Props){
  const [working,setWorking]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [confirm,setConfirm]=useState(false);
  const [cameraActive,setCameraActive]=useState(false);
+ const [cameraModalOpen,setCameraModalOpen]=useState(false);
+ const [cameraStarting,setCameraStarting]=useState(false);
  const [cameraError,setCameraError]=useState('');
  const videoRef=useRef<HTMLVideoElement>(null);
+ const cameraCloseRef=useRef<HTMLButtonElement>(null);
  const streamRef=useRef<MediaStream|null>(null);
  const scannerControls=useRef<{stop:()=>void}|null>(null);
  const cameraRequest=useRef(0);
@@ -29,12 +33,15 @@ export default function ClaimLootPanel({db,character,busy,onChanged}:Props){
   streamRef.current=null;
   if(videoRef.current)videoRef.current.srcObject=null;
   setCameraActive(false);
+  setCameraStarting(false);
  };
+ const closeCamera=()=>{stopCamera();setCameraModalOpen(false)};
  const startCamera=async()=>{
   // getUserMedia is invoked directly from the user tap. Do not await a library
   // import first: iOS Safari requires the user-gesture camera permission flow.
-  setOpen(true);setCameraError('');setNotice('');
+  setOpen(true);setCameraModalOpen(true);setCameraStarting(true);setCameraError('');setNotice('');
   if(!navigator.mediaDevices?.getUserMedia){
+   setCameraStarting(false);
    setCameraError('Camera access requires HTTPS and a compatible browser. Use Safari or paste a claim link.');
    return;
   }
@@ -45,12 +52,16 @@ export default function ClaimLootPanel({db,character,busy,onChanged}:Props){
    });
    if(request!==cameraRequest.current){stream.getTracks().forEach(track=>track.stop());return}
    streamRef.current=stream;
+   setCameraStarting(false);
    setCameraActive(true);
   }catch(e){
-   if(request===cameraRequest.current)setCameraError('Unable to open the camera. Allow access in iPhone Settings → Safari → Camera, or paste a loot QR link. '+inventoryErrorMessage(e));
+   if(request===cameraRequest.current){
+    setCameraStarting(false);
+    setCameraError('Unable to open the camera. Allow access in your browser settings, or paste a loot QR link. '+inventoryErrorMessage(e));
+   }
   }
  };
- useEffect(()=>{stopCamera();setCameraError('')},[character]);
+ useEffect(()=>{stopCamera();setCameraModalOpen(false);setCameraError('')},[character]);
  useEffect(()=>()=>{
   cameraRequest.current++;
   scannerControls.current?.stop();
@@ -62,15 +73,13 @@ export default function ClaimLootPanel({db,character,busy,onChanged}:Props){
   const request=cameraRequest.current;
   const reader=new BrowserQRCodeReader();
   const video=videoRef.current;
-  // The claim panel can sit below the fold on an iPhone. Reveal the live preview.
-  window.requestAnimationFrame(()=>video.scrollIntoView({block:'center',behavior:'smooth'}));
   void reader.decodeFromStream(streamRef.current,video,(result,_err,controls)=>{
    if(!active||!result)return;
    const found=qrToken(result.getText());
    if(found){
     setToken(found);setConfirm(false);setCameraError('');
     setNotice('QR code scanned. Review the claim before confirming.');
-    controls.stop();stopCamera();
+    controls.stop();closeCamera();
    }else setCameraError('That QR is not a Nexus loot claim. Point the camera at the GM loot QR code.');
   }).then(controls=>{
    if(active&&request===cameraRequest.current)scannerControls.current=controls;
@@ -80,6 +89,25 @@ export default function ClaimLootPanel({db,character,busy,onChanged}:Props){
   });
   return()=>{active=false;scannerControls.current?.stop();scannerControls.current=null};
  },[cameraActive]);
+ useEffect(()=>{
+  if(!cameraModalOpen)return;
+  const frame=window.requestAnimationFrame(()=>cameraCloseRef.current?.focus());
+  const keydown=(event:KeyboardEvent)=>{
+   if(event.key==='Escape'){
+    event.preventDefault();
+    closeCamera();
+   }else if(event.key==='Tab'){
+    const dialog=cameraCloseRef.current?.closest('[role="dialog"]');
+    const buttons=dialog?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)');
+    if(!buttons?.length)return;
+    const first=buttons[0],last=buttons[buttons.length-1];
+    if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}
+    else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}
+   }
+  };
+  document.addEventListener('keydown',keydown);
+  return()=>{window.cancelAnimationFrame(frame);document.removeEventListener('keydown',keydown)};
+ },[cameraModalOpen]);
  useEffect(()=>{const t=initialToken();if(t){setToken(t);setOpen(true);setConfirm(false)}},[character]);
  const claim=async()=>{
   const raw=token.trim().toLowerCase();
@@ -103,18 +131,14 @@ export default function ClaimLootPanel({db,character,busy,onChanged}:Props){
  };
  return <div className="mv-loot-claim">
   <button type="button" className="mv-loot-claim-trigger" disabled={busy}
-   onClick={()=>{if(cameraActive){stopCamera()}else{setOpen(true);void startCamera()}}}>
+   onClick={()=>void startCamera()}>
    <PackageOpen size={24}/><strong>Claim Loot</strong><small>Enter or scan a GM loot QR</small>
   </button>
   {open&&<div className="mv-loot-claim-form">
    <p>Scan the GM's loot QR using your iPhone camera or paste its claim link. Loot is only awarded after you review and confirm.</p>
    <button type="button" className="mv-loot-camera-button" disabled={working||busy||cameraActive}
      onClick={()=>void startCamera()}><Camera size={17} aria-hidden="true"/> {cameraActive?'Camera scanning…':'Open Camera'}</button>
-   {cameraActive&&<div className="mv-loot-camera">
-     <video ref={videoRef} autoPlay playsInline muted aria-label="Live QR scanning camera preview"/>
-     <button type="button" onClick={stopCamera}><CameraOff size={16} aria-hidden="true"/> Close Camera</button>
-   </div>}
-   {cameraError&&<p className="mv-loot-camera-help" role="status">{cameraError}</p>}
+   {cameraError&&!cameraModalOpen&&<p className="mv-loot-camera-help" role="status">{cameraError}</p>}
    <label>Claim link or token<textarea rows={2} value={token} disabled={working} placeholder="Paste QR claim link or 64-character token" onChange={e=>paste(e.target.value)}/></label>
    {!confirm?<button type="button" disabled={busy||working||!token.trim()} onClick={()=>{setError('');setConfirm(true)}}>Review Loot Claim</button>:
     <div className="mv-loot-confirm">
@@ -126,5 +150,35 @@ export default function ClaimLootPanel({db,character,busy,onChanged}:Props){
    {notice&&<p role="status" className="mv-loot-success"><CheckCircle2 size={16}/>{notice}</p>}
   </div>}
   {!open&&notice&&<p role="status" className="mv-loot-success">{notice}</p>}
+  {cameraModalOpen&&createPortal(
+   <div className="mv-modal-backdrop mv-loot-camera-backdrop"
+     onMouseDown={event=>{if(event.currentTarget===event.target)closeCamera()}}>
+    <section role="dialog" aria-modal="true" aria-labelledby="mv-loot-camera-title"
+      aria-describedby="mv-loot-camera-guide" className="mv-item-modal mv-loot-camera-dialog">
+     <div className="mv-modal-header">
+      <div className="mv-modal-heading"><Camera size={23} aria-hidden="true"/><div>
+       <span className="mv-modal-eyebrow">Claim Loot</span>
+       <h3 id="mv-loot-camera-title">Scan Loot QR</h3>
+      </div></div>
+      <button ref={cameraCloseRef} type="button" className="mv-modal-close"
+        aria-label="Close loot camera" onClick={closeCamera}><X size={22}/></button>
+     </div>
+     <div className="mv-modal-body mv-loot-camera-dialog-body">
+      <div className="mv-loot-camera">
+       <video ref={videoRef} autoPlay playsInline muted aria-label="Live loot QR camera preview"/>
+       {cameraStarting&&<p className="mv-loot-camera-status" role="status">Opening camera… Allow camera access if prompted.</p>}
+       {!cameraStarting&&!cameraActive&&cameraError&&
+        <p className="mv-loot-camera-help" role="alert">{cameraError}</p>}
+      </div>
+      <p id="mv-loot-camera-guide">Center the GM's loot QR in the camera view. A valid scan will return you to the claim confirmation.</p>
+      {cameraError&&cameraActive&&<p className="mv-loot-camera-help" role="status">{cameraError}</p>}
+     </div>
+     <div className="mv-modal-footer">
+      <button type="button" className="mv-loot-camera-close" onClick={closeCamera}>
+       <CameraOff size={16} aria-hidden="true"/> Close Camera
+      </button>
+     </div>
+    </section>
+   </div>,document.body)}
  </div>;
 }
