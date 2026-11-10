@@ -18,8 +18,6 @@ const checks=[
   [/list_character_attributes\(p_character\)/,sql,'authorization'],
   [/revoke all on function public.list_character_loadout_audit/,sql,'restricted anonymous permissions'],
   [/revoke all on function public.list_character_equipment_dependency_map/,sql,'restricted dependency permissions'],
-  [/LoadoutHealthPanel/,char,'Character integration'],
-  [/onReviewRemoval=/,char,'existing guarded unequip action'],
   [/list_character_loadout_audit/,panel,'live audit'],
   [/list_character_equipment_dependency_map/,panel,'live dependencies'],
   [/Items needing attention/,panel,'health summary'],
@@ -38,6 +36,8 @@ const checks=[
 for(const [re,source,label] of checks){
   assert.match(source,re,String(label));
 }
+assert.doesNotMatch(char,/LoadoutHealthPanel|mv-loadout-launch/,'unused loadout button removed from character screen');
+assert.match(char,/preview_character_unequip_dependencies/,'dependency warnings still protect unequipping');
 assert.doesNotMatch(panel,/db\.from\('equipment_assignments'\)\.delete/,'UI must never delete assignments');
 assert.doesNotMatch(panel,/db\.rpc\('unequip_inventory_item'/,'UI uses existing verified unequip handler');
 
