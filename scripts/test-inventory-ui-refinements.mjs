@@ -20,7 +20,7 @@ const contracts=[
   [/InventoryWorkbench/,'inventory workbench integration'],
   [/favoriteIds/,'saved favorites state'],
   [/inventoryIndicators/,'authorized condition and weight feed'],
-  [/className="mv-capacity-dialog"/,'capacity breakdown appears in modal'],
+  [/className="mv-item-modal mv-capacity-dialog"/,'capacity breakdown appears in modal'],
   [/onClick=\{\(\)=>\{const row=equippedByItem.get\(selectedItem.item_id\)/,'detail Unequip uses dependency check']
 ];
 for(const [pattern,label] of contracts) assert.match(ui,pattern,String(label));
@@ -39,7 +39,7 @@ assert.doesNotMatch(css,/\.mv-attribute-summary-item\.has-equipment-bonus/,'no h
 assert.match(ui,/Equipment adjustment/,'equipment bonus information preserved in attribute popup');
 // Weight details are hidden until expanded, for D&D and non-D&D rulesets.
 const weightPanel=ui.slice(ui.indexOf('const inventoryWeightPanel='),ui.indexOf('const walletOrder='));
-const dialogStart=weightPanel.indexOf('className="mv-capacity-dialog"');
+const dialogStart=weightPanel.indexOf('className="mv-item-modal mv-capacity-dialog"');
 const breakdownStart=weightPanel.indexOf('<div className="mv-weight-breakdown">');
 assert.ok(dialogStart>=0&&breakdownStart>dialogStart,'weight breakdown is confined to capacity modal');
 assert.doesNotMatch(weightPanel,/<details className="mv-carry-capacity-help">/);
