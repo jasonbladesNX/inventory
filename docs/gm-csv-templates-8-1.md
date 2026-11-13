@@ -14,7 +14,7 @@ Templates are generated client-side by `src/gmCsvTemplateSpecs.ts` and downloade
 | --- | --- | --- |
 | `nexus-gm-catalog` | Create campaign-specific item definitions | 8.2 |
 | `nexus-gm-character-inventory` | Grant catalog items to existing characters | 8.2 |
-| `nexus-gm-shop-stock` | Set merchant listings, quantities and buyback prices | 8.3 |
+| `nexus-gm-shop-stock` | Set merchant listings, quantities and buyback prices | 8.3 (implemented) |
 | `nexus-gm-loot-contents` | Configure physical items and currency across QR loot containers | 8.4 |
 
 Every base name is available as `-blank.csv` and `-example.csv`. Example names such as "Example Trading Post" are **illustrative**; they are not automatically created as campaign records.
@@ -49,7 +49,7 @@ Not included in v1: complex use effects, nested JSON properties, icon/image atta
 - `currency_code` is an existing campaign denomination. Numeric prices must satisfy the denomination's precision.
 - `unit_price` and `buyback_price`: 0–1,000,000,000; `quantity`: integer 0–1,000,000.
 - `buys_from_players`: true or false.
-- Current listing identity is merchant + item definition + currency. A future preview must clearly state whether an import updates current stock or adjusts it incrementally.
+- Current listing identity is merchant + item definition + currency. The Milestone 8.3 import preview shows existing stock and prices, and the import REPLACES matching merchant/item/currency listing values, never increments them.
 
 ### 4. Treasure / QR loot contents
 
