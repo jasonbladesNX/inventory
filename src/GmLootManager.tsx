@@ -10,7 +10,7 @@ type LootItem={item_id:string;definition_id:string;name:string;quantity:number};
 type Definition={id:string;name:string;category:string};
 type Currency={id:string;code:string;name:string;precision_digits:number};
 type LootMoney={currency_id:string;code:string;name:string;amount:number|string;precision_digits:number};
-export default function GmLootManager({db,campaign}:{db:SupabaseClient;campaign:string}){
+export default function GmLootManager({db,campaign,refreshVersion=0}:{db:SupabaseClient;campaign:string;refreshVersion?:number}){
  const [containers,setContainers]=useState<Container[]>([]);
  const [catalog,setCatalog]=useState<Definition[]>([]);
  const [currencies,setCurrencies]=useState<Currency[]>([]),[lootMoney,setLootMoney]=useState<LootMoney[]>([]);
@@ -54,6 +54,32 @@ export default function GmLootManager({db,campaign}:{db:SupabaseClient;campaign:
   .catch(e=>{if(!cancelled)setError(inventoryErrorMessage(e))});
   return()=>{cancelled=true};
  },[db,source]);
+ useEffect(()=>{
+  if(refreshVersion===0)return;
+  let cancelled=false;
+  void Promise.all([
+    db.rpc('list_gm_qr_loot_containers',{p_campaign:campaign}),
+    db.rpc('list_campaign_shop_item_definitions',{p_campaign:campaign}),
+    db.rpc('list_campaign_currency_definitions',{p_campaign:campaign}),
+    ...(source?[
+      db.rpc('list_gm_qr_loot_items',{p_source:source}),
+      db.rpc('list_gm_qr_loot_currency',{p_source:source})
+    ]:[])
+  ]).then(([a,b,c,itemsResponse,currencyResponse])=>{
+    if(a.error)throw a.error;
+    if(b.error)throw b.error;
+    if(c.error)throw c.error;
+    if(itemsResponse?.error)throw itemsResponse.error;
+    if(currencyResponse?.error)throw currencyResponse.error;
+    if(!cancelled){
+      setContainers(a.data||[]);
+      setCatalog(b.data||[]);
+      setCurrencies(c.data||[]);
+      if(source){setItems(itemsResponse?.data||[]);setLootMoney(currencyResponse?.data||[])}
+    }
+  }).catch(e=>{if(!cancelled)setError(inventoryErrorMessage(e))});
+  return()=>{cancelled=true};
+ },[db,campaign,refreshVersion]);
  const act=async(fn:()=>Promise<void>)=>{
   if(busy)return;setBusy(true);setError('');setNotice('');
   try{await fn()}catch(e){setError(inventoryErrorMessage(e))}finally{setBusy(false)}
