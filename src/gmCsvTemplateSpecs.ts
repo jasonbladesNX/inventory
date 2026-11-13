@@ -26,7 +26,7 @@ export const gmCsvTemplates:readonly GmCsvTemplate[]=[
     columns:[
       {key:'item_name',required:true,description:'Name to display for the new campaign item.'},
       {key:'category',required:true,description:'Built-in category code (gear, ingredient, consumable, weapon, armor, ring, etc.) or an existing active custom category code.'},
-      {key:'description',required:false,description:'Description displayed in item details. The future importer will need to support saving this field.'},
+      {key:'description',required:false,description:'Description displayed in item details; Milestone 8.2 saves it to the campaign item definition.'},
       {key:'stackable',required:true,description:'true or false. Consumables must be stackable; equippable/special items cannot be.'},
       {key:'consumable',required:true,description:'true or false; usable items deduct inventory on use.'},
       {key:'two_handed',required:false,description:'true or false; relevant to weapons only. Leave blank for false.'},
@@ -40,7 +40,7 @@ export const gmCsvTemplates:readonly GmCsvTemplate[]=[
     ],
     notes:[
       'Campaign-specific categories must exist before importing items that use them.',
-      'This initial contract handles ordinary item flags and one optional passive attribute bonus; complex use effects and additional properties will be addressed with the import implementation.',
+      'Milestone 8.2 handles ordinary item flags and one optional passive attribute bonus; complex use effects and additional properties are deferred.',
       'Equippable items and rings are never stackable; consumables must be stackable.'
     ]
   },
@@ -63,7 +63,7 @@ export const gmCsvTemplates:readonly GmCsvTemplate[]=[
     notes:[
       'The character and item must already exist in the active campaign or its ruleset.',
       'Characters and items can be referenced by unique names or by UUID. If both are supplied, the future importer will verify they refer to the same record.',
-      'The importer will need to batch grants safely, preserve stackability and record inventory activity.'
+      'Milestone 8.2 imports grants atomically, preserves stacking and records inventory activity.'
     ]
   },
   {
