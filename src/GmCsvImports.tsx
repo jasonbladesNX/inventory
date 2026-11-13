@@ -13,11 +13,16 @@ type PreviewRow={
   unit_price?:number;buyback_price?:number;buys_from_players?:boolean;
   old_unit_price?:number|null;old_buyback_price?:number|null;
   old_quantity?:number|null;old_buys_from_players?:boolean|null;
+  container_id?:string|null;container_name?:string;new_container?:boolean;
+  entry_type?:'item'|'currency';
+  new_quantity?:number;currency_amount?:number;old_currency_amount?:number|null;
 };
 type ImportResponse={
   mode:'preview'|'imported';
   row_count:number;total_units?:number;rows:PreviewRow[];
   created?:unknown[]|number;granted?:unknown[];updated?:number;stock_mode?:string;
+  new_containers?:number;item_rows?:number;currency_rows?:number;
+  item_mode?:string;currency_mode?:string;new_container_ids?:string[];
 };
 type Props={
   db:SupabaseClient;campaign:string;
@@ -27,12 +32,14 @@ const MAX_BYTES=1024*1024;
 const messages:Record<CsvImportKind,string>={
   catalog:'Create new campaign-specific item definitions. Existing names are rejected; no existing catalog entries are overwritten.',
   'character-inventory':'Grant items to existing campaign characters. Existing inventory is preserved and additional units are added.',
-  'shop-stock':'Create or update listings for existing campaign merchants. Matching merchant + item + currency listings will have stock, prices and buyback settings REPLACED, not added to; unlisted merchandise stays unchanged.'
+  'shop-stock':'Create or update listings for existing campaign merchants. Matching merchant + item + currency listings will have stock, prices and buyback settings REPLACED, not added to; unlisted merchandise stays unchanged.',
+  'loot-contents':'Add item rewards and set currency amounts in existing active, unclaimed loot containers, or create new containers. Existing physical items are kept. Existing currency denominations are REPLACED, not incremented. Generate QR codes separately after reviewing the contents.'
 };
 const rpcNames:Record<CsvImportKind,string>={
   catalog:'gm_import_catalog_csv',
   'character-inventory':'gm_import_character_inventory_csv',
-  'shop-stock':'gm_import_shop_stock_csv'
+  'shop-stock':'gm_import_shop_stock_csv',
+  'loot-contents':'gm_import_qr_loot_csv'
 };
 
 export default function GmCsvImports({db,campaign,onImported}:Props){
@@ -85,7 +92,8 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
       if(serial!==request.current)return;
       const response=data as ImportResponse;
       if(response?.mode!=='preview'||response.row_count!==rows.length||response.rows?.length!==rows.length||
-        (kind==='shop-stock'&&response.stock_mode!=='replace'))
+        (kind==='shop-stock'&&response.stock_mode!=='replace')||
+        (kind==='loot-contents'&&(response.item_mode!=='add'||response.currency_mode!=='set')))
         throw Error('The server returned an incomplete preview. No changes were made.');
       setPreview(response);
     }catch(e){if(serial===request.current)setError('Preview failed. No records were changed. '+inventoryErrorMessage(e))}
@@ -99,7 +107,7 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
     try{
       const {data,error:rpcError}=await db.rpc(rpcNames[kind],{
         p_campaign:campaign,p_rows:rows,p_dry_run:false,
-        ...(kind==='shop-stock'?{p_expected:preview.rows}:{})
+        ...(kind==='shop-stock'||kind==='loot-contents'?{p_expected:preview.rows}:{})
       });
       if(rpcError)throw rpcError;
       const result=data as ImportResponse;
@@ -109,6 +117,7 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
       if(serial!==request.current)return;
       const qty=kind==='catalog'?`${result.row_count} catalog item(s) created`:
         kind==='shop-stock'?`${result.created} new shop listing(s) and ${result.updated} updated listing(s)`:
+        kind==='loot-contents'?`${result.new_containers} new loot container(s), ${result.item_rows} item reward row(s), and ${result.currency_rows} currency reward row(s)`:
         `${result.total_units} unit(s) granted across ${result.row_count} row(s)`;
       setSuccess(`Import successful: ${qty}. The batch was committed as one transaction.`);
       setPreview(null);setRows([]);setFileName('');setConfirm(false);
@@ -120,7 +129,7 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
         const detail=inventoryErrorMessage(e);
         const uncertain=/network|failed to fetch|connection|timeout|abort/i.test(detail);
         setError((committed||uncertain
-          ?'Import outcome could not be confirmed. Check the catalog or character inventory before retrying. '
+          ?'Import outcome could not be confirmed. Check the affected catalog, character inventory, shop or loot containers before retrying. '
           :'Import rejected; the server rolled back all rows. ')+detail);
       }
     }finally{if(serial===request.current)setWorking(null)}
@@ -138,6 +147,9 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
       <button type="button" className={kind==='shop-stock'?'is-selected':''}
         aria-pressed={kind==='shop-stock'} disabled={Boolean(working)}
         onClick={()=>selectMode('shop-stock')}>Shop Inventory</button>
+      <button type="button" className={kind==='loot-contents'?'is-selected':''}
+        aria-pressed={kind==='loot-contents'} disabled={Boolean(working)}
+        onClick={()=>selectMode('loot-contents')}>Treasure & Loot</button>
     </div>
     <p className="nx-csv-import-tip"><Info size={16} aria-hidden="true"/>{messages[kind]}</p>
     <label className="nx-csv-import-file" htmlFor="nx-import-file">
@@ -149,6 +161,7 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
     <p className="nx-small-note">
       Use the matching file from <strong>GM CSV Templates</strong>. Maximum {kind==='catalog'?'100 catalog items':
         kind==='shop-stock'?'200 merchant/item/currency listings; stock 0–1,000,000 per row':
+        kind==='loot-contents'?'200 loot reward rows, 50 new containers, 500 units per item row and 10,000 total units':
         '200 character/item rows, 500 units per row and 10,000 units total'} per import, 1 MB per CSV.
       Files are read locally first; only validated rows are sent for the server preview.
     </p>
@@ -173,8 +186,24 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
         {kind==='character-inventory'?` · ${preview.total_units} total units`:''}. Nothing has been imported yet.</p>
       {kind==='shop-stock'&&<p className="nx-csv-shop-warning">Stock quantities and prices are <strong>replaced</strong> for matching listings.
         Merchandise not included in the file is untouched. Inactive merchants can be stocked, but remain closed to players.</p>}
+      {kind==='loot-contents'&&<p className="nx-csv-shop-warning">Item quantities are <strong>added</strong> to a container; a currency amount <strong>replaces</strong> the existing amount in that denomination.
+        New containers are created without QR codes. Claimed, inactive, or already-issued active QR containers cannot be imported into.</p>}
       <div className={'nx-csv-import-preview-table'+(kind==='shop-stock'?' nx-csv-shop-preview':'')}>
-        {kind==='shop-stock'?<table>
+        {kind==='loot-contents'?<table>
+          <thead><tr><th scope="col">Row</th><th scope="col">Container</th><th scope="col">Reward</th>
+            <th scope="col">Current</th><th scope="col">After Import</th></tr></thead>
+          <tbody>{preview.rows.map((item,index)=><tr key={index}>
+            <td>{item.row}</td>
+            <td><strong>{item.container_name}</strong>
+              <span className="nx-csv-price-line">{item.new_container?'Create new container':'Existing active container'}</span></td>
+            <td>{item.entry_type==='item'?item.item_name:`${item.currency_code} currency`}
+              <span className="nx-csv-price-line">{item.entry_type==='item'?'Add items':'Set currency amount'}</span></td>
+            <td>{item.entry_type==='item'?`${item.old_quantity??0} units`:
+              item.old_currency_amount===null?'No currency yet':`${item.old_currency_amount} ${item.currency_code}`}</td>
+            <td><strong>{item.entry_type==='item'?`${item.new_quantity} units (+${item.quantity})`:
+              `${item.currency_amount} ${item.currency_code}`}</strong></td>
+          </tr>)}</tbody>
+        </table>:kind==='shop-stock'?<table>
           <thead><tr><th scope="col">Row / Action</th><th scope="col">Merchant</th><th scope="col">Item / Currency</th>
             <th scope="col">Currently</th><th scope="col">After Import</th></tr></thead>
           <tbody>{preview.rows.map((item,index)=><tr key={index}>
@@ -210,10 +239,11 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
       <button type="button" className="nx-csv-import-confirm"
         disabled={!confirm||Boolean(working)} onClick={()=>void applyFile()}>
         {working==='import'?'Importing…':kind==='catalog'?'Confirm & Create Catalog Items':
-          kind==='shop-stock'?'Confirm & Replace Shop Listings':'Confirm & Grant Inventory Items'}
+          kind==='shop-stock'?'Confirm & Replace Shop Listings':
+          kind==='loot-contents'?'Confirm & Import Loot':'Confirm & Grant Inventory Items'}
       </button>
       <p className="nx-small-note">The server validates the file again at confirmation. If any row fails, the entire import rolls back.
-        Shop imports compare live listing values against the preview and reject changes made since review; character grants add to inventory and catalog imports never overwrite items.</p>
+        Shop and loot imports compare live values against the preview and reject stale contents; character grants add to inventory and catalog imports never overwrite items. QR tokens are generated later in QR Loot Containers.</p>
     </section>}
   </section>;
 }
