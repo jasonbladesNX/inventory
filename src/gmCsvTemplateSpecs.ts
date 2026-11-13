@@ -69,7 +69,7 @@ export const gmCsvTemplates:readonly GmCsvTemplate[]=[
   {
     id:'shop-stock',
     title:'Shop Inventory & Prices',
-    summary:'Plan merchandise, stock, buyback settings and prices for existing campaign merchants.',
+    summary:'Create or replace merchandise, stock, buyback settings and prices for existing campaign merchants.',
     columns:[
       {key:'merchant_name',required:false,description:'Existing campaign merchant name; required if merchant_id is blank.'},
       {key:'merchant_id',required:false,description:'Optional campaign merchant UUID to disambiguate names.'},
@@ -83,12 +83,12 @@ export const gmCsvTemplates:readonly GmCsvTemplate[]=[
     ],
     examples:[
       ['Example Trading Post','','Potion of Healing','','GP','50','25','12','true'],
-      ['Example Trading Post','','Longsword','','GP','15','7.5','3','false']
+      ['Example Trading Post','','Longsword','','GP','15','7','3','false']
     ],
     notes:[
       'Examples use fictional merchants. Create the merchant and currency in the GM Dashboard before trying future imports.',
       'Pricing uses the selected currency denomination; prices must not exceed 1,000,000,000.',
-      'Whether repeated rows overwrite or increment existing stock will be chosen during import preview in Milestone 8.3.'
+      'Milestone 8.3 REPLACES stock, selling price, buyback price and buyback eligibility for existing merchant/item/currency listings. Other merchandise remains unchanged.'
     ]
   },
   {
