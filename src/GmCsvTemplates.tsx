@@ -9,7 +9,7 @@ export default function GmCsvTemplates(){
     <h2><FileSpreadsheet size={20} aria-hidden="true"/> GM CSV Templates</h2>
     <p>Download a blank CSV or a filled example for each type of campaign inventory data. Files use stable, machine-readable column names so that future GM import tools can validate them.</p>
     <p className="nx-csv-scope-note"><Info size={16} aria-hidden="true"/>
-      Milestone 8.1 provides templates only. Upload, preview, duplicate handling and changes to campaign data will be added in Milestones 8.2–8.5.
+      Milestone 8.1 provides downloads only. For Item Catalog and Character Inventory uploads, open GM CSV Imports (Milestone 8.2). Shop and Loot uploads will follow in Milestones 8.3–8.4.
     </p>
     <div className="nx-gm-csv-grid">
       {gmCsvTemplates.map(template=><article key={template.id} className="nx-gm-csv-card">
