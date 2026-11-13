@@ -95,7 +95,7 @@ try{
   }
   assert.equal((html.match(/Blank CSV<\/button>/g)||[]).length,4);
   assert.equal((html.match(/Example CSV<\/button>/g)||[]).length,4);
-  assert.match(html,/templates only/,'no misleading upload claims');
+  assert.match(html,/downloads only/,'8.1 correctly describes downloads as separate from imports');
   assert.match(html,/View columns and instructions/,'field guide is discoverable');
   assert.doesNotMatch(html,/type="file"/,'no upload input in milestone 8.1');
 }finally{
