@@ -49,3 +49,16 @@
  .nx-csv-import-kind{gap:6px}
  .nx-gm-csv-imports .nx-csv-import-kind button{font-size:11px}
 }
+
+
+/* Milestone 8.3: three import types and side-by-side current/replacement shop values. */
+.nx-gm-csv-imports .nx-csv-import-kind button{flex:1 1 145px}
+.nx-csv-shop-preview table{min-width:730px}
+.nx-csv-shop-preview td{line-height:1.45;min-width:110px}
+.nx-csv-shop-preview td:nth-child(2),.nx-csv-shop-preview td:nth-child(3){min-width:145px}
+.nx-csv-shop-preview td:nth-child(4),.nx-csv-shop-preview td:nth-child(5){min-width:155px}
+.nx-csv-shop-preview .nx-csv-price-line{display:block;margin-top:4px;color:#b6dbe7}
+.nx-csv-shop-preview .nx-csv-inactive-merchant{display:inline;color:#f9c99b;font-size:11px}
+.nx-gm-csv-imports .nx-csv-shop-warning{display:block;padding:11px 12px;border:1px solid #ad8b51;
+  border-radius:9px;background:#473923;color:#ffe3b2;font-size:12px;line-height:1.5}
+.nx-csv-shop-warning strong{color:#fff0bf}
