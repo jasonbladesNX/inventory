@@ -6,7 +6,7 @@ type Merchant={id:string;name:string;description:string;active:boolean};
 type Definition={id:string;name:string;category:string};
 type Currency={id:string;code:string;name:string;precision_digits:number};
 type Listing={listing_id:string;definition_id:string;item_name:string;category:string;currency_id:string;currency_code:string;price:number|string;buyback:number|string;quantity:number;buys_from_players:boolean};
-export default function GmMerchantManager({db,campaign,definitions}:{db:SupabaseClient;campaign:string;definitions:Definition[]}){
+export default function GmMerchantManager({db,campaign,definitions,refreshVersion=0}:{db:SupabaseClient;campaign:string;definitions:Definition[];refreshVersion?:number}){
  const[merchants,setMerchants]=useState<Merchant[]>([]),[currencies,setCurrencies]=useState<Currency[]>([]);
  const[itemCatalog,setItemCatalog]=useState<Definition[]>([]);
  const[merchant,setMerchant]=useState(''),[listings,setListings]=useState<Listing[]>([]);
@@ -30,7 +30,7 @@ export default function GmMerchantManager({db,campaign,definitions}:{db:Supabase
   .then(([a,b,d])=>{if(a.error)throw a.error;if(b.error)throw b.error;if(d.error)throw d.error;if(!cancelled){setMerchants(a.data||[]);setCurrencies(b.data||[]);setItemCatalog(d.data||[])}})
   .catch(e=>{if(!cancelled)setError(inventoryErrorMessage(e))});
   return()=>{cancelled=true};
- },[db,campaign,definitions.length]);
+ },[db,campaign,definitions.length,refreshVersion]);
  useEffect(()=>{if(!merchant){setListings([]);return}let cancelled=false;
   setListingBusy(true);
   void Promise.resolve(db.rpc('list_merchant_stock',{p_merchant:merchant})).then(({data,error:rpcError})=>{
@@ -38,7 +38,7 @@ export default function GmMerchantManager({db,campaign,definitions}:{db:Supabase
   }).catch(e=>{if(!cancelled)setError(inventoryErrorMessage(e))})
   .finally(()=>{if(!cancelled)setListingBusy(false)});
   return()=>{cancelled=true};
- },[db,merchant]);
+ },[db,merchant,refreshVersion]);
  const resetListing=()=>{setListingSelection('');setDefinition('');setCurrency('');setPrice('1');setBuyback('0');setStock('1');setBuyFromPlayers(false)};
  const choose=(id:string)=>{
   setMerchant(id);resetListing();setNotice('');const m=merchants.find(row=>row.id===id);
