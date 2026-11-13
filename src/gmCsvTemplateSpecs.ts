@@ -79,7 +79,7 @@ export const gmCsvTemplates:readonly GmCsvTemplate[]=[
       {key:'unit_price',required:true,description:'Price for one unit; nonnegative and compatible with currency precision.'},
       {key:'buyback_price',required:true,description:'Nonnegative price paid by merchant when buying this item back.'},
       {key:'quantity',required:true,description:'Whole-number stock between 0 and 1,000,000 (0 indicates no stock).'},
-      {key:'buys_from_players',required:true,description:'true or false.'}
+      {key:'buys_from_players',required:true,description:'Enter true or false; controls whether the merchant buys items from players.'}
     ],
     examples:[
       ['Example Trading Post','','Potion of Healing','','GP','50','25','12','true'],
