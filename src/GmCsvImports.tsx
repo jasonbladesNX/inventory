@@ -107,8 +107,13 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
       try{await onImported(kind)}
       catch{setSuccess(`Import successful: ${qty}. The dashboard could not refresh automatically; reopen the character or campaign to view the changes.`)}
     }catch(e){
-      if(serial===request.current)
-        setError((committed?'Import may have completed. Refresh before retrying. ':'Import failed; no rows were applied. ')+inventoryErrorMessage(e));
+      if(serial===request.current){
+        const detail=inventoryErrorMessage(e);
+        const uncertain=/network|failed to fetch|connection|timeout|abort/i.test(detail);
+        setError((committed||uncertain
+          ?'Import outcome could not be confirmed. Check the catalog or character inventory before retrying. '
+          :'Import rejected; the server rolled back all rows. ')+detail);
+      }
     }finally{if(serial===request.current)setWorking(null)}
   };
 
