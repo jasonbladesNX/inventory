@@ -112,9 +112,9 @@ export const gmCsvTemplates:readonly GmCsvTemplate[]=[
       ['Example Hidden Cache','','currency','','','','SP','120']
     ],
     notes:[
-      'Each container can have multiple item and currency rows. The import preview will determine how new containers are created or existing ones updated.',
-      'Only active, unclaimed containers can be modified. The CSV never contains QR claim tokens or character account information.',
-      'QR codes are generated separately in the GM Dashboard after review of imported contents.'
+      'Each container can have multiple item and currency rows. Milestone 8.4 creates new containers by name or adds items to existing active, unclaimed containers; currency amounts are set by denomination.',
+      'Only active, unclaimed containers without an active QR claim token can be modified. The CSV never contains QR tokens or player credentials.',
+      'QR codes are generated separately in QR Loot Containers after reviewing imported rewards. Physical item amounts are added, while currency amounts replace that denomination.'
     ]
   }
 ];
