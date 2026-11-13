@@ -33,7 +33,7 @@ for(const [source,pattern,why] of [
   [ui,/Confirm & Replace Shop Listings/,'explicit destructive-replace confirmation'],
   [ui,/Matching merchant \+ item \+ currency listings/,'replace semantics disclosed'],
   [ui,/kind==='shop-stock'\?'200 merchant\/item\/currency listings/,'shop-specific row limits'],
-  [ui,/kind==='shop-stock'\?\{p_expected:preview.rows\}:\{\}/,'only shop import uses snapshot RPC arg'],
+  [ui,/kind==='shop-stock'\|\|kind==='loot-contents'\?\{p_expected:preview.rows\}:\{\}/,'shop and loot imports use snapshot RPC argument'],
   [schema,/Milestone 8.3 REPLACES stock/,'template documentation updated'],
   [css,/\.nx-csv-shop-preview table/,'before/after table styled'],
   [sql,/create or replace function public\.gm_import_shop_stock_csv/,'server-side import RPC'],
