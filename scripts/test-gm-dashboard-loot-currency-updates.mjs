@@ -10,9 +10,10 @@ assert.match(main,/title="Crafting Skills & Recipes">/,'crafting section starts 
 assert.doesNotMatch(main,/title="Crafting Skills & Recipes" initiallyOpen/,'crafting is not expanded by default');
 assert.ok(main.indexOf('title="Crafting Skills & Recipes"')<main.indexOf('title="GM Item Catalog"'),'recipe editor appears before long catalog tools');
 assert.match(main,/GmCraftingManager db=\{db!\}/,'recipe component retained');
-assert.equal((main.match(/<GmDashboardCard/g)||[]).length,12,'every GM card wrapped');
-assert.equal((main.match(/<\/GmDashboardCard>/g)||[]).length,12,'all GM collapsibles closed');
+assert.equal((main.match(/<GmDashboardCard/g)||[]).length,13,'every GM card wrapped');
+assert.equal((main.match(/<\/GmDashboardCard>/g)||[]).length,13,'all GM collapsibles closed');
 assert.match(main,/title="GM CSV Templates"/,'GM CSV template card is collapsed by default');
+assert.match(main,/title="GM CSV Imports"/,'import card is GM-only and collapsed by default');
 assert.match(card,/aria-expanded=\{open\}/,'card expansion state accessible');
 assert.match(card,/hidden=\{!open\}/,'cards collapse without unmounting edited forms');
 assert.match(card,/setOpen\(v=>!v\)/,'clicking header toggles card');
