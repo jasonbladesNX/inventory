@@ -1,6 +1,6 @@
 import type {GmCsvTemplate} from './gmCsvTemplateSpecs';
 
-export type CsvImportKind='catalog'|'character-inventory';
+export type CsvImportKind='catalog'|'character-inventory'|'shop-stock';
 export type CsvImportRow=Record<string,string>;
 export type CsvImportProblem={line:number;message:string};
 export type CsvImportParseResult={
@@ -8,7 +8,7 @@ export type CsvImportParseResult={
   problems:CsvImportProblem[];
 };
 
-const MAX_ROWS:Record<CsvImportKind,number>={catalog:100,'character-inventory':200};
+const MAX_ROWS:Record<CsvImportKind,number>={catalog:100,'character-inventory':200,'shop-stock':200};
 
 function csvRecords(input:string):{cells:string[];line:number}[]{
   const text=input.replace(/^\uFEFF/,'');
@@ -53,7 +53,7 @@ const name=(row:CsvImportRow,k:string)=>row[k].trim();
 const special=new Set(['weapon','shield','armor','clothing','jewelry','ring','headgear','footwear','focus','tool','wondrous','container','recipe']);
 
 export function parseGmImportCsv(input:string,template:GmCsvTemplate):CsvImportParseResult{
-  if(template.id!=='catalog'&&template.id!=='character-inventory'){
+  if(template.id!=='catalog'&&template.id!=='character-inventory'&&template.id!=='shop-stock'){
     throw Error('Uploads for this template are not enabled yet.');
   }
   const mode=template.id;
@@ -71,11 +71,12 @@ export function parseGmImportCsv(input:string,template:GmCsvTemplate):CsvImportP
     ].filter(Boolean).join('. ')+'. Use the current GM CSV template.');
   }
   if(recs.length<2)throw Error('This CSV has a header but no item rows.');
-  if(recs.length-1>MAX_ROWS[mode])throw Error(`Maximum ${MAX_ROWS[mode]} rows per ${mode==='catalog'?'catalog':'character inventory'} import.`);
+  if(recs.length-1>MAX_ROWS[mode])throw Error(`Maximum ${MAX_ROWS[mode]} rows per ${mode==='catalog'?'catalog':mode==='shop-stock'?'shop stock':'character inventory'} import.`);
 
   const problems:CsvImportProblem[]=[];
   const rows:CsvImportRow[]=[];
   const seenNames=new Set<string>();
+  const seenListings=new Set<string>();
   let totalUnits=0;
   for(const rec of recs.slice(1)){
     if(rec.cells.length!==headers.length){
@@ -110,7 +111,7 @@ export function parseGmImportCsv(input:string,template:GmCsvTemplate):CsvImportP
       const key=name(record,'item_name').toLowerCase();
       if(seenNames.has(key))messages.push('Duplicate item name in CSV.');
       else seenNames.add(key);
-    }else{
+    }else if(mode==='character-inventory'){
       if(!name(record,'character_id')&&!name(record,'character_name'))messages.push('Character name or character ID is required.');
       if(!name(record,'item_definition_id')&&!name(record,'item_name'))messages.push('Item name or item definition ID is required.');
       for(const key of ['character_id','item_definition_id']){
@@ -120,6 +121,33 @@ export function parseGmImportCsv(input:string,template:GmCsvTemplate):CsvImportP
       const quantity=name(record,'quantity');
       if(!/^[0-9]{1,3}$/.test(quantity)||Number(quantity)<1||Number(quantity)>500)messages.push('Quantity must be a whole number from 1 to 500.');
       else totalUnits+=Number(quantity);
+    }else{
+      if(!name(record,'merchant_id')&&!name(record,'merchant_name'))messages.push('Merchant name or merchant ID is required.');
+      if(!name(record,'item_definition_id')&&!name(record,'item_name'))messages.push('Item name or item definition ID is required.');
+      for(const key of ['merchant_id','item_definition_id']){
+        const id=name(record,key);
+        if(id&&!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))messages.push(`${key} must be a UUID.`);
+      }
+      const currency=name(record,'currency_code');
+      if(!currency)messages.push('Currency code is required.');
+      if(currency.length>24)messages.push('Currency code is too long.');
+      const quantity=name(record,'quantity');
+      if(!/^[0-9]{1,7}$/.test(quantity)||Number(quantity)>1000000)
+        messages.push('Stock quantity must be a whole number from 0 to 1,000,000.');
+      for(const key of ['unit_price','buyback_price']){
+        const value=name(record,key);
+        if(!/^[0-9]{1,10}(\.[0-9]{1,6})?$/.test(value)||
+           !Number.isFinite(Number(value))||Number(value)>1000000000)
+          messages.push(`${key} must be between 0 and 1,000,000,000, with up to six decimal places.`);
+      }
+      if(!bool(name(record,'buys_from_players').toLowerCase()))
+        messages.push('buys_from_players must be true or false.');
+      const listingKey=[
+        name(record,'merchant_id')||name(record,'merchant_name'),
+        name(record,'item_definition_id')||name(record,'item_name'),currency
+      ].map(v=>v.trim().toLowerCase()).join('|');
+      if(seenListings.has(listingKey))messages.push('Duplicate merchant/item/currency listing in CSV.');
+      else seenListings.add(listingKey);
     }
     for(const message of messages)problems.push({line:rec.line,message});
     rows.push(record);
