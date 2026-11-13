@@ -19,6 +19,7 @@ import GmCraftingProfessions from './GmCraftingProfessions';
 import GmItemCategoryManager,{type CampaignItemCategory} from './GmItemCategoryManager';
 import GmBulkGrantItems from './GmBulkGrantItems';
 import GmCsvTemplates from './GmCsvTemplates';
+import GmCsvImports from './GmCsvImports';
 import GmDashboardCard from './GmDashboardCard';
 import './style.css';
 import './app-pages.css';
@@ -406,6 +407,12 @@ function App(){
           </GmDashboardCard>
           <GmDashboardCard key={'csv-templates-'+campaign} title="GM CSV Templates">
             <GmCsvTemplates/>
+          </GmDashboardCard>
+          <GmDashboardCard key={'csv-imports-'+campaign} title="GM CSV Imports">
+            <GmCsvImports db={db!} campaign={campaign} onImported={async kind=>{
+              if(kind==='catalog')await refreshItemCatalog(campaign);
+              else if(char)await loadChar(campaign,char);
+            }}/>
           </GmDashboardCard>
           <GmDashboardCard key={'recipes-'+campaign} title="Crafting Skills & Recipes">
             <GmCraftingProfessions db={db!} campaign={campaign} characters={chars}
