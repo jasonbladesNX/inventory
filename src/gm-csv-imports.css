@@ -1,0 +1,51 @@
+/* Milestone 8.2 — GM CSV uploader, data validation and review. */
+.nx-gm-csv-imports{display:grid;gap:12px}
+.nx-gm-csv-imports>h2,.nx-gm-csv-imports>p{margin:0}
+.nx-csv-import-kind{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.nx-gm-csv-imports .nx-csv-import-kind button{flex:1 1 135px;min-height:42px;border-color:#3b8096;color:#b6dce9;background:#092c40}
+.nx-gm-csv-imports .nx-csv-import-kind button.is-selected{background:#0d6179;color:#e8fdff;border-color:#78dcea}
+.nx-gm-csv-imports .nx-csv-import-tip{display:flex;align-items:flex-start;gap:9px;color:#bfe5ef;
+  padding:11px 12px;border:1px solid #376b7d;border-radius:9px;background:#0a3041}
+.nx-csv-import-tip svg{flex:none;margin-top:2px}
+.nx-gm-csv-imports .nx-csv-import-file{display:grid;gap:7px;font-size:13px}
+.nx-gm-csv-imports input[type=file]{width:100%;min-width:0;min-height:48px;font-size:12px;
+  padding:10px;border:1px solid #45879c;border-radius:8px;background:#071d2c;color:#d0f1f9}
+.nx-gm-csv-imports input[type=file]::file-selector-button{border:1px solid #559cb3;background:#104d63;color:#def8ff;
+  padding:8px 10px;border-radius:6px;cursor:pointer;margin-right:10px}
+.nx-csv-import-meta{display:flex;align-items:center;flex-wrap:wrap;gap:7px;font-size:12px;word-break:break-word}
+.nx-csv-import-meta span{color:#9dbdc9;margin-left:auto}
+.nx-gm-csv-imports .nx-csv-import-error,.nx-gm-csv-imports .nx-csv-import-success{
+  display:flex;align-items:flex-start;gap:8px;margin:0;border-radius:8px;padding:10px 12px;font-size:12px;
+  line-height:1.5;overflow-wrap:anywhere
+}
+.nx-gm-csv-imports .nx-csv-import-error{background:#462b36;border:1px solid #bb7181;color:#ffe0e4}
+.nx-gm-csv-imports .nx-csv-import-success{background:#16473d;border:1px solid #4fb69e;color:#dbfdf1}
+.nx-csv-import-problems{max-height:280px;overflow-y:auto;background:#402a34;border:1px solid #ad6475;
+  border-radius:10px;padding:12px;font-size:12px;color:#ffe1e5}
+.nx-csv-import-problems strong{display:flex;align-items:center;gap:8px}
+.nx-csv-import-problems ul{margin:8px 0 0;padding-left:21px}
+.nx-csv-import-problems li{padding:3px 0;overflow-wrap:anywhere}
+.nx-csv-import-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.nx-gm-csv-imports .nx-csv-import-actions button{display:inline-flex;align-items:center;justify-content:center;flex:1 1 160px}
+.nx-gm-csv-imports .nx-csv-import-actions button.nx-csv-import-clear{background:#092938;border-color:#476b7d}
+.nx-csv-import-preview{display:grid;gap:11px;border:1px solid #448da7;border-radius:11px;padding:13px;background:#082b3d}
+.nx-csv-import-preview h3{display:flex;align-items:center;gap:7px;margin:0;color:#b2f1e1}
+.nx-gm-csv-imports .nx-csv-import-preview>p{margin:0}
+.nx-csv-import-preview-table{max-width:100%;max-height:350px;overflow:auto;border:1px solid #315b72;border-radius:8px}
+.nx-csv-import-preview-table table{width:100%;min-width:500px;border-collapse:collapse}
+.nx-csv-import-preview-table th,.nx-csv-import-preview-table td{padding:8px 10px;border-bottom:1px solid #294e5f;
+  text-align:left;vertical-align:top;color:#cae5ee;font-size:12px;overflow-wrap:anywhere}
+.nx-csv-import-preview-table th{position:sticky;top:0;background:#154357;color:#ecfbff;z-index:1}
+.nx-csv-import-preview-table tr:last-child td{border-bottom:0}
+.nx-gm-csv-imports .nx-csv-import-approval{display:flex;flex-direction:row;align-items:flex-start;gap:10px;
+  padding:11px;border:1px solid #4a879d;border-radius:9px;color:#def6fc;font-size:12px;line-height:1.5}
+.nx-csv-import-approval input{width:19px;height:19px;min-width:19px;accent-color:#31b6d3;margin:0}
+.nx-gm-csv-imports .nx-csv-import-confirm{min-height:48px;border-color:#7ee2a9!important;
+  background:#176656!important;color:#e6fff2!important;font-size:13px}
+.nx-gm-csv-imports .nx-csv-import-confirm:hover:not(:disabled){background:#1d836b!important}
+@media(max-width:480px){
+ .nx-csv-import-preview{padding:10px}
+ .nx-csv-import-preview-table th,.nx-csv-import-preview-table td{padding:7px;font-size:11px}
+ .nx-csv-import-kind{gap:6px}
+ .nx-gm-csv-imports .nx-csv-import-kind button{font-size:11px}
+}
