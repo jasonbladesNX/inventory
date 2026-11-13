@@ -1,6 +1,6 @@
 import React from 'react';
 import {Download,FileSpreadsheet,Info} from 'lucide-react';
-import {downloadGmTemplateCsv,gmCsvTemplates} from './gmCsvTemplates';
+import {downloadGmTemplateCsv,gmCsvTemplates} from './gmCsvTemplateSpecs';
 import './gm-csv-templates.css';
 
 /** Milestone 8.1: download-only GM templates; no upload or mutation operations. */
