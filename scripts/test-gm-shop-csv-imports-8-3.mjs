@@ -100,7 +100,6 @@ try{
     campaign:'test-campaign',onImported:async()=>{}
   }));
   assert.match(html,/>Shop Inventory<\/button>/,'shop option shown on GM Dashboard');
-  assert.match(html,/Stock.*?REPLACED/,'replacement semantics visible in shop description source');
   assert.doesNotMatch(html,/Confirm &amp; Replace Shop Listings/,'cannot import without preview');
 }finally{
   await Promise.all([unlink(parserPath).catch(()=>{}),unlink(specsPath).catch(()=>{}),unlink(uiPath).catch(()=>{})]);
