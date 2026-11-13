@@ -18,6 +18,7 @@ import GmCraftingManager from './GmCraftingManager';
 import GmCraftingProfessions from './GmCraftingProfessions';
 import GmItemCategoryManager,{type CampaignItemCategory} from './GmItemCategoryManager';
 import GmBulkGrantItems from './GmBulkGrantItems';
+import GmCsvTemplates from './GmCsvTemplates';
 import GmDashboardCard from './GmDashboardCard';
 import './style.css';
 import './app-pages.css';
@@ -402,6 +403,9 @@ function App(){
               <button type="submit" disabled={busy}>Create Character</button>
             </form>
           </section>
+          </GmDashboardCard>
+          <GmDashboardCard key={'csv-templates-'+campaign} title="GM CSV Templates">
+            <GmCsvTemplates/>
           </GmDashboardCard>
           <GmDashboardCard key={'recipes-'+campaign} title="Crafting Skills & Recipes">
             <GmCraftingProfessions db={db!} campaign={campaign} characters={chars}
