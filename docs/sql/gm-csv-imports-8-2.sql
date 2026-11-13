@@ -196,7 +196,7 @@ begin
         raise exception 'Row %: character_name does not match character_id',v_no using errcode='22023';
       end if;
     else
-      select count(*),min(c.id),min(c.name) into v_matches,v_char_id,v_resolved_char_name
+      select count(*),(array_agg(c.id))[1],min(c.name) into v_matches,v_char_id,v_resolved_char_name
       from public.characters c where c.campaign_id=p_campaign and c.is_active
         and lower(btrim(c.name))=lower(v_char_name);
       if v_matches<>1 then
@@ -219,7 +219,7 @@ begin
         raise exception 'Row %: item_name does not match item_definition_id',v_no using errcode='22023';
       end if;
     else
-      select count(*),min(d.id),min(d.name) into v_matches,v_def_id,v_resolved_def_name
+      select count(*),(array_agg(d.id))[1],min(d.name) into v_matches,v_def_id,v_resolved_def_name
       from public.item_definitions d where lower(btrim(d.name))=lower(v_def_name)
         and (d.campaign_id=p_campaign or (d.campaign_id is null and d.ruleset_version_id=v_ruleset));
       if v_matches<>1 then
