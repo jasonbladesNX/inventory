@@ -45,6 +45,7 @@ function App(){
   const[inventoryVersion,setInventoryVersion]=useState(0);
   const[craftingConfigVersion,setCraftingConfigVersion]=useState(0);
   const[shopImportVersion,setShopImportVersion]=useState(0);
+  const[lootImportVersion,setLootImportVersion]=useState(0);
   const[session,setSession]=useState<any>(null);
   const[sessionReady,setSessionReady]=useState(false);
   const[email,setEmail]=useState('');
@@ -413,6 +414,7 @@ function App(){
             <GmCsvImports db={db!} campaign={campaign} onImported={async kind=>{
               if(kind==='catalog')await refreshItemCatalog(campaign);
               else if(kind==='shop-stock')setShopImportVersion(v=>v+1);
+              else if(kind==='loot-contents')setLootImportVersion(v=>v+1);
               else if(char)await loadChar(campaign,char);
             }}/>
           </GmDashboardCard>
@@ -429,7 +431,7 @@ function App(){
             <GmMerchantManager db={db!} campaign={campaign} definitions={defs} refreshVersion={shopImportVersion}/>
           </GmDashboardCard>
           <GmDashboardCard key={'loot-'+campaign} title="QR Loot Containers">
-            <GmLootManager db={db!} campaign={campaign}/>
+            <GmLootManager db={db!} campaign={campaign} refreshVersion={lootImportVersion}/>
           </GmDashboardCard>
           <GmDashboardCard key={'catalog-'+campaign} title="GM Item Catalog">
           <section className="nx-page-card nx-gm-tools">
