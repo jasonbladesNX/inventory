@@ -6,7 +6,7 @@
 
 Sign in as a GM, open a campaign, and expand **GM CSV Templates** (collapsed by default). For each data type, download either **Blank CSV** (one header row and no data) or **Example CSV** (sample rows). Expand **View columns and instructions** for field-level guidance.
 
-Templates are generated client-side by `src/gmCsvTemplates.ts` and downloaded as UTF-8 CSV with an Excel-friendly BOM, comma delimiter, properly escaped quotes and CRLF line endings.
+Templates are generated client-side by `src/gmCsvTemplateSpecs.ts` and downloaded as UTF-8 CSV with an Excel-friendly BOM, comma delimiter, properly escaped quotes and CRLF line endings.
 
 ## Template types
 
