@@ -1,6 +1,6 @@
 import type {GmCsvTemplate} from './gmCsvTemplateSpecs';
 
-export type CsvImportKind='catalog'|'character-inventory'|'shop-stock';
+export type CsvImportKind='catalog'|'character-inventory'|'shop-stock'|'loot-contents';
 export type CsvImportRow=Record<string,string>;
 export type CsvImportProblem={line:number;message:string};
 export type CsvImportParseResult={
@@ -8,7 +8,7 @@ export type CsvImportParseResult={
   problems:CsvImportProblem[];
 };
 
-const MAX_ROWS:Record<CsvImportKind,number>={catalog:100,'character-inventory':200,'shop-stock':200};
+const MAX_ROWS:Record<CsvImportKind,number>={catalog:100,'character-inventory':200,'shop-stock':200,'loot-contents':200};
 
 function csvRecords(input:string):{cells:string[];line:number}[]{
   const text=input.replace(/^\uFEFF/,'');
@@ -53,7 +53,7 @@ const name=(row:CsvImportRow,k:string)=>row[k].trim();
 const special=new Set(['weapon','shield','armor','clothing','jewelry','ring','headgear','footwear','focus','tool','wondrous','container','recipe']);
 
 export function parseGmImportCsv(input:string,template:GmCsvTemplate):CsvImportParseResult{
-  if(template.id!=='catalog'&&template.id!=='character-inventory'&&template.id!=='shop-stock'){
+  if(template.id!=='catalog'&&template.id!=='character-inventory'&&template.id!=='shop-stock'&&template.id!=='loot-contents'){
     throw Error('Uploads for this template are not enabled yet.');
   }
   const mode=template.id;
@@ -71,12 +71,14 @@ export function parseGmImportCsv(input:string,template:GmCsvTemplate):CsvImportP
     ].filter(Boolean).join('. ')+'. Use the current GM CSV template.');
   }
   if(recs.length<2)throw Error('This CSV has a header but no item rows.');
-  if(recs.length-1>MAX_ROWS[mode])throw Error(`Maximum ${MAX_ROWS[mode]} rows per ${mode==='catalog'?'catalog':mode==='shop-stock'?'shop stock':'character inventory'} import.`);
+  if(recs.length-1>MAX_ROWS[mode])throw Error(`Maximum ${MAX_ROWS[mode]} rows per ${mode==='catalog'?'catalog':mode==='shop-stock'?'shop stock':mode==='loot-contents'?'loot contents':'character inventory'} import.`);
 
   const problems:CsvImportProblem[]=[];
   const rows:CsvImportRow[]=[];
   const seenNames=new Set<string>();
   const seenListings=new Set<string>();
+  const seenLoot=new Set<string>();
+  const newLootContainers=new Set<string>();
   let totalUnits=0;
   for(const rec of recs.slice(1)){
     if(rec.cells.length!==headers.length){
@@ -121,7 +123,7 @@ export function parseGmImportCsv(input:string,template:GmCsvTemplate):CsvImportP
       const quantity=name(record,'quantity');
       if(!/^[0-9]{1,3}$/.test(quantity)||Number(quantity)<1||Number(quantity)>500)messages.push('Quantity must be a whole number from 1 to 500.');
       else totalUnits+=Number(quantity);
-    }else{
+    }else if(mode==='shop-stock'){
       if(!name(record,'merchant_id')&&!name(record,'merchant_name'))messages.push('Merchant name or merchant ID is required.');
       if(!name(record,'item_definition_id')&&!name(record,'item_name'))messages.push('Item name or item definition ID is required.');
       for(const key of ['merchant_id','item_definition_id']){
@@ -148,10 +150,52 @@ export function parseGmImportCsv(input:string,template:GmCsvTemplate):CsvImportP
       ].map(v=>v.trim().toLowerCase()).join('|');
       if(seenListings.has(listingKey))messages.push('Duplicate merchant/item/currency listing in CSV.');
       else seenListings.add(listingKey);
+    }else{
+      const containerId=name(record,'container_id');
+      const containerName=name(record,'container_name');
+      if(!containerId&&(containerName.length<2||containerName.length>120))
+        messages.push('Container name must be 2–120 characters when no container ID is supplied.');
+      if(containerName.length>120)messages.push('Container name must not exceed 120 characters.');
+      if(containerId&&!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(containerId))
+        messages.push('container_id must be a UUID.');
+      const type=name(record,'entry_type').toLowerCase();
+      if(type!=='item'&&type!=='currency')messages.push('entry_type must be item or currency.');
+      const key=(containerId||containerName).toLowerCase();
+      if(!containerId&&containerName)newLootContainers.add(key);
+      if(type==='item'){
+        const itemId=name(record,'item_definition_id'),itemName=name(record,'item_name');
+        if(!itemId&&!itemName)messages.push('Item name or item definition ID is required.');
+        if(itemId&&!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(itemId))
+          messages.push('item_definition_id must be a UUID.');
+        const quantity=name(record,'quantity');
+        if(!/^[0-9]{1,3}$/.test(quantity)||Number(quantity)<1||Number(quantity)>500)
+          messages.push('Item quantity must be a whole number from 1 to 500.');
+        else totalUnits+=Number(quantity);
+        if(name(record,'currency_code')||name(record,'currency_amount'))
+          messages.push('Item rows must leave currency_code and currency_amount blank.');
+        const rowKey=key+'|item|'+(itemId||itemName).toLowerCase();
+        if(seenLoot.has(rowKey))messages.push('Duplicate container/item reward; combine quantities into one row.');
+        else seenLoot.add(rowKey);
+      }else if(type==='currency'){
+        if(name(record,'item_name')||name(record,'item_definition_id')||name(record,'quantity'))
+          messages.push('Currency rows must leave item fields and quantity blank.');
+        const currency=name(record,'currency_code').toUpperCase();
+        if(!currency)messages.push('Currency code is required.');
+        const amount=name(record,'currency_amount');
+        if(!/^[0-9]{1,10}(\\.[0-9]{1,6})?$/.test(amount)||!Number.isFinite(Number(amount))||
+          Number(amount)<=0||Number(amount)>1000000000)
+          messages.push('Currency amount must be positive, at most 1,000,000,000 and have up to six decimals.');
+        const rowKey=key+'|currency|'+currency;
+        if(seenLoot.has(rowKey))messages.push('Duplicate container/currency reward.');
+        else seenLoot.add(rowKey);
+      }
     }
     for(const message of messages)problems.push({line:rec.line,message});
     rows.push(record);
   }
-  if(mode==='character-inventory'&&totalUnits>10000)problems.push({line:0,message:'The file exceeds 10,000 total item units.'});
+  if((mode==='character-inventory'||mode==='loot-contents')&&totalUnits>10000)
+    problems.push({line:0,message:'The file exceeds 10,000 total item units.'});
+  if(mode==='loot-contents'&&newLootContainers.size>50)
+    problems.push({line:0,message:'A loot CSV can create at most 50 containers in one import.'});
   return {rows,problems};
 }
