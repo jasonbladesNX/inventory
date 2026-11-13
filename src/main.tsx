@@ -44,6 +44,7 @@ function App(){
   const[gmCampaignError,setGmCampaignError]=useState('');
   const[inventoryVersion,setInventoryVersion]=useState(0);
   const[craftingConfigVersion,setCraftingConfigVersion]=useState(0);
+  const[shopImportVersion,setShopImportVersion]=useState(0);
   const[session,setSession]=useState<any>(null);
   const[sessionReady,setSessionReady]=useState(false);
   const[email,setEmail]=useState('');
@@ -411,6 +412,7 @@ function App(){
           <GmDashboardCard key={'csv-imports-'+campaign} title="GM CSV Imports">
             <GmCsvImports db={db!} campaign={campaign} onImported={async kind=>{
               if(kind==='catalog')await refreshItemCatalog(campaign);
+              else if(kind==='shop-stock')setShopImportVersion(v=>v+1);
               else if(char)await loadChar(campaign,char);
             }}/>
           </GmDashboardCard>
@@ -424,7 +426,7 @@ function App(){
             <GmCurrencyManager db={db!} campaign={campaign} characters={chars} onChanged={async()=>{if(char)await loadChar(campaign,char)}}/>
           </GmDashboardCard>
           <GmDashboardCard key={'merchants-'+campaign} title="Campaign Merchants">
-            <GmMerchantManager db={db!} campaign={campaign} definitions={defs}/>
+            <GmMerchantManager db={db!} campaign={campaign} definitions={defs} refreshVersion={shopImportVersion}/>
           </GmDashboardCard>
           <GmDashboardCard key={'loot-'+campaign} title="QR Loot Containers">
             <GmLootManager db={db!} campaign={campaign}/>
