@@ -50,7 +50,6 @@ function csvRecords(input:string):{cells:string[];line:number}[]{
 
 const bool=(value:string)=>value==='true'||value==='false';
 const name=(row:CsvImportRow,k:string)=>row[k].trim();
-const ordinary=new Set(['gear','ingredient','consumable','ammunition','material','component','misc','supplies']);
 const special=new Set(['weapon','shield','armor','clothing','jewelry','ring','headgear','footwear','focus','tool','wondrous','container','recipe']);
 
 export function parseGmImportCsv(input:string,template:GmCsvTemplate):CsvImportParseResult{
