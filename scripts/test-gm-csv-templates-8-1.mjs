@@ -8,7 +8,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {build} from 'esbuild';
 
 const app=readFileSync('src/main.tsx','utf8');
-const source=readFileSync('src/gmCsvTemplates.ts','utf8');
+const source=readFileSync('src/gmCsvTemplateSpecs.ts','utf8');
 const componentSource=readFileSync('src/GmCsvTemplates.tsx','utf8');
 const css=readFileSync('src/gm-csv-templates.css','utf8');
 const expected=['catalog','character-inventory','shop-stock','loot-contents'];
@@ -43,7 +43,7 @@ function parseCsv(csv){
   return out;
 }
 try{
-  await build({entryPoints:['src/gmCsvTemplates.ts'],outfile:path,
+  await build({entryPoints:['src/gmCsvTemplateSpecs.ts'],outfile:path,
     bundle:true,platform:'node',format:'cjs',logLevel:'silent'});
   await build({entryPoints:['src/GmCsvTemplates.tsx'],outfile:uiPath,
     bundle:true,platform:'node',format:'cjs',external:['react','react-dom'],
