@@ -88,12 +88,13 @@ try{
   const GMTemplates=require(uiPath).default;
   const html=renderToStaticMarkup(React.createElement(GMTemplates));
   for(const t of gmCsvTemplates){
-    assert.ok(html.includes(t.title),'GM interface contains '+t.title);
-    assert.ok(html.includes('Download blank '+t.title+' CSV template'),'blank download accessibility');
-    assert.ok(html.includes('Download example '+t.title+' CSV template'),'example download accessibility');
+    const escapedTitle=t.title.replaceAll('&','&amp;');
+    assert.ok(html.includes(escapedTitle),'GM interface contains '+t.title);
+    assert.ok(html.includes('Download blank '+escapedTitle+' CSV template'),'blank download accessibility');
+    assert.ok(html.includes('Download example '+escapedTitle+' CSV template'),'example download accessibility');
   }
-  assert.equal((html.match(/>Blank CSV</g)||[]).length,4);
-  assert.equal((html.match(/>Example CSV</g)||[]).length,4);
+  assert.equal((html.match(/Blank CSV<\/button>/g)||[]).length,4);
+  assert.equal((html.match(/Example CSV<\/button>/g)||[]).length,4);
   assert.match(html,/templates only/,'no misleading upload claims');
   assert.match(html,/View columns and instructions/,'field guide is discoverable');
   assert.doesNotMatch(html,/type="file"/,'no upload input in milestone 8.1');
