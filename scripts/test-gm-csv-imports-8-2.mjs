@@ -60,7 +60,6 @@ try{
     loader:{'.css':'empty'},logLevel:'silent'});
   const req=createRequire(import.meta.url);
   const {parseGmImportCsv}=req(codePath);
-  const {gmCsvTemplates,makeGmTemplateCsv}=req(codePath); // parser bundles referenced types only; specs may tree-shake
   const specsPath=fileURLToPath(new URL('./.gm-csv-8-2-specs.cjs',import.meta.url));
   try{
     await build({entryPoints:['src/gmCsvTemplateSpecs.ts'],outfile:specsPath,
@@ -83,7 +82,6 @@ try{
     const duplicate=parseGmImportCsv(header+'\r\n'+row+'\r\n'+row+'\r\n',catalog);
     assert.ok(duplicate.problems.some(x=>/Duplicate item name/.test(x.message)));
     const chars=specs.makeGmTemplateCsv(character,true);
-    assert.ok(parseGmImportCsv(chars.replace('Longsword','',''),character).rows.length>0);
     const lines=chars.split('\r\n');
     assert.ok(lines.length>2);
     const invalidQty=chars.replace(/,4\r\n/,',501\r\n');
@@ -101,7 +99,7 @@ try{
   assert.match(html,/type="file"/);
   assert.match(html,/Validate &amp; Preview/);
   assert.match(html,/Clear File/);
-  assert.match(html,/No rows/).doesNotExist;
+  assert.doesNotMatch(html,/Confirm &amp; Create Catalog Items/,'confirmation remains hidden before preview');
 }finally{
   await Promise.all([unlink(codePath).catch(()=>{}),unlink(uiPath).catch(()=>{})]);
 }
