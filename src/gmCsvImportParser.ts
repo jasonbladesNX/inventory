@@ -182,7 +182,7 @@ export function parseGmImportCsv(input:string,template:GmCsvTemplate):CsvImportP
         const currency=name(record,'currency_code').toUpperCase();
         if(!currency)messages.push('Currency code is required.');
         const amount=name(record,'currency_amount');
-        if(!/^[0-9]{1,10}(\\.[0-9]{1,6})?$/.test(amount)||!Number.isFinite(Number(amount))||
+        if(!/^[0-9]{1,10}(\.[0-9]{1,6})?$/.test(amount)||!Number.isFinite(Number(amount))||
           Number(amount)<=0||Number(amount)>1000000000)
           messages.push('Currency amount must be positive, at most 1,000,000,000 and have up to six decimals.');
         const rowKey=key+'|currency|'+currency;
