@@ -20,7 +20,7 @@ const panel=app.indexOf('<GmCsvTemplates/>');
 assert.ok(gated>=0&&panel>gated,'GM template interface must be inside GM authorization gate');
 assert.doesNotMatch(componentSource,/db\.rpc\(|\.from\(|type="file"|uploadCsv|importCsv/,'8.1 must not upload or write any data');
 assert.match(source,/URL\.createObjectURL\(new Blob/,'generates browser downloads');
-assert.match(source,/\uFEFF/,'Excel-friendly UTF-8 BOM');
+assert.ok(source.includes(String.raw`\uFEFF`),'Excel-friendly UTF-8 BOM');
 assert.match(source,/link\.download='nexus-gm-'/,'predictable CSV file naming');
 assert.match(css,/\.nx-gm-csv-grid/,'responsive grid');
 
