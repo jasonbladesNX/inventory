@@ -62,3 +62,11 @@
 .nx-gm-csv-imports .nx-csv-shop-warning{display:block;padding:11px 12px;border:1px solid #ad8b51;
   border-radius:9px;background:#473923;color:#ffe3b2;font-size:12px;line-height:1.5}
 .nx-csv-shop-warning strong{color:#fff0bf}
+
+/* Treasure/QR loot imports: mobile-scrollable current/proposed reward view. */
+.nx-csv-loot-preview table{min-width:660px}
+.nx-csv-loot-preview td{line-height:1.45;vertical-align:top}
+.nx-csv-loot-preview td:nth-child(2){min-width:150px}
+.nx-csv-loot-preview td:nth-child(3){min-width:140px}
+.nx-csv-loot-preview td:nth-child(4),.nx-csv-loot-preview td:nth-child(5){min-width:110px}
+.nx-csv-loot-preview .nx-csv-price-line{display:block;margin-top:4px;color:#b6dbe7}
