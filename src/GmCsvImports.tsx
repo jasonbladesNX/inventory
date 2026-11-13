@@ -188,7 +188,7 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
         Merchandise not included in the file is untouched. Inactive merchants can be stocked, but remain closed to players.</p>}
       {kind==='loot-contents'&&<p className="nx-csv-shop-warning">Item quantities are <strong>added</strong> to a container; a currency amount <strong>replaces</strong> the existing amount in that denomination.
         New containers are created without QR codes. Claimed, inactive, or already-issued active QR containers cannot be imported into.</p>}
-      <div className={'nx-csv-import-preview-table'+(kind==='shop-stock'?' nx-csv-shop-preview':'')}>
+      <div className={'nx-csv-import-preview-table'+(kind==='shop-stock'?' nx-csv-shop-preview':kind==='loot-contents'?' nx-csv-loot-preview':'')}>
         {kind==='loot-contents'?<table>
           <thead><tr><th scope="col">Row</th><th scope="col">Container</th><th scope="col">Reward</th>
             <th scope="col">Current</th><th scope="col">After Import</th></tr></thead>
