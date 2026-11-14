@@ -41,14 +41,14 @@ export default function GmInitiativeManager({db,campaign}:{db:SupabaseClient;cam
    const request=crypto.randomUUID();
    const {error:e}=await db.rpc('manage_zone_initiative',{p_campaign:campaign,p_zone:zone,p_action:a,p_request:request,...fields});
    if(e)throw e;
-   await refresh();setNotice(a==='request'?'Initiative rolls requested. Players can enter their d20 results.':a==='next'?'Advanced to the next participant.':'Initiative updated.');
+   await refresh();setNotice(a==='request'?'Initiative rolls requested. Players can enter their d20 results.':(a==='next'||a==='next_with_zone_turn')?'Advanced to the next participant.':'Initiative updated.');
   }catch(e){setError(inventoryErrorMessage(e))}
   finally{setBusy(false)}
  }
  const ready=encounter.entries.filter(e=>e.roll!=null).length;
  const current=encounter.entries.find(e=>e.position===encounter.active_position);
  return <section className="nx-initiative" aria-label="Campaign initiative manager">
-  <p>Each zone has its own encounter, initiative order and combat rounds. Combat rounds expire only round-based effects in that zone. The Phase 9 zone turn counter remains a separate GM control.</p>
+  <p>Each zone has its own encounter, initiative order and combat rounds. Combat rounds expire only round-based effects in that zone. Use Next Participant for initiative only, or explicitly choose Next + Zone Turn to advance both counters atomically.</p>
   <label>Zone <select value={zone} disabled={busy} onChange={e=>setZone(e.target.value)}>
    {zones.filter(z=>z.active).map(z=><option key={z.id} value={z.id}>{z.name}</option>)}
   </select></label>
@@ -60,6 +60,7 @@ export default function GmInitiativeManager({db,campaign}:{db:SupabaseClient;cam
     <button type="button" disabled={busy} onClick={()=>{if(encounter.phase==='active'&&!window.confirm('Reset this encounter and request fresh initiative rolls?'))return;void action('request')}}>Request Fresh Initiative</button>
     {encounter.phase==='rolling'&&<button type="button" disabled={busy||ready!==encounter.entries.length||!ready} onClick={()=>void action('start')}>Start Initiative Order</button>}
     {encounter.phase==='active'&&<button type="button" disabled={busy} onClick={()=>void action('next')}>Next Participant</button>}
+    {encounter.phase==='active'&&<button type="button" disabled={busy} onClick={()=>{if(window.confirm('Advance the active participant AND this zone’s Phase 9 turn? This will tick both sets of timers as applicable.'))void action('next_with_zone_turn')}}>Next + Zone Turn</button>}
     {(encounter.phase==='active'||encounter.phase==='rolling')&&<button type="button" disabled={busy} onClick={()=>{if(window.confirm('End this encounter?'))void action('close')}}>End Encounter</button>}
    </div>
    <div className="nx-init-list">
