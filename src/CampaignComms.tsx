@@ -37,7 +37,7 @@ export default function CampaignComms({db,campaign,isGm=false}:{db:SupabaseClien
  },[db,campaign,isGm]);
  useEffect(()=>{setError('');void refresh().catch(e=>setError(inventoryErrorMessage(e)))},[refresh]);
  useEffect(()=>{
-  let alive=true;let channel:ReturnType<typeof db.channel>|null=null;
+  let alive=true;let channel:ReturnType<SupabaseClient['channel']>|undefined;
   void db.auth.getUser().then(({data,error:e})=>{
    if(!alive||e||!data.user)return;
    channel=db.channel('nx-inbox-'+campaign+'-'+data.user.id)
