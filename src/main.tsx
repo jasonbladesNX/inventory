@@ -31,6 +31,7 @@ import GmCampaignSettings from './GmCampaignSettings';
 import BankPanel from './BankPanel';
 import FeatureErrorBoundary from './FeatureErrorBoundary';
 import GmSessionPartyManager from './GmSessionPartyManager';
+import GmPartyGameplay from './GmPartyGameplay';
 import './style.css';
 import './app-pages.css';
 
@@ -443,6 +444,9 @@ function App(){
         </div>
         {campaign&&!campaignBusy&&!gmAccess&&<section className="nx-page-card nx-warning"><Shield size={20}/><div><h2>GM permission required</h2><p>Your account doesn't have manager access to this campaign. Select another campaign or use the Player Portal.</p></div></section>}
         {campaign&&gmAccess&&!campaignBusy&&<>
+          <GmDashboardCard key={'party-gameplay-'+campaign} title="Party Gameplay">
+            <GmPartyGameplay db={db!} campaign={campaign}/>
+          </GmDashboardCard>
           <GmDashboardCard key={'party-'+campaign} title="Parties & Game Session"><GmSessionPartyManager db={db!} campaign={campaign} characters={chars}/></GmDashboardCard>
           <GmDashboardCard key={'settings-'+campaign} title="Campaign Settings">
             <GmCampaignSettings db={db!} campaign={campaign}/>
