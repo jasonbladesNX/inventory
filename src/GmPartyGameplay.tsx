@@ -2,6 +2,7 @@ import React,{useCallback,useEffect,useState} from 'react';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {inventoryErrorMessage} from './inventoryErrors';
 import PartyChat from './PartyChat';
+import PartyCombatBoard from './PartyCombatBoard';
 type Party={id:string;name:string;members:{character_id:string;name:string}[]};
 type Zone={id:string;name:string;active:boolean};
 type Summary={party_id:string;name:string;bank_items:{id:string;name:string;quantity:number}[];members:{character_id:string;name:string;zone_name:string|null;hp:{current:number;max:number}|null;initiative_roll:number|null;initiative_score:number|null}[]};
@@ -94,6 +95,7 @@ export default function GmPartyGameplay({db,campaign}:{db:SupabaseClient;campaig
      max={summary?.bank_items?.find(i=>i.id===lootItem)?.quantity} value={lootQty} onChange={e=>setLootQty(e.target.value)}/></label>
     <button type="button" disabled={busy||!lootItem||!lootTarget} onClick={()=>void distribute()}>Distribute Loot</button>
    </div>
+   <PartyCombatBoard db={db} party={party} character={null}/>
    <PartyChat db={db} party={party} character={null}/>
    <div style={{display:'grid',gap:8}}>
     <h3>Message Party</h3>
