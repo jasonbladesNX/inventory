@@ -67,7 +67,7 @@ export default function BankPanel({db,campaign,character,items,revision=0,onInve
     <div className="nx-bank-card-heading">{bank.type==='personal'?<Archive size={18}/>:<Users size={18}/>}
      <strong>{bank.name}</strong><small>{bank.items.length} item stacks</small></div>
     {bank.type==='party'&&bank.withdrawal_policy==='approval'&&
-     <p className="nx-bank-note">Approval required: submit item requests under My Party → Party Loot Requests. Direct item and currency withdrawal is disabled.</p>}
+     <p className="nx-bank-note">Approval required: request items or currency under My Party. Direct party-bank withdrawals are disabled.</p>}
     {bank.items.length===0?<p className="nx-bank-empty">Nothing stored here yet.</p>:
      <div className="nx-bank-items">{bank.items.map(stored=><div key={stored.id} className="nx-bank-item">
       <div><strong>{stored.name}</strong><small>Quantity: {stored.quantity}</small></div>
