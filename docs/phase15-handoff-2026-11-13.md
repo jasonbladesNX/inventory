@@ -134,3 +134,35 @@ All data changes from these tests rolled back. The 10 permanent QA characters re
 ### Player-party bank refresh integration
 - `BankPanel` now accepts an optional `revision` counter, and its data-refresh effect reacts to membership changes. `src/main.tsx` passes the existing inventory revision; player create/join/leave advances that counter so newly available party banks appear promptly.
 - No live GitHub Actions run was available for the latest commit during this check; browser and build acceptance remain outstanding.
+
+
+## Phase 15 continuation — Party approvals, invitations and organizer controls (November 14, 2026)
+
+Following user browser acceptance of self-service create/join/leave and shared bank access, implemented a controlled-enrollment workflow that preserves **open** as the default.
+
+### Delivered
+- `docs/sql/phase15_party_approval_invites.sql`: `campaign_parties.join_policy` (`open` or `approval`); private `party_membership_requests` ledger; player join requests, organizer/GM invitations, approve/decline/cancel with authenticated authorization; GM-only join-policy changes; request list scoped to the player's active character, organizer or GM.
+- `docs/sql/phase15_party_policy_rpc_updates.sql`: existing direct-join RPC rejects approval-required parties (server-side), exposes join policy and organizer metadata to players/GM. Existing open-party join behavior retained.
+- `docs/sql/phase15_party_invite_candidates.sql`: current organizer/GM can list invite-eligible campaign characters who do not belong to another party or already have a pending request.
+- `docs/sql/phase15_repeat_party_request_fix.sql`: previous accepted/rejected requests no longer prevent future invitations; unique *pending* request index remains.
+- `docs/sql/phase15_gm_party_session_lock.sql`: GM create/add/remove operations now obey the active-session lock too.
+- `docs/sql/phase15_party_organizer_membership_guard.sql`: leaving a party revokes the former organizer's privileges to invite and review, while GM authority persists.
+- `src/PlayerPartyManager.tsx`: player requests to join approval-required parties; organizers invite other characters and review pending join requests; invited players accept/decline. Keyboard submit and button click both honor join policies.
+- `src/GmSessionPartyManager.tsx`: GM select Open/Approval Required for each party.
+- `src/player-party.css`: compact pending request UI.
+- `scripts/test-phase15-party-approvals.mjs`: wired into CI, source-contract validation.
+
+### Database integration tests (all rollback-only, no lasting test-party data)
+1. Open-party behavior continues to work through the existing join path; approval-required join rejected if submitted directly.
+2. Player requests, and organizer/GM approvals, create membership; player cannot approve own join request.
+3. Organizer invites, targeted player accepts, member receives access; arbitrary accounts cannot invite.
+4. Only GM changes join policy; duplicate pending requests blocked.
+5. GM/member mutations and pending approvals blocked during live session.
+6. Re-invitation after an earlier accepted membership and later leave succeeds.
+7. Party founder loses organizer privileges after leaving, including invitee-list access.
+
+### Remaining considerations
+- The default remains `open`; GMs must set a party to `approval` before join requests are required.
+- An invitation may be accepted regardless of the party's open/approval policy; acceptance always belongs to the invited player's active character.
+- No external notifications are sent to offline users; the pending requests display on the Player Portal or gameplay party panel when refreshed.
+- Live TypeScript/Vite build and browser acceptance of this latest UI remain unverified; do not mark this continuation accepted without a browser test.
