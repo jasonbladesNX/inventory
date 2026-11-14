@@ -631,7 +631,7 @@ function App(){
           tab={activeTab} onTabChange={setActiveTab}/>
         {activeTab==='inventory'&&<section className="nx-play-extras">
           <ConnectionChecks db={db!} campaign={campaign} character={char}/>
-          <Trading key={campaign+':'+char} db={db!} campaign={campaign} character={char} characters={recipients}/>
+          <Trading key={campaign+':'+char} db={db!} campaign={campaign} character={char} characters={recipients} onInventoryChanged={async()=>{await loadChar(campaign,char)}}/>
         </section>}
       </div>:<section className="nx-page-card">
         <h1>Select a Character</h1>
