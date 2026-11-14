@@ -24,3 +24,21 @@
 
 ## Next-phase dependency
 Phase 15 bank and party membership implementation should reuse active `campaign_members` and GM checks; banks need server-side prohibition on item manipulation during live sessions, not UI-only disable rules.
+
+## Phase 14 Continued Work — Lifecycle, Settings, Ownership UI
+
+Additional SQL:
+- `docs/sql/phase14_campaign_lifecycle.sql`: owner-only archive/restore with saved settings snapshot, trading/shops disabled during archive, active session ended, administrative audit.
+- `docs/sql/phase14_hide_archived_player_campaigns.sql`: archived campaign characters omitted from Player Portal listing.
+- `docs/sql/phase14_owner_role_visibility.sql`: members marked `is_owner` so UI cannot offer owner removal/demotion.
+- `docs/sql/phase14_campaign_settings.sql`: GM-authorized whitelist for `allow_trades`, `allow_shops`, `approval_required`, and `enforce_capacity`, with audit events.
+- `src/GmCampaignSettings.tsx`: toggle interface in GM dashboard, disabled when archived.
+- `src/GmCampaignAdministration.tsx`: owner-only archive/restore controls and guarded owner role actions.
+
+Rollback tests passed:
+- Archive hides campaign from Player Portal, disables trades/shops, restore recovers original JSON settings.
+- Settings editor accepts allowed flags, denies arbitrary fields, logs changes.
+- Reassignment blocks a second active character for a target member, permits reassignment after conflicting character is made inactive.
+- All test mutations rolled back.
+
+Caveats: archived campaigns are hidden from normal Player Portal and trading/shops disabled, but not every legacy gameplay RPC independently checks archive status. Campaign duplication/bulk administration/granular permission templates still remain. Browser build/Cloudflare deployment unverified.
