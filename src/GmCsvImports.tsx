@@ -4,6 +4,8 @@ import {AlertTriangle,CheckCircle2,FileSpreadsheet,Info,UploadCloud} from 'lucid
 import {inventoryErrorMessage} from './inventoryErrors';
 import {gmCsvTemplates,type GmCsvTemplate} from './gmCsvTemplateSpecs';
 import {parseGmImportCsv,type CsvImportKind,type CsvImportProblem,type CsvImportRow} from './gmCsvImportParser';
+import {reviewGmCsvImport,makeGmCsvReport,saveGmCsvReport,gmCsvReportName,
+  type CsvDuplicateStrategy,type CsvReportEntry} from './gmCsvImportReview';
 import './gm-csv-imports.css';
 
 type PreviewRow={
@@ -47,6 +49,10 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
   const [fileName,setFileName]=useState('');
   const [rows,setRows]=useState<CsvImportRow[]>([]);
   const [problems,setProblems]=useState<CsvImportProblem[]>([]);
+  const [lineNumbers,setLineNumbers]=useState<number[]>([]);
+  const [duplicateStrategy,setDuplicateStrategy]=useState<CsvDuplicateStrategy>('reject');
+  const [serverIssues,setServerIssues]=useState<CsvImportProblem[]>([]);
+  const [receipt,setReceipt]=useState<string|null>(null);
   const [preview,setPreview]=useState<ImportResponse|null>(null);
   const [confirm,setConfirm]=useState(false);
   const [working,setWorking]=useState<'reading'|'preview'|'import'|null>(null);
@@ -55,9 +61,27 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
   const request=useRef(0);
   const fileInput=useRef<HTMLInputElement>(null);
   const template=gmCsvTemplates.find(t=>t.id===kind) as GmCsvTemplate;
+  const review=React.useMemo(
+    ()=>reviewGmCsvImport({rows,lineNumbers,problems},kind,duplicateStrategy),
+    [rows,lineNumbers,problems,kind,duplicateStrategy]);
+  const issues=[...review.problems,...serverIssues].sort((a,b)=>a.line-b.line);
+  const duplicateCount=review.groups.reduce((total,group)=>total+group.lines.length-1,0);
+  const downloadDiagnostics=()=>{
+    const reportEntries:CsvReportEntry[]=[
+      ...issues.map(issue=>({line:issue.line,status:'error' as const,message:issue.message})),
+      ...review.decisions.map(decision=>({
+        line:decision.line,status:'resolution' as const,message:decision.message,
+        action:'GM selected '+duplicateStrategy+' duplicate handling; confirm the preview before importing.'})),
+      ...(error&&issues.length===0?[{line:0,status:'error' as const,message:error}]:[])
+    ];
+    if(reportEntries.length===0)return;
+    saveGmCsvReport(makeGmCsvReport(fileName||'import.csv',kind,reportEntries),
+      gmCsvReportName(fileName||'import.csv','errors'));
+  };
   const reset=()=>{
     request.current++;
-    setFileName('');setRows([]);setProblems([]);setPreview(null);
+    setFileName('');setRows([]);setProblems([]);setLineNumbers([]);setPreview(null);
+    setDuplicateStrategy('reject');setServerIssues([]);setReceipt(null);
     setConfirm(false);setWorking(null);setError('');setSuccess('');
     if(fileInput.current)fileInput.current.value='';
   };
@@ -75,43 +99,73 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
       const text=await file.text();
       if(serial!==request.current)return;
       const parsed=parseGmImportCsv(text,template);
-      setRows(parsed.rows);setProblems(parsed.problems);
-      if(parsed.problems.length)setError(`Correct ${parsed.problems.length} issue(s) below, then choose the file again.`);
-    }catch(e){if(serial===request.current)setError(inventoryErrorMessage(e))}
+      setRows(parsed.rows);setLineNumbers(parsed.lineNumbers);setProblems(parsed.problems);
+      if(parsed.problems.length)setError('Review the validation findings below. Correct invalid values or explicitly resolve duplicate rows.');
+    }catch(e){if(serial===request.current){
+      const detail=inventoryErrorMessage(e);
+      setError(detail);setProblems([{line:0,message:detail}]);
+    }}
     finally{if(serial===request.current)setWorking(null)}
   };
   const previewFile=async()=>{
-    if(working||!rows.length||problems.length)return;
+    if(working||!review.effectiveRows.length||review.problems.length)return;
     const serial=request.current;
-    setWorking('preview');setError('');setSuccess('');setPreview(null);setConfirm(false);
+    setWorking('preview');setError('');setServerIssues([]);setSuccess('');setPreview(null);setConfirm(false);
     try{
       const {data,error:rpcError}=await db.rpc(rpcNames[kind],{
-        p_campaign:campaign,p_rows:rows,p_dry_run:true
+        p_campaign:campaign,p_rows:review.effectiveRows,p_dry_run:true
       });
       if(rpcError)throw rpcError;
       if(serial!==request.current)return;
       const response=data as ImportResponse;
-      if(response?.mode!=='preview'||response.row_count!==rows.length||response.rows?.length!==rows.length||
+      if(response?.mode!=='preview'||response.row_count!==review.effectiveRows.length||response.rows?.length!==review.effectiveRows.length||
         (kind==='shop-stock'&&response.stock_mode!=='replace')||
         (kind==='loot-contents'&&(response.item_mode!=='add'||response.currency_mode!=='set')))
         throw Error('The server returned an incomplete preview. No changes were made.');
       setPreview(response);
-    }catch(e){if(serial===request.current)setError('Preview failed. No records were changed. '+inventoryErrorMessage(e))}
+    }catch(e){
+      if(serial!==request.current)return;
+      const detail=inventoryErrorMessage(e);
+      setError('Preview failed. No records were changed. '+detail);
+      const maybeRow=/\\bRow (\\d+)\\s*:/i.exec(detail);
+      const fallback=maybeRow?[
+        {line:review.sourceLines[Number(maybeRow[1])-1]??0,message:'Server: '+detail}
+      ]:[{line:0,message:'Server: '+detail}];
+      setServerIssues(fallback);
+      // After the full atomic preview rejects, gather additional independent
+      // row errors without weakening any of the original batch guarantees.
+      if(!/permission|not authorized|GM required|network|fetch failed|timeout/i.test(detail)){
+        try{
+          const {data,error:diagError}=await db.rpc('gm_csv_diagnose_rows',{
+            p_campaign:campaign,p_kind:kind,p_rows:review.effectiveRows
+          });
+          if(!diagError&&serial===request.current){
+            const diagnostics=(data as {issues?:{row:number;message:string}[]})?.issues??[];
+            if(diagnostics.length){
+              setServerIssues(diagnostics.map(issue=>({
+                line:review.sourceLines[issue.row-1]??0,
+                message:'Server: '+issue.message.replace(/^Row 1:\\s*/i,'')
+              })));
+            }
+          }
+        }catch{/* Preserve the original error when diagnostics are unavailable. */}
+      }
+    }
     finally{if(serial===request.current)setWorking(null)}
   };
   const applyFile=async()=>{
-    if(!preview||!confirm||working||!rows.length||problems.length)return;
+    if(!preview||!confirm||working||!review.effectiveRows.length||issues.length)return;
     const serial=request.current;
-    setWorking('import');setError('');setSuccess('');
+    setWorking('import');setError('');setServerIssues([]);setSuccess('');
     let committed=false;
     try{
       const {data,error:rpcError}=await db.rpc(rpcNames[kind],{
-        p_campaign:campaign,p_rows:rows,p_dry_run:false,
+        p_campaign:campaign,p_rows:review.effectiveRows,p_dry_run:false,
         ...(kind==='shop-stock'||kind==='loot-contents'?{p_expected:preview.rows}:{})
       });
       if(rpcError)throw rpcError;
       const result=data as ImportResponse;
-      if(result?.mode!=='imported'||result.row_count!==rows.length)
+      if(result?.mode!=='imported'||result.row_count!==review.effectiveRows.length)
         throw Error('The import returned an unexpected result; refresh the dashboard to verify before attempting another import.');
       committed=true;
       if(serial!==request.current)return;
@@ -120,7 +174,13 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
         kind==='loot-contents'?`${result.new_containers} new loot container(s), ${result.item_rows} item reward row(s), and ${result.currency_rows} currency reward row(s)`:
         `${result.total_units} unit(s) granted across ${result.row_count} row(s)`;
       setSuccess(`Import successful: ${qty}. The batch was committed as one transaction.`);
-      setPreview(null);setRows([]);setFileName('');setConfirm(false);
+      setReceipt(makeGmCsvReport(fileName||'import.csv',kind,
+        preview.rows.map((item,i)=>({
+          line:review.sourceLines[i]??(i+2),status:'imported' as const,
+          message:`${item.action}: ${item.item_name??item.currency_code??'record'} in ${item.container_name??item.merchant_name??item.character_name??'campaign'}`,
+          action:'Successfully committed to the selected campaign.'
+        }))));
+      setPreview(null);setRows([]);setLineNumbers([]);setFileName('');setConfirm(false);
       if(fileInput.current)fileInput.current.value='';
       try{await onImported(kind)}
       catch{setSuccess(`Import successful: ${qty}. The dashboard could not refresh automatically; reopen the character or campaign to view the changes.`)}
