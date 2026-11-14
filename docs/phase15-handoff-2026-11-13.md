@@ -166,3 +166,32 @@ Following user browser acceptance of self-service create/join/leave and shared b
 - An invitation may be accepted regardless of the party's open/approval policy; acceptance always belongs to the invited player's active character.
 - No external notifications are sent to offline users; the pending requests display on the Player Portal or gameplay party panel when refreshed.
 - Live TypeScript/Vite build and browser acceptance of this latest UI remain unverified; do not mark this continuation accepted without a browser test.
+
+
+## Phase 15 continuation — Player Party Configuration (November 14, 2026)
+
+User reported that there was no way to configure a party from the player interface, despite the GM having a join-policy dropdown. This UI gap is corrected.
+
+### Implementation
+- `docs/sql/phase15_party_configuration.sql`: `configure_party(p_party,p_name,p_policy)` and `remove_party_member(p_party,p_character)`. Authorized to the **current player organizer** (original creator who still controls an active character in that party), or the campaign GM.
+- Organizer can edit party name, choose `open` or `approval` join policy, and remove another member.
+- Renaming the party also updates its shared bank holder's display name, without changing item/currency ownership.
+- Member removal revokes bank access by removing the character's party membership; all shared bank contents remain unchanged.
+- Both RPCs lock/validate the campaign session and refuse changes while GM gameplay is active. Changes are audit-logged and public/anon function access revoked.
+- `src/PlayerPartyManager.tsx`: **Configure Party** toggle for organizers within My Party, with a compact edit form, Save Party Settings button and Manage Members rows; disabled during active gameplay.
+- `src/player-party.css`: responsive settings and roster controls.
+- `scripts/test-phase15-party-configuration.mjs`: source regression registered in existing GitHub Actions workflow.
+
+### Rollback-only SQL tests
+- Party rename and approval-policy update succeeded.
+- Shared bank display name updated, retaining the same holder.
+- Ordinary party member could not edit settings.
+- Organizer could remove another party member between games.
+- Rename and member removal blocked while GM game session was active.
+- Former organizer lost party editing access after leaving; GM could still configure an orphaned party.
+- All test changes rolled back.
+
+### Browser acceptance required
+Open a character that **created and currently belongs to** a party; under Player Portal → Manage [Character]'s Party or gameplay → My Party, click **Configure Party**. Change party name and join policy, verify a different player sees the updated join requirement, and remove a test member. Confirm the GM Start Game lock disables changes. A regular member should not see the configuration button.
+
+**Verification caveat:** DB tests and source-level checks performed; actual TypeScript build, deployment and live player browser checks remain unverified. No real-party data modified.
