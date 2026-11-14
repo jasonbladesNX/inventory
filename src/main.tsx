@@ -32,6 +32,7 @@ import BankPanel from './BankPanel';
 import FeatureErrorBoundary from './FeatureErrorBoundary';
 import GmSessionPartyManager from './GmSessionPartyManager';
 import GmPartyGameplay from './GmPartyGameplay';
+import PlayerPartyManager from './PlayerPartyManager';
 import './style.css';
 import './app-pages.css';
 
@@ -403,14 +404,22 @@ function App(){
           {playerCharactersLoading?<p role="status">Loading your characters…</p>:
             playerCharactersError?<p className="nx-character-list-error" role="alert">Unable to load your characters: {playerCharactersError}</p>:
             playerCharacters.length===0?<p className="nx-small-note">No characters are currently assigned to this account. Ask your GM to assign a character in an active campaign.</p>:
-            playerCharacters.map(person=><button type="button" key={person.character_id} className="nx-player-character-card"
-              disabled={busy||campaignBusy} aria-label={`Open ${person.character_name} in ${person.campaign_name}`}
-              onClick={()=>{void openPlayerCharacter(person)}}>
-              <span className="nx-player-character-label">
-                <strong>{person.character_name}</strong>
-                <span>{person.campaign_name}</span>
-              </span>
-            </button>)}
+            playerCharacters.map(person=><div key={person.character_id} className="nx-player-party-character-entry">
+              <button type="button" className="nx-player-character-card"
+                disabled={busy||campaignBusy} aria-label={`Open ${person.character_name} in ${person.campaign_name}`}
+                onClick={()=>{void openPlayerCharacter(person)}}>
+                <span className="nx-player-character-label">
+                  <strong>{person.character_name}</strong>
+                  <span>{person.campaign_name}</span>
+                </span>
+              </button>
+              <details className="nx-player-party-portal-panel">
+                <summary>Manage {person.character_name}'s Party</summary>
+                <FeatureErrorBoundary title="Player Party">
+                  <PlayerPartyManager db={db!} campaign={person.campaign_id} character={person.character_id}/>
+                </FeatureErrorBoundary>
+              </details>
+            </div>)}
         </div>
         <CharacterTransfers db={db!} characters={playerCharacters}/>
       </section>:
@@ -675,6 +684,10 @@ function App(){
           tab={activeTab} onTabChange={setActiveTab}/>
         {activeTab==='inventory'&&<section className="nx-play-extras">
           <ConnectionChecks db={db!} campaign={campaign} character={char}/>
+          <FeatureErrorBoundary key={'party-player-'+campaign+':'+char} title="Party">
+            <PlayerPartyManager db={db!} character={char} campaign={campaign}
+              onPartyChanged={async()=>{setInventoryVersion(v=>v+1)}}/>
+          </FeatureErrorBoundary>
           <FeatureErrorBoundary key={'bank-'+campaign+':'+char} title="Bank Storage">
             <BankPanel db={db!} campaign={campaign} character={char} items={items}
               onInventoryChanged={async()=>{await loadChar(campaign,char)}}/>
