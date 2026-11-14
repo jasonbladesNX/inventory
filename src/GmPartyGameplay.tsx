@@ -4,6 +4,7 @@ import {inventoryErrorMessage} from './inventoryErrors';
 import PartyChat from './PartyChat';
 import PartyCombatBoard from './PartyCombatBoard';
 import PartyLootRequests from './PartyLootRequests';
+import PartyCurrencyRequests from './PartyCurrencyRequests';
 import GmPartyLootBatch from './GmPartyLootBatch';
 type Party={id:string;name:string;members:{character_id:string;name:string}[]};
 type Zone={id:string;name:string;active:boolean};
@@ -111,6 +112,7 @@ export default function GmPartyGameplay({db,campaign}:{db:SupabaseClient;campaig
     if(e)throw e;
     setSummary(data as Summary);
    }}/>
+   <PartyCurrencyRequests db={db} party={party} character={null}/>
    <PartyCombatBoard db={db} party={party} character={null}/>
    <PartyChat db={db} party={party} character={null}/>
    <div style={{display:'grid',gap:8}}>
