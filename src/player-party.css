@@ -20,3 +20,9 @@
 .nx-party-leave{justify-self:start}
 .nx-party-success{color:#b6e8d5}.nx-party-error{color:#ffd0ca}
 @media(max-width:450px){.nx-party-action,.nx-party-current{padding:10px}}
+
+.nx-party-request{display:grid;gap:7px;padding:10px;border:1px solid #3b7186;border-radius:8px;background:#0b3446}
+.nx-party-request strong{color:#d8f8ff}.nx-party-request span{font-size:12px;color:#aad2e0}
+.nx-party-request-actions{display:flex;gap:7px;flex-wrap:wrap}
+.nx-party-request-actions button{flex:1;min-width:96px}
+.nx-party-action select{width:100%}
