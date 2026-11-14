@@ -103,3 +103,30 @@ Additional rollback SQL tests passed: two-party-player currency deposit/withdraw
 - 15.10 Database rollback tests and source regressions implemented. **Live Cloudflare UI/browser checks and actual full TypeScript build remain unverified.**
 
 **The personal and party banks are the core delivered user-requested additions.** Remaining optional party-gameplay expansions should be separately scoped and browser-tested. No existing campaign data was mutated by rollback tests.
+
+
+## Player party self-service follow-up — November 14, 2026
+
+### Gap corrected
+Prior Phase 15 party creation and membership controls were GM-only. Players could use party-bank storage once a GM assigned them but had no player-facing way to create, join, or leave a party.
+
+### Implemented
+- `docs/sql/phase15_player_party_self_service.sql`: authenticated `list_player_party_options(p_character)` and `manage_player_party(p_character,p_action,p_party,p_name)`.
+- A player can create a named party (auto-joins them and provisions a shared party bank), join an existing party in the same active campaign, or leave their current party.
+- One active party per character; a character cannot change parties while the GM session is running. Every operation checks ownership and active campaign membership, locks the session row, and emits an audit event. No open invitation is needed for the default join flow; available campaign parties are discoverable to active characters.
+- Leaving revokes future shared-bank access but **does not** delete the party, its shared holder, items, or currency.
+- `src/PlayerPartyManager.tsx`, `src/player-party.css`: compact responsive panel for Current Party/roster, Create Party, Join Party, Leave Party and lock status.
+- `src/main.tsx`: player party controls under each character in the Player Portal and in gameplay, within a recoverable feature boundary. `src/app-pages.css` adds portal accordion styles.
+- `scripts/test-player-party-self-service.mjs` added to GitHub Actions regression suite.
+
+### Database rollback tests
+1. Owner created a party; auto-membership and shared bank confirmed.
+2. Duplicate membership/create rejected.
+3. Leaving a party during active GM session rejected.
+4. Leaving between games removed membership but preserved shared party bank.
+5. Joining a separate party worked.
+6. Another user cannot mutate the player's membership.
+7. Two distinct test characters/users: discover party, join, see party bank; leave, lose bank access; unknown-party join denied; game-session join denied.
+All data changes from these tests rolled back. The 10 permanent QA characters remain intact.
+
+**Verification outstanding:** Full TypeScript/Vite build and live mobile/browser acceptance still need checking. GM Dashboard party management remains available. Future enhancements may include invitations/approval requests for private parties and leadership permissions; default parties are open to any active character in that campaign.
