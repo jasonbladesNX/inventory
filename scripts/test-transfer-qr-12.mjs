@@ -10,7 +10,7 @@ assert.match(schema,/alter table public\.character_transfer_requests enable row 
 assert.match(schema,/revoke all on public\.character_transfer_requests from public,anon,authenticated/);
 assert.match(schema,/unique_open_character_transfer/);
 for(const fn of ['list_character_transfer_requests','list_character_transfer_targets','manage_character_transfer'])
- assert.ok(schema.includes('function public.'+fn),'missing '+fn);
+ assert.ok(schema.toLowerCase().includes('function public.'+fn),'missing '+fn);
 for(const stage of ['requested','awaiting_target','approved_pending_migration','rejected','cancelled'])
  assert.ok(schema.includes("'"+stage+"'"),'missing '+stage);
 assert.match(schema,/app_private\.is_gm\(t\.source_campaign_id\)/);
