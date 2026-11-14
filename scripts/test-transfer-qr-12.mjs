@@ -26,7 +26,7 @@ assert.match(ui,/list_character_transfer_targets/);
 assert.match(ui,/manage_character_transfer/);
 assert.match(ui,/Approve as Source GM/);
 assert.match(ui,/Approve as Destination GM/);
-assert.match(ui,/safe migration remains a separate step/);
+assert.match(ui,/Populated characters remain blocked until their campaign-linked data can be migrated safely/,'transfer safety guidance remains visible');
 assert.match(main,/Trade invitation received/);
 assert.match(main,/Review trade as/);
 assert.match(main,/setActiveTab\('inventory'\)/);

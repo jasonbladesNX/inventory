@@ -8,7 +8,7 @@ for(const requirement of [
  'batch_distribute_party_bank_loot','p_allocations jsonb','p_apply boolean default false',
  'jsonb_array_length','v_count>25','is_running','app_private.is_gm',
  'for update','expected_quantity','v_total>v_actual',
- 'Party bank loot cannot be distributed',
+ 'Party loot cannot be distributed during a running game',
  'distribute_party_bank_loot','revoke all on function public.batch_distribute_party_bank_loot'
 ])assert.ok(sql.includes(requirement),'Missing batch distribution safety contract: '+requirement);
 assert.match(sql,/if p_apply then/);

@@ -91,7 +91,7 @@ export default function BankPanel({db,campaign,character,items,revision=0,onInve
     <button disabled={busy||!depositItem||!depositBank} type="submit">Deposit</button>
    </div>
   </form>}
-  <BankTreasury db={db} character={character} banks={state.banks} running={state.is_running} onChanged={async()=>{await onInventoryChanged();await refresh()}}/>
+  <BankTreasury db={db} character={character} banks={state.banks} running={state.is_running} revision={revision} onChanged={async()=>{await onInventoryChanged();await refresh()}}/>
   <details className="nx-bank-history"><summary>Bank Activity History</summary>
    <button type="button" onClick={()=>void loadHistory()}>Load Recent Activity</button>
    {history.length===0?<p>No bank activity loaded.</p>:

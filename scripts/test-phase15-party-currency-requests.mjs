@@ -6,6 +6,8 @@ const ui=read('src/PartyCurrencyRequests.tsx');
 const player=read('src/PlayerPartyManager.tsx');
 const gm=read('src/GmPartyGameplay.tsx');
 const bank=read('docs/sql/phase15_party_bank_withdrawal_policy.sql');
+const treasury=read('src/BankTreasury.tsx');
+const bankPanel=read('src/BankPanel.tsx');
 for(const phrase of [
  'party_currency_requests','enable row level security',
  'revoke all on public.party_currency_requests',
@@ -27,4 +29,6 @@ for(const phrase of ['Request Currency','Approve & Transfer','Decline','Cancel',
  assert.ok(ui.includes(phrase),'Missing currency UI: '+phrase);
 assert.match(player,/<PartyCurrencyRequests key=\{'money-'/);
 assert.match(gm,/<PartyCurrencyRequests db=\{db\} party=\{party\} character=\{null\}/);
+assert.match(treasury,/\[refresh,bankIds,revision\]/,'treasury refreshes on bank membership and inventory changes');
+assert.match(bankPanel,/revision=\{revision\}/,'bank panel forwards inventory revisions');
 console.log('Phase 15 currency request source contracts passed.');
