@@ -4,6 +4,7 @@ import type {SupabaseClient} from '@supabase/supabase-js';
 import {Backpack, CircleDot, Coins, Crown, FlaskConical, Footprints, Gem, Hand, HeartPulse, PackageOpen, ScrollText, Scale, Shield, ShieldCheck, Shirt, ShoppingBag, Sparkles, Star, Sword, Trash2, UserRound, WandSparkles, Wrench, X} from 'lucide-react';
 import {inventoryErrorMessage} from './inventoryErrors';
 import CombatStatusPanel from './CombatStatusPanel';
+import CharacterZoneStatus from './CharacterZoneStatus';
 import CharacterRestPanel from './CharacterRestPanel';
 import CharacterCurrencyPanel from './CharacterCurrencyPanel';
 import CampaignShop from './CampaignShop';
@@ -1003,6 +1004,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       <div className="mv-ornament" aria-hidden="true">✦</div>
     </div>
     {tab==='character'&&<div className="mv-panels">
+      <CharacterZoneStatus db={db} character={character}/>
       {useSuccess&&<p className="mv-use-success" role="status">{useSuccess}</p>}
       <div className="mv-character-action-row">
       <CombatStatusPanel db={db} character={character} inventoryVersion={inventoryVersion}
