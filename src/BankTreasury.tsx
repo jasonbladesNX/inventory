@@ -4,7 +4,7 @@ import {Coins} from 'lucide-react';
 import {inventoryErrorMessage} from './inventoryErrors';
 type Balance={currency_id:string;code:string;name:string;amount:number;precision:number};
 type BankBalance={bank_id:string;currency:Balance[]};
-type Bank={id:string;name:string};
+type Bank={id:string;name:string;type?:'personal'|'party';withdrawal_policy?:'direct'|'approval'};
 type Ledger={carried:Balance[];banks:BankBalance[]};
 export default function BankTreasury({db,character,banks,running,onChanged}:{
  db:SupabaseClient;character:string;banks:Bank[];running:boolean;onChanged:()=>Promise<void>
@@ -31,10 +31,11 @@ export default function BankTreasury({db,character,banks,running,onChanged}:{
   {banks.map(bank=>{const balances=ledger.banks.find(b=>b.bank_id===bank.id)?.currency??[];
    return <div key={bank.id} style={{border:'1px solid #35697e',borderRadius:9,padding:10}}>
     <strong>{bank.name}</strong>
+    {bank.type==='party'&&bank.withdrawal_policy==='approval'&&<p style={{fontSize:12}}>Party currency withdrawals are restricted by GM policy.</p>}
     {balances.length===0?<p style={{fontSize:12}}>No currency stored.</p>:
      balances.filter(c=>Number(c.amount)>0).map(c=><div key={c.currency_id} style={{display:'flex',gap:8,alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',padding:'8px 0'}}>
       <span>{c.amount} {c.code}</span>
-      {!running&&<span style={{display:'flex',gap:6,alignItems:'center'}}>
+      {!running&&!(bank.type==='party'&&bank.withdrawal_policy==='approval')&&<span style={{display:'flex',gap:6,alignItems:'center'}}>
        <input aria-label={'Withdraw '+c.code+' from '+bank.name} type="number" min={1/10**c.precision} step={1/10**c.precision} max={c.amount}
         value={quantities[bank.id+':'+c.currency_id]??String(c.amount)} style={{maxWidth:92}}
         onChange={e=>setQuantities(v=>({...v,[bank.id+':'+c.currency_id]:e.target.value}))}/>
