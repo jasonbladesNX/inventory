@@ -264,3 +264,33 @@ The previous GM Party Gameplay view could send private one-to-one party announce
 3. Player C outside the party should not see its feed. After B leaves, B should immediately lose access to the conversation.
 4. Start Game: verify messages still work while bank and membership controls remain locked.
 5. Verify mobile message input, timestamps, refresh and no inventory black screen.
+
+
+## Phase 15 continuation — Player Party Combat Board (November 14, 2026)
+
+Following browser acceptance of private party messaging, implemented the next party gameplay gap: **a shared, read-only player combat status view**, synchronized with the existing Phase 10 GM zone initiative tracker.
+
+### Delivered
+- `docs/sql/phase15_party_combat_board.sql`: `get_party_combat_board(p_party,p_character)`. Verifies a caller is a current, active owner of the supplied party character, or an authorized campaign GM. Returns only active party members, grouped by their assigned active campaign zones, including zone initiative phase, round, active turn position, whether a party member is acting, initiative score, roll, position and character HP. Non-party enemy identity is deliberately not included. Uses existing `zone_initiative_sessions`, `zone_initiative_entries`, `character_zone_assignments` as authoritative state, does not create a separate encounter system or modify initiative.
+- `src/PartyCombatBoard.tsx`, `src/party-combat.css`: responsive party combat board, highlighted active party member, zone/round/position and HP, manually refreshable plus 15-second polling.
+- `src/PlayerPartyManager.tsx`: combat board shown in active party card, alongside Party Messages.
+- `src/GmPartyGameplay.tsx`: same board in GM party gameplay view, not replacing the GM's interactive Phase 10 combat manager.
+- `scripts/test-phase15-party-combat-board.mjs`: registered in GitHub Actions for source contract regression.
+
+### Database rollback tests (passed)
+- GM and the member owning an active party character could read the board.
+- A member could not use a different party character's UUID to access it; unrelated signed-in account blocked.
+- Synthetic combat arena, encounter session, and two party initiative entries: board correctly returned round 3, active position 1, actor A and two party members; after changing authoritative round/position, board updated to round 4 and actor B.
+- Entire test setup, including temporary party/zone/session assignments, rolled back. Permanent QA characters preserved.
+
+### Remaining/verification
+- This milestone does **not** introduce player turn advancement or GM initiative modifications from the player UI. The existing GM Zone Initiative Manager remains authoritative.
+- The board shows party positions, not every opposing combatant; if an opponent is acting, it says "Another participant is acting".
+- Full TypeScript/Vite build, CI execution, production deployment and user browser acceptance not yet verified.
+
+### Browser acceptance
+1. GM creates/selects a party with two or more player characters sharing a zone; starts zone initiative using the existing GM Initiative Manager.
+2. Players open **My Party → Party Combat Board**, verify round, phase, and individual initiative order.
+3. GM advances to the next party member; the highlighted acting character updates after refresh (or the next 15-second poll).
+4. Members in different zones appear in separate groupings. Non-members and characters who leave should not access the party board.
+5. Combat controls remain GM-only; Party Messages and bank/session locks continue to work.
