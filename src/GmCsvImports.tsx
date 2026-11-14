@@ -103,7 +103,11 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
       if(parsed.problems.length)setError('Review the validation findings below. Correct invalid values or explicitly resolve duplicate rows.');
     }catch(e){if(serial===request.current){
       const detail=inventoryErrorMessage(e);
-      setError(detail);setProblems([{line:0,message:detail}]);
+      const csvLine=/CSV line (\d+)\s*:/i.exec(detail);
+      setError(detail);setProblems([{
+        line:csvLine?Number(csvLine[1]):0,
+        message:detail.replace(/^CSV line \d+\s*:\s*/i,'')
+      }]);
     }}
     finally{if(serial===request.current)setWorking(null)}
   };
