@@ -41,7 +41,7 @@ export default function GmInitiativeManager({db,campaign}:{db:SupabaseClient;cam
    const request=crypto.randomUUID();
    const {error:e}=await db.rpc('manage_zone_initiative',{p_campaign:campaign,p_zone:zone,p_action:a,p_request:request,...fields});
    if(e)throw e;
-   await refresh();setNotice(a==='request'?'Initiative rolls requested. Players can enter their d20 results.':(a==='next'||a==='next_with_zone_turn')?'Advanced to the next participant.':'Initiative updated.');
+   await refresh();if(a==='request'){setRolls({});setScores({});setPositions({})}else if(a==='adjust'){setScores({})}else if(a==='reorder'){setPositions({})}setNotice(a==='request'?'Initiative rolls requested. Players can enter their d20 results.':(a==='next'||a==='next_with_zone_turn')?'Advanced to the next participant.':'Initiative updated.');
   }catch(e){setError(inventoryErrorMessage(e))}
   finally{setBusy(false)}
  }
@@ -57,7 +57,7 @@ export default function GmInitiativeManager({db,campaign}:{db:SupabaseClient;cam
    <span>Round {encounter.round||'—'} · {ready}/{encounter.entries.length} rolls</span></div>
    {encounter.phase==='active'&&<p className="nx-init-active">Acting: <strong>{current?.name??'Unknown'}</strong> · Position {encounter.active_position}</p>}
    <div className="nx-init-actions">
-    <button type="button" disabled={busy} onClick={()=>{if(encounter.phase==='active'&&!window.confirm('Reset this encounter and request fresh initiative rolls?'))return;void action('request')}}>Request Fresh Initiative</button>
+    <button type="button" disabled={busy} onClick={()=>{if((encounter.phase==='active'||(encounter.phase==='rolling'&&ready>0))&&!window.confirm('Reset the current initiative rolls and request fresh results?'))return;void action('request')}}>Request Fresh Initiative</button>
     {encounter.phase==='rolling'&&<button type="button" disabled={busy||ready!==encounter.entries.length||!ready} onClick={()=>void action('start')}>Start Initiative Order</button>}
     {encounter.phase==='active'&&<button type="button" disabled={busy} onClick={()=>void action('next')}>Next Participant</button>}
     {encounter.phase==='active'&&<button type="button" disabled={busy} onClick={()=>{if(window.confirm('Advance the active participant AND this zone’s Phase 9 turn? This will tick both sets of timers as applicable.'))void action('next_with_zone_turn')}}>Next + Zone Turn</button>}
