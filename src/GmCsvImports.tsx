@@ -262,7 +262,7 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
     {error&&<p className="nx-csv-import-error" role="alert">{error}</p>}
     {success&&<p className="nx-csv-import-success" role="status"><CheckCircle2 size={17} aria-hidden="true"/>{success}</p>}
     <div className="nx-csv-import-actions">
-      <button type="button" disabled={Boolean(working)||review.effectiveRows.length===0||issues.length>0}
+      <button type="button" disabled={Boolean(working)||review.effectiveRows.length===0||review.problems.length>0}
         onClick={()=>void previewFile()}>{working==='preview'?'Checking…':'Validate & Preview'}</button>
       {(issues.length>0||review.decisions.length>0||Boolean(error))&&<button type="button"
         className="nx-csv-import-report" onClick={downloadDiagnostics}>Download Validation Report</button>}
