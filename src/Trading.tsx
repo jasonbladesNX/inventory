@@ -28,7 +28,7 @@ export default function Trading({db,campaign,character,characters,onInventoryCha
   document.addEventListener('keydown',close);
   return()=>document.removeEventListener('keydown',close);
  },[composerOpen,detailTrade,qrTrade]);
- if(!character)return <section className="panel"><h2>Player Trading</h2><p className="muted">Select your character to view trades.</p></section>;
+ if(!character)return <section className="mv-panel nx-trading"><h3>Player Trading</h3><p className="nx-trade-footer-note">Select your character to view trades.</p></section>;
  function addItemLine(){const n=Number(quantity),selected=items.find(x=>x.item_id===item);if(!selected||!selected.eligible||!Number.isFinite(n)||n<=0||n>Number(selected.quantity)||itemLines.some(x=>x.item_id===item)){setMessage('Select an eligible unused item and a valid quantity.');return}setItemLines(v=>[...v,{item_id:item,quantity:n}]);setItem('');setQuantity('1');setMessage('')}
  function addMoneyLine(){const n=Number(amount),selected=currencies.find(x=>x.currency_id===currency);if(!selected||!Number.isFinite(n)||n<=0||n>Number(selected.available)||!Number.isInteger(n*10**Number(selected.precision_digits||0))||moneyLines.some(x=>x.currency_id===currency)){setMessage('Select an unused currency and an amount within your balance.');return}setMoneyLines(v=>[...v,{currency_id:currency,amount:n}]);setCurrency('');setAmount('');setMessage('')}
  function offerSummary(t:Trade){
