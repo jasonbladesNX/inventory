@@ -118,7 +118,7 @@ function App(){
   }
   async function loadCampaigns(){
     if(!db)return;
-    const result=await db.from('campaigns').select('id,name,owner_user_id,ruleset_version_id');
+    const result=await db.from('campaigns').select('id,name,owner_user_id,ruleset_version_id,status');
     if(result.error)throw result.error;
     setCampaigns(result.data||[]);
     return result.data||[];
@@ -225,7 +225,7 @@ function App(){
     let cancelled=false;
     setGmCampaignLoading(true);setGmCampaignError('');setGmCampaignIds([]);
     void Promise.all([
-      db.from('campaigns').select('id,name,owner_user_id,ruleset_version_id'),
+      db.from('campaigns').select('id,name,owner_user_id,ruleset_version_id,status'),
       db.from('campaign_members').select('campaign_id,role,status').eq('user_id',session.user.id).eq('status','active')
     ]).then(([campaignResult,membershipResult])=>{
       if(campaignResult.error)throw campaignResult.error;
@@ -443,7 +443,10 @@ function App(){
         {campaign&&!campaignBusy&&!gmAccess&&<section className="nx-page-card nx-warning"><Shield size={20}/><div><h2>GM permission required</h2><p>Your account doesn't have manager access to this campaign. Select another campaign or use the Player Portal.</p></div></section>}
         {campaign&&gmAccess&&!campaignBusy&&<>
           <GmDashboardCard key={'party-'+campaign} title="Parties & Game Session"><GmSessionPartyManager db={db!} campaign={campaign} characters={chars}/></GmDashboardCard>
-          <GmDashboardCard key={'admin-'+campaign} title="Campaign Administration"><GmCampaignAdministration db={db!} campaign={campaign}/></GmDashboardCard>
+          <GmDashboardCard key={'admin-'+campaign} title="Campaign Administration"><GmCampaignAdministration db={db!} campaign={campaign}
+            isOwner={selectedCampaign?.owner_user_id===session?.user?.id}
+            campaignStatus={selectedCampaign?.status||'active'}
+            onCampaignChanged={async()=>{await loadCampaigns()}}/></GmDashboardCard>
           <GmDashboardCard key={'transfers-'+campaign} title="Character Transfer Requests"><CharacterTransfers db={db!} campaign={campaign}/></GmDashboardCard>
           <GmDashboardCard key={'characters-'+campaign} title="Character Management">
           <section className="nx-page-card nx-gm-tools">
