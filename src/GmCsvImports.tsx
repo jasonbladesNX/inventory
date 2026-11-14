@@ -127,7 +127,7 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
       if(serial!==request.current)return;
       const detail=inventoryErrorMessage(e);
       setError('Preview failed. No records were changed. '+detail);
-      const maybeRow=/\\bRow (\\d+)\\s*:/i.exec(detail);
+      const maybeRow=/\bRow (\d+)\s*:/i.exec(detail);
       const fallback=maybeRow?[
         {line:review.sourceLines[Number(maybeRow[1])-1]??0,message:'Server: '+detail}
       ]:[{line:0,message:'Server: '+detail}];
@@ -144,7 +144,7 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
             if(diagnostics.length){
               setServerIssues(diagnostics.map(issue=>({
                 line:review.sourceLines[issue.row-1]??0,
-                message:'Server: '+issue.message.replace(/^Row 1:\\s*/i,'')
+                message:'Server: '+issue.message.replace(/^Row 1:\s*/i,'')
               })));
             }
           }
@@ -226,34 +226,67 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
       Files are read locally first; only validated rows are sent for the server preview.
     </p>
     {fileName&&<p className="nx-csv-import-meta"><FileSpreadsheet size={16} aria-hidden="true"/>
-      <strong>{fileName}</strong><span>{rows.length} data row(s)</span>
+      <strong>{fileName}</strong><span>{rows.length} source row(s) · {review.effectiveRows.length} planned action(s)</span>
     </p>}
-    {problems.length>0&&<section className="nx-csv-import-problems" aria-label="CSV row errors" role="alert">
-      <strong><AlertTriangle size={16} aria-hidden="true"/> {problems.length} validation issue(s)</strong>
-      <ul>{problems.slice(0,40).map((p,i)=><li key={i}>{p.line?`Line ${p.line}`:'File'}: {p.message}</li>)}</ul>
-      {problems.length>40&&<p>And {problems.length-40} additional issues. Fix the file before importing.</p>}
+    {review.groups.length>0&&<section className="nx-csv-import-duplicates" aria-label="Review duplicate rows">
+      <h3><Info size={17} aria-hidden="true"/> Review {duplicateCount} duplicate row(s) across {review.groups.length} group(s)</h3>
+      <p>Duplicates default to rejection. Choose a resolution rule before previewing; the original CSV file is never modified.
+        Entries identified once by a name and once by an ID may require manual correction if the server resolves them to the same record.</p>
+      <label>Duplicate resolution
+        <select value={duplicateStrategy} disabled={Boolean(working)} onChange={event=>{
+          setDuplicateStrategy(event.target.value as CsvDuplicateStrategy);
+          setPreview(null);setConfirm(false);setServerIssues([]);setError('');
+        }}>
+          <option value="reject">Reject duplicates (default)</option>
+          <option value="first">Keep first occurrence</option>
+          <option value="last">Keep last occurrence</option>
+          {(kind==='character-inventory'||kind==='loot-contents')&&
+            <option value="combine">{kind==='loot-contents'?'Combine item units; use last currency amount':'Combine item quantities'}</option>}
+        </select>
+      </label>
+      <ul>{review.groups.slice(0,20).map(group=><li key={group.key}>
+        <strong>{group.label}</strong> · CSV lines {group.lines.join(', ')}
+        {group.canCombine&&<span> · Quantities can be combined</span>}
+      </li>)}</ul>
+      {review.groups.length>20&&<p>Plus {review.groups.length-20} more duplicate groups in the downloadable report.</p>}
+      {review.decisions.length>0&&<details>
+        <summary>{review.decisions.length} resolution decision(s) — inspect excluded or combined rows</summary>
+        <ul>{review.decisions.map((decision,i)=><li key={i}>{decision.message}</li>)}</ul>
+      </details>}
+    </section>}
+    {issues.length>0&&<section className="nx-csv-import-problems" aria-label="CSV row errors" role="alert">
+      <strong><AlertTriangle size={16} aria-hidden="true"/> {issues.length} validation issue(s)</strong>
+      <ul>{issues.slice(0,50).map((p,i)=><li key={i}>{p.line?`CSV line ${p.line}`:'File'}: {p.message}</li>)}</ul>
+      {issues.length>50&&<p>And {issues.length-50} additional issues. Download the full error report.</p>}
     </section>}
     {error&&<p className="nx-csv-import-error" role="alert">{error}</p>}
     {success&&<p className="nx-csv-import-success" role="status"><CheckCircle2 size={17} aria-hidden="true"/>{success}</p>}
     <div className="nx-csv-import-actions">
-      <button type="button" disabled={Boolean(working)||rows.length===0||problems.length>0}
+      <button type="button" disabled={Boolean(working)||review.effectiveRows.length===0||issues.length>0}
         onClick={()=>void previewFile()}>{working==='preview'?'Checking…':'Validate & Preview'}</button>
+      {(issues.length>0||review.decisions.length>0||Boolean(error))&&<button type="button"
+        className="nx-csv-import-report" onClick={downloadDiagnostics}>Download Validation Report</button>}
+      {receipt&&<button type="button" className="nx-csv-import-report"
+        onClick={()=>saveGmCsvReport(receipt,gmCsvReportName('nexus-gm-import','receipt'))}>
+        Download Import Receipt
+      </button>}
       <button type="button" className="nx-csv-import-clear" disabled={Boolean(working)} onClick={reset}>Clear File</button>
     </div>
     {preview&&<section className="nx-csv-import-preview" aria-label="Import preview">
       <h3><CheckCircle2 size={17} aria-hidden="true"/> Server Validation Passed</h3>
-      <p><strong>{preview.row_count} row(s) ready</strong>
-        {kind==='character-inventory'?` · ${preview.total_units} total units`:''}. Nothing has been imported yet.</p>
+      <p><strong>{preview.row_count} action(s) ready from {review.originalCount} CSV row(s)</strong>
+        {kind==='character-inventory'?` · ${preview.total_units} total units`:''}
+        {review.decisions.length?` · ${review.decisions.length} duplicate resolution(s) applied`:''}. Nothing has been imported yet.</p>
       {kind==='shop-stock'&&<p className="nx-csv-shop-warning">Stock quantities and prices are <strong>replaced</strong> for matching listings.
         Merchandise not included in the file is untouched. Inactive merchants can be stocked, but remain closed to players.</p>}
       {kind==='loot-contents'&&<p className="nx-csv-shop-warning">Item quantities are <strong>added</strong> to a container; a currency amount <strong>replaces</strong> the existing amount in that denomination.
         New containers are created without QR codes. Claimed, inactive, or already-issued active QR containers cannot be imported into.</p>}
       <div className={'nx-csv-import-preview-table'+(kind==='shop-stock'?' nx-csv-shop-preview':kind==='loot-contents'?' nx-csv-loot-preview':'')}>
         {kind==='loot-contents'?<table>
-          <thead><tr><th scope="col">Row</th><th scope="col">Container</th><th scope="col">Reward</th>
+          <thead><tr><th scope="col">CSV line</th><th scope="col">Container</th><th scope="col">Reward</th>
             <th scope="col">Current</th><th scope="col">After Import</th></tr></thead>
           <tbody>{preview.rows.map((item,index)=><tr key={index}>
-            <td>{item.row}</td>
+            <td>{review.sourceLines[item.row-1]??item.row}</td>
             <td><strong>{item.container_name}</strong>
               <span className="nx-csv-price-line">{item.new_container?'Create new container':'Existing active container'}</span></td>
             <td>{item.entry_type==='item'?item.item_name:`${item.currency_code} currency`}
@@ -264,10 +297,10 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
               `${item.currency_amount} ${item.currency_code}`}</strong></td>
           </tr>)}</tbody>
         </table>:kind==='shop-stock'?<table>
-          <thead><tr><th scope="col">Row / Action</th><th scope="col">Merchant</th><th scope="col">Item / Currency</th>
+          <thead><tr><th scope="col">CSV line / Action</th><th scope="col">Merchant</th><th scope="col">Item / Currency</th>
             <th scope="col">Currently</th><th scope="col">After Import</th></tr></thead>
           <tbody>{preview.rows.map((item,index)=><tr key={index}>
-            <td>{item.row} · {item.action==='create'?'Create':'Replace'}</td>
+            <td>{review.sourceLines[item.row-1]??item.row} · {item.action==='create'?'Create':'Replace'}</td>
             <td>{item.merchant_name}{item.merchant_active===false&&<span className="nx-csv-inactive-merchant"> (inactive)</span>}</td>
             <td>{item.item_name}<span className="nx-csv-price-line">{item.currency_code}</span></td>
             <td>{item.action==='create'?'No existing listing':<>
@@ -283,9 +316,9 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
             </td>
           </tr>)}</tbody>
         </table>:<table>
-          <thead><tr><th scope="col">Row</th><th scope="col">Action</th><th scope="col">Destination</th><th scope="col">Item</th><th scope="col">Qty / Category</th></tr></thead>
+          <thead><tr><th scope="col">CSV line</th><th scope="col">Action</th><th scope="col">Destination</th><th scope="col">Item</th><th scope="col">Qty / Category</th></tr></thead>
           <tbody>{preview.rows.map((item,index)=><tr key={index}>
-            <td>{item.row}</td><td>{kind==='catalog'?'Create':'Grant'}</td>
+            <td>{review.sourceLines[item.row-1]??item.row}</td><td>{kind==='catalog'?'Create':'Grant'}</td>
             <td>{kind==='catalog'?'Campaign catalog':item.character_name}</td>
             <td>{item.item_name}</td><td>{kind==='catalog'?item.category:item.quantity}</td>
           </tr>)}</tbody>
