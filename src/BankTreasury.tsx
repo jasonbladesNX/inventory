@@ -17,7 +17,12 @@ export default function BankTreasury({db,character,banks,running,revision=0,onCh
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const refresh=useCallback(async()=>{const {data,error:e}=await db.rpc('list_bank_treasury',{p_character:character});if(e)throw e;setLedger(data as Ledger)},[db,character]);
  const bankIds=banks.map(bank=>bank.id).join('|');
- useEffect(()=>{void refresh().catch(e=>setError(inventoryErrorMessage(e)))},[refresh,bankIds,revision]);
+ useEffect(()=>{
+  let active=true;
+  void refresh().catch(e=>{if(active)setError(inventoryErrorMessage(e))});
+  const interval=window.setInterval(()=>{if(active)void refresh().catch(()=>{})},20000);
+  return()=>{active=false;window.clearInterval(interval)};
+ },[refresh,bankIds,revision]);
  useEffect(()=>{setBankId(previous=>banks.some(b=>b.id===previous)?previous:banks[0]?.id??'')},[banks]);
  async function move(action:'deposit'|'withdraw',b:string,c:string,qty:number){
   if(busy)return;setBusy(true);setNotice('');setError('');
