@@ -30,5 +30,7 @@ for(const phrase of ['Request Currency','Approve & Transfer','Decline','Cancel',
 assert.match(player,/<PartyCurrencyRequests key=\{'money-'/);
 assert.match(gm,/<PartyCurrencyRequests db=\{db\} party=\{party\} character=\{null\}/);
 assert.match(treasury,/\[refresh,bankIds,revision\]/,'treasury refreshes on bank membership and inventory changes');
+assert.match(treasury,/window\.setInterval\(\(\)=>\{if\(active\)void refresh\(\)\.catch\(\(\)=>\{\}\)\},20000\)/,'treasury polls for other players’ shared bank currency transfers');
+assert.match(treasury,/window\.clearInterval\(interval\)/,'treasury polling cleans up after unmount');
 assert.match(bankPanel,/revision=\{revision\}/,'bank panel forwards inventory revisions');
 console.log('Phase 15 currency request source contracts passed.');

@@ -38,6 +38,7 @@
 - Performance advisor reports unindexed foreign keys, including bank activity fields; evaluate based on actual query plans/load: https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys
 - `README.md` and `DEPLOYMENT_STEPS.md` retain early-development statements that settlement is disabled; revise documentation before broader release to distinguish current secure settlement from deprecated legacy calls.
 - Existing deliberate limitations remain: nested-container banking is restricted; personal bank references prevent certain character migrations until explicit mapping exists.
+- **Approval separation-of-duties policy:** Code review shows the current party leader can submit a currency or loot request and subsequently approve that same request, because the review permission check does not distinguish the requester when the requester is also the leader. Previous documented self-approval denial checks covered ordinary non-leader players; they do not prove leaders are prohibited. Determine whether leader self-approval is intended. If not, enforce a `requested_by <> auth.uid()` check on approval (with a separate GM override decision), plus rollback tests. No policy change made in this review.
 
 ## Required gate for Phase 16
 - Merge and verify the CI-tested integration changes on `main`.
