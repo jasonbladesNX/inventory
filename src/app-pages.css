@@ -122,3 +122,10 @@ html,body,#root{height:100%;overflow:hidden}
  .nx-entry-grid{max-width:390px}
  .nx-app-playing .multiverse{min-height:calc(100dvh - 145px)}
 }
+
+/* Player Portal party management — kept below each character's launch card. */
+.nx-player-party-character-entry{display:grid;gap:6px;min-width:0}
+.nx-player-party-portal-panel{border:1px solid #36758b;border-radius:9px;background:#092739;padding:10px}
+.nx-player-party-portal-panel>summary{cursor:pointer;color:#c7edfa;font-size:13px;font-weight:700;padding:4px 2px;list-style-position:inside}
+.nx-player-party-portal-panel>.mv-panel{margin:10px 0 0}
+.nx-player-party-portal-panel .nx-player-parties{margin-top:10px}
