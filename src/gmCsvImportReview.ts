@@ -132,12 +132,32 @@ const safeReportCell=(value:string)=>{
   const safe=/^[\s]*[=+\-@]/.test(normalized)?"'"+normalized:normalized;
   return /[",\n]/.test(safe)?'"'+safe.replace(/"/g,'""')+'"':safe;
 };
+export function gmCsvRecommendedFix(message:string):string{
+  if(/duplicate|already exists/i.test(message))
+    return 'Resolve duplicate rows explicitly or remove existing-name conflicts before retrying.';
+  if(/not found|unknown|unavailable|ambiguous|does not match|not available/i.test(message))
+    return 'Use a uniquely matching existing campaign name or its exact UUID; verify the selected campaign.';
+  if(/precision|decimal|fractional|currency_amount/i.test(message))
+    return 'Use a valid campaign currency denomination and its configured decimal precision.';
+  if(/quantity|unit limit|total units|stock/i.test(message))
+    return 'Adjust quantities to the documented per-row and total-import limits.';
+  if(/header|columns|quote|CSV line/i.test(message))
+    return 'Correct the CSV structure and use the latest downloadable template.';
+  if(/claimed|inactive|token/i.test(message))
+    return 'Choose a new active unclaimed container; do not modify one with a live QR claim token.';
+  if(/permission|GM required|authorization/i.test(message))
+    return 'Sign in as a GM authorized for the selected campaign.';
+  if(/preview|changed since/i.test(message))
+    return 'Validate and preview the current records again before confirming.';
+  return 'Review the referenced CSV row, correct the value, then validate again.';
+}
+
 export function makeGmCsvReport(
   filename:string,kind:CsvImportKind,entries:readonly CsvReportEntry[]
 ):string{
   const lines=[['file','import_type','csv_line','status','details','recommended_action'],
     ...entries.map(e=>[filename,kind,e.line>0?String(e.line):'File',e.status,e.message,
-      e.action??(e.status==='error'?'Correct the file, then validate again.':'')])];
+      e.action??(e.status==='error'?gmCsvRecommendedFix(e.message):'')])];
   return '\uFEFF'+lines.map(line=>line.map(safeReportCell).join(',')).join('\r\n')+'\r\n';
 }
 export function saveGmCsvReport(csv:string,filename:string):void{
