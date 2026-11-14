@@ -8,7 +8,7 @@ const player=read('src/CharacterZoneStatus.tsx');
 const character=read('src/CharacterScreen.tsx');
 for(const table of ['campaign_zones','character_zone_assignments','zone_time_events'])
  assert.match(migration,new RegExp('create table if not exists public\\.'+table));
-for(const rpc of ['list_campaign_zone_state','get_character_zone_state','manage_campaign_zone'])assert.ok(migration.includes('function public.'+rpc));
+for(const rpc of ['list_campaign_zone_state','get_character_zone_state','manage_campaign_zone'])assert.ok(migration.toLowerCase().includes('function public.'+rpc));
 assert.match(migration,/alter table public\.campaign_zones enable row level security/);
 assert.match(migration,/not app_private\.is_gm\(p_campaign\)/);
 assert.match(migration,/unique\(zone_id,request_id\)/);
