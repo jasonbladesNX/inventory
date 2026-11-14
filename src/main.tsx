@@ -11,6 +11,7 @@ import RequirementEditor from './RequirementEditor';
 import ItemUseEffectFields,{buildUseEffect,draftFromEffect,emptyUseEffect,type UseEffectDraft} from './ItemUseEffectFields';
 import ConnectionChecks from './ConnectionChecks';
 import Trading from './Trading';
+import TradingBoundary from './TradingBoundary';
 import GmCurrencyManager from './GmCurrencyManager';
 import GmMerchantManager from './GmMerchantManager';
 import GmLootManager from './GmLootManager';
@@ -631,7 +632,9 @@ function App(){
           tab={activeTab} onTabChange={setActiveTab}/>
         {activeTab==='inventory'&&<section className="nx-play-extras">
           <ConnectionChecks db={db!} campaign={campaign} character={char}/>
-          <Trading key={campaign+':'+char} db={db!} campaign={campaign} character={char} characters={recipients} onInventoryChanged={async()=>{await loadChar(campaign,char)}}/>
+          <TradingBoundary key={'trading-boundary-'+campaign+':'+char} character={char}>
+            <Trading key={campaign+':'+char} db={db!} campaign={campaign} character={char} characters={recipients} onInventoryChanged={async()=>{await loadChar(campaign,char)}}/>
+          </TradingBoundary>
         </section>}
       </div>:<section className="nx-page-card">
         <h1>Select a Character</h1>
