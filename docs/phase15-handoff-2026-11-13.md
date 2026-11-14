@@ -229,3 +229,38 @@ Test with two player accounts/characters assigned to one party: creator sees **C
 - `docs/sql/phase15_party_leadership_pending_request_guard.sql`: Former leaders who authored pending invitations cannot cancel them after transferring leadership. Only current leader, GM, or the requester of their own join request may cancel. The pending-request UI applies the same permissions.
 - Additional rollback test passed: old leader's attempt to cancel an outstanding invite was rejected; new leader successfully cancelled it.
 - `scripts/test-phase15-party-leadership.mjs` now checks this privilege revocation.
+
+
+## Phase 15 continuation — Party-private chat (November 14, 2026)
+
+The previous GM Party Gameplay view could send private one-to-one party announcements, but players had no shared party message feed. This continuation implements a dedicated conversation.
+
+### Delivered
+- `docs/sql/phase15_party_chat.sql`: `campaign_party_messages` table, RLS enabled, authenticated/anonymous direct grants revoked. The only supported access is through `list_party_messages(p_party,p_character,p_limit)` and `send_party_message(p_party,p_character,p_body)`, both authenticated and server-authorized.
+- Players may read/send only when the supplied character is active, belongs to the party, and is owned by their active campaign membership; a GM can read/send as GM without requiring a character. Former members immediately lose read/send access. A blank message or body over 2000 characters is rejected. Messages are scoped by exact party UUID, not campaign.
+- The feed returns the most recent 50 messages in chronological order; clients can request up to 100.
+- `src/PartyChat.tsx` and `src/party-chat.css`: compact mobile-responsive Party Messages list with sender, GM indicator, timestamps, compose field, 2000-character counter, send, refresh, error states, 15-second polling.
+- `src/PlayerPartyManager.tsx`: Party Messages appears inside the current-party card for all active members, not only the leader.
+- `src/GmPartyGameplay.tsx`: GM Party Gameplay panel includes the same private party chat (GM identity), alongside preexisting direct announcements.
+- `scripts/test-phase15-party-chat.mjs`: registered in GitHub Actions.
+
+### Rollback SQL verification (passed)
+- Non-member could neither read nor send private party messages.
+- Two distinct synthetic test player accounts joined the same party and exchanged messages.
+- A GM posted and viewed messages.
+- Upon leaving, the prior member could no longer read or send.
+- Blank messages rejected. All test messages, parties and session changes rolled back.
+- Source integration checks: 10/10 passed.
+
+### Important notes
+- Party messages are allowed during active GM sessions; membership and bank locks remain unaffected.
+- This is polling, not Supabase Realtime; read markers, typing indicators, attachments, and notifications for offline accounts are not implemented.
+- The existing direct GM-to-player message flow remains available separately.
+- Full Vite/TypeScript build, deployment and live browser acceptance were not independently verified.
+
+### Browser acceptance
+1. With Player A and Player B in the same party, open **My Party → Party Messages**, send from A and refresh B; B should receive the message and be able to reply.
+2. GM opens **Party Gameplay**, selects the party, posts a GM message; players see it with GM designation.
+3. Player C outside the party should not see its feed. After B leaves, B should immediately lose access to the conversation.
+4. Start Game: verify messages still work while bank and membership controls remain locked.
+5. Verify mobile message input, timestamps, refresh and no inventory black screen.
