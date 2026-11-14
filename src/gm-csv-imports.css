@@ -70,3 +70,39 @@
 .nx-csv-loot-preview td:nth-child(3){min-width:140px}
 .nx-csv-loot-preview td:nth-child(4),.nx-csv-loot-preview td:nth-child(5){min-width:110px}
 .nx-csv-loot-preview .nx-csv-price-line{display:block;margin-top:4px;color:#b6dbe7}
+
+
+/* Milestone 8.5: explicit duplicate review and downloadable diagnostics. */
+.nx-gm-csv-imports .nx-csv-import-duplicates{
+  display:grid;gap:10px;padding:13px;border:1px solid #6b8d9d;
+  border-radius:10px;background:#0d3042;color:#ccecf4
+}
+.nx-csv-import-duplicates h3{display:flex;align-items:center;gap:8px;
+  font-size:15px;margin:0;color:#e1f8ff}
+.nx-gm-csv-imports .nx-csv-import-duplicates p{
+  margin:0;font-size:12px;line-height:1.5;color:#b3d4df
+}
+.nx-gm-csv-imports .nx-csv-import-duplicates label{
+  display:grid;gap:7px;max-width:440px;font-size:12px;font-weight:650
+}
+.nx-gm-csv-imports .nx-csv-import-duplicates select{
+  min-height:43px;padding:9px 12px;color:#edfaff;background:#0a2536;
+  border:1px solid #5d9eae;border-radius:8px
+}
+.nx-csv-import-duplicates ul{
+  display:grid;gap:6px;max-height:225px;overflow-y:auto;
+  margin:0;padding:0 0 0 20px;font-size:12px;line-height:1.45
+}
+.nx-csv-import-duplicates li{overflow-wrap:anywhere}
+.nx-csv-import-duplicates details{font-size:12px;border-top:1px solid #467082;padding-top:8px}
+.nx-csv-import-duplicates summary{cursor:pointer;color:#aff0fb;font-weight:700}
+.nx-csv-import-duplicates details ul{margin-top:10px}
+.nx-gm-csv-imports .nx-csv-import-actions button.nx-csv-import-report{
+  background:#104456;border:1px solid #448698;color:#def5ff;
+  min-height:44px
+}
+.nx-csv-import-preview table td:first-child{white-space:nowrap}
+@media(max-width:540px){
+ .nx-gm-csv-imports .nx-csv-import-duplicates{padding:10px}
+ .nx-csv-import-duplicates ul{max-height:180px}
+}
