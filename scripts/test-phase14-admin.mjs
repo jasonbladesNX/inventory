@@ -19,4 +19,15 @@ assert.match(ui,/GmCampaignAdministration/);
 assert.match(main,/Campaign Invitations/);
 assert.match(main,/Join Campaign/);
 assert.match(main,/respond_to_campaign_invitation/);
+const lifecycle=read('docs/sql/phase14_campaign_lifecycle.sql');
+const archiveFilter=read('docs/sql/phase14_hide_archived_player_campaigns.sql');
+const settings=read('docs/sql/phase14_campaign_settings.sql');
+const settingsUi=read('src/GmCampaignSettings.tsx');
+for(const part of ['manage_campaign_lifecycle','campaign_archive_snapshots','archived','restore','audit_events'])
+ assert.ok(lifecycle.includes(part),'missing archive feature: '+part);
+assert.match(archiveFilter,/cp.status='active'/);
+assert.match(settings,/update_campaign_admin_settings/);
+assert.match(settings,/campaign_admin_settings/);
+assert.match(settingsUi,/allow_trades/);
+assert.match(main,/<GmCampaignSettings/);
 console.log('Phase 14 GM administration and invitation source contracts passed.');
