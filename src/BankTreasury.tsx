@@ -6,8 +6,8 @@ type Balance={currency_id:string;code:string;name:string;amount:number;precision
 type BankBalance={bank_id:string;currency:Balance[]};
 type Bank={id:string;name:string;type?:'personal'|'party';withdrawal_policy?:'direct'|'approval'};
 type Ledger={carried:Balance[];banks:BankBalance[]};
-export default function BankTreasury({db,character,banks,running,onChanged}:{
- db:SupabaseClient;character:string;banks:Bank[];running:boolean;onChanged:()=>Promise<void>
+export default function BankTreasury({db,character,banks,running,revision=0,onChanged}:{
+ db:SupabaseClient;character:string;banks:Bank[];running:boolean;revision?:number;onChanged:()=>Promise<void>
 }){
  const [ledger,setLedger]=useState<Ledger>({carried:[],banks:[]});
  const [bankId,setBankId]=useState('');
@@ -16,7 +16,8 @@ export default function BankTreasury({db,character,banks,running,onChanged}:{
  const [quantities,setQuantities]=useState<Record<string,string>>({});
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const refresh=useCallback(async()=>{const {data,error:e}=await db.rpc('list_bank_treasury',{p_character:character});if(e)throw e;setLedger(data as Ledger)},[db,character]);
- useEffect(()=>{void refresh().catch(e=>setError(inventoryErrorMessage(e)))},[refresh]);
+ const bankIds=banks.map(bank=>bank.id).join('|');
+ useEffect(()=>{void refresh().catch(e=>setError(inventoryErrorMessage(e)))},[refresh,bankIds,revision]);
  useEffect(()=>{setBankId(previous=>banks.some(b=>b.id===previous)?previous:banks[0]?.id??'')},[banks]);
  async function move(action:'deposit'|'withdraw',b:string,c:string,qty:number){
   if(busy)return;setBusy(true);setNotice('');setError('');
