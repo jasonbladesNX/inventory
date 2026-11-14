@@ -128,7 +128,12 @@ export default function PlayerPartyManager({db,character,campaign,onPartyChanged
       value={name} disabled={busy||state.is_running} onChange={e=>setName(e.target.value)}/></label>
      <button type="submit" disabled={busy||state.is_running||!name.trim()}><Plus size={16}/> Create Party</button>
     </form>
-    <form onSubmit={e=>{e.preventDefault();if(choice)void action('join',choice)}} className="nx-party-action">
+    <form onSubmit={e=>{e.preventDefault();if(!choice)return;
+     const selected=state.parties.find(p=>p.id===choice);
+     if(!selected)return;
+     if(selected.join_policy==='approval')void membershipRequest('request',selected.id,character);
+     else void action('join',selected.id);
+    }} className="nx-party-action">
      <h4>Join a Party</h4>
      <p>Open parties allow immediate joining. Approval-required parties receive a join request.</p>
      <label>Available parties<select value={choice} disabled={busy||state.is_running||state.parties.length===0}
@@ -136,11 +141,8 @@ export default function PlayerPartyManager({db,character,campaign,onPartyChanged
       <option value="">Choose a party…</option>
       {state.parties.map(p=><option key={p.id} value={p.id}>{p.name} ({p.member_count} members)</option>)}
      </select></label>
-     <button type="button" disabled={busy||state.is_running||!choice}
-      onClick={()=>{const selected=state.parties.find(p=>p.id===choice);if(!selected)return;
-       if(selected.join_policy==='approval')void membershipRequest('request',selected.id,character);
-       else void action('join',selected.id);
-      }}><LogIn size={16}/> {state.parties.find(p=>p.id===choice)?.join_policy==='approval'?'Request to Join':'Join Party'}</button>
+     <button type="submit" disabled={busy||state.is_running||!choice}>
+      <LogIn size={16}/> {state.parties.find(p=>p.id===choice)?.join_policy==='approval'?'Request to Join':'Join Party'}</button>
     </form>
    </div>}
   {requests.length>0&&<div className="nx-party-action">
