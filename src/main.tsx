@@ -24,6 +24,7 @@ import GmDashboardCard from './GmDashboardCard';
 import GmZoneManager from './GmZoneManager';
 import GmInitiativeManager from './GmInitiativeManager';
 import CampaignComms from './CampaignComms';
+import CharacterTransfers from './CharacterTransfers';
 import './style.css';
 import './app-pages.css';
 
@@ -363,7 +364,7 @@ function App(){
               </span>
             </button>)}
         </div>
-        <div className="nx-future-feature"><ScrollText size={20}/><div><strong>Request Character Transfer</strong><span>Coming soon — transfer characters between campaigns with GM approval.</span></div></div>
+        <CharacterTransfers db={db!} characters={playerCharacters}/>
       </section>:
       page==='create'?<section className="nx-page-card nx-create-page">
         <button type="button" className="nx-back-link" onClick={()=>navigate('gm-select')}><ChevronLeft size={17}/> GM Campaigns</button>
@@ -395,6 +396,7 @@ function App(){
         </div>
         {campaign&&!campaignBusy&&!gmAccess&&<section className="nx-page-card nx-warning"><Shield size={20}/><div><h2>GM permission required</h2><p>Your account doesn't have manager access to this campaign. Select another campaign or use the Player Portal.</p></div></section>}
         {campaign&&gmAccess&&!campaignBusy&&<>
+          <GmDashboardCard key={'transfers-'+campaign} title="Character Transfer Requests"><CharacterTransfers db={db!} campaign={campaign}/></GmDashboardCard>
           <GmDashboardCard key={'characters-'+campaign} title="Character Management">
           <section className="nx-page-card nx-gm-tools">
             <h2><UserRound size={20}/> Character Management</h2>
