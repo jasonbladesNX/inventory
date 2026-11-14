@@ -395,3 +395,38 @@ This phase extends mandatory leader/GM approval to **items** via `Party Loot Req
 6. Confirm all other Phase 15 flows remain available.
 
 **Status:** Database integration tests and source checks performed; full TypeScript/Vite build, GitHub Actions execution and live browser acceptance not independently verified.
+
+
+## Phase 15 continuation — Party Currency Requests and Approvals (November 14, 2026)
+
+The user accepted the GM-controlled bank withdrawal policy and explicitly asked to **stop manual milestone acceptance testing**. From this point forward, implement and execute available automated verification; consolidate any browser acceptance into a single end-of-phase review.
+
+### Delivered
+- `docs/sql/phase15_party_currency_requests.sql`: `party_currency_requests` with RLS enabled, no direct anon/authenticated table grants; unique partial index for pending party/character/currency requests.
+- New authenticated, permission-checked RPCs:
+  - `list_party_currency_requests(p_party,p_character)` returns only party currency balances and requests visible to the current player, party leader or GM, plus current bank policy and session state.
+  - `manage_party_currency_request(p_party,p_action,p_character,p_currency,p_amount,p_request)` supports `request`, `approve`, `decline`, and `cancel`. Requesters must own a current active party character. The current party leader or campaign GM can approve/decline; only the requester can cancel. Leaders lose approval authority immediately on leadership transfer.
+  - Approval re-verifies active recipient membership and inventory, currency definition/precision, and sufficient bank balance. Uses existing `app_private.move_wallet_amount` to move funds atomically between bank and player wallets, and logs `campaign_bank_currency_activity` plus campaign audit events. All actions locked during active GM game sessions.
+  - Direct item/currency withdrawal restrictions from previous milestone stay in force when the GM policy is `approval`, but approved currency requests now offer an authorized distribution route.
+- `src/PartyCurrencyRequests.tsx`, `src/party-currency-requests.css`: responsive player currency request form, pending requests, leader/GM approval, decline, requester cancel, 20-second polling, manual refresh, precision/available-balance validation.
+- `src/PlayerPartyManager.tsx`: panel appears for every active party character in My Party; triggers inventory/bank refresh after approval.
+- `src/GmPartyGameplay.tsx`: matching GM request and approval queue.
+- Updated `src/GmSessionPartyManager.tsx`, `src/BankPanel.tsx`, `src/BankTreasury.tsx` to remove the stale help text that said currency approvals were unavailable.
+- `scripts/test-phase15-party-currency-requests.mjs`: new source-contract regression included in `.github/workflows/build.yml`.
+
+### Automated verification performed
+1. SQL rollback test with party currency balance 20: player request 7.25, GM approval, 7.25 added to player's carried wallet, 12.75 left in party bank.
+2. Requester self-approval denied; repeated approval denied; actions blocked while game session running.
+3. Leadership handoff A→B: old leader immediately lost read/review ability and approval authorization; new leader approved an existing request.
+4. Duplicate pending requests and invalid denomination precision rejected.
+5. Insufficient bank balance at approval time rejected, leaving the request pending; requester could then cancel; unrelated authenticated account could not view party requests.
+6. Manual source integration checks: **15/15 passed**.
+7. All SQL tests rolled back; existing campaign and character data preserved.
+
+### Automated-build limitation
+- GitHub Actions on push is configured to run `npm run syntax`, `npm run contracts`, `npm run check`, source regressions and `npm run build`. The job's execution result was not independently retrieved from the available GitHub integration.
+- The runtime used for this development session cannot connect directly to GitHub to clone/install and run the full TypeScript/Vite build; therefore **do not represent the complete frontend build, CI run or production browser smoke test as verified**.
+- Supabase security advisor reports RLS enabled without direct table policies for `party_currency_requests` and authenticated access to its SECURITY DEFINER RPCs; both are intentional under the existing RPC-based design, with explicit ownership/role checks, revoked public/anon grants, and no direct table access. No new critical alert was identified in the inspected findings.
+
+### Phase review checklist (deferred)
+At the end of Phase 15: cross-account player/leader/GM testing of currency requests (approval and direct policies), bank/recipient wallet balances, audit/activity records, expired membership behavior, leadership changes with outstanding requests, session locks, mobile layout and legacy bank operations. Confirm latest GitHub Actions green build and deployment before accepting the phase.
