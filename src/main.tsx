@@ -689,7 +689,7 @@ function App(){
               onPartyChanged={async()=>{setInventoryVersion(v=>v+1)}}/>
           </FeatureErrorBoundary>
           <FeatureErrorBoundary key={'bank-'+campaign+':'+char} title="Bank Storage">
-            <BankPanel db={db!} campaign={campaign} character={char} items={items}
+            <BankPanel db={db!} campaign={campaign} character={char} items={items} revision={inventoryVersion}
               onInventoryChanged={async()=>{await loadChar(campaign,char)}}/>
           </FeatureErrorBoundary>
           <TradingBoundary key={'trading-boundary-'+campaign+':'+char} character={char}>
