@@ -1,0 +1,35 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const read=(path)=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+const schema=read('docs/sql/phase12_character_transfer_approval_workflow.sql');
+const main=read('src/main.tsx');
+const ui=read('src/CharacterTransfers.tsx');
+const trade=read('src/Trading.tsx');
+assert.match(schema,/create table public\.character_transfer_requests/);
+assert.match(schema,/alter table public\.character_transfer_requests enable row level security/);
+assert.match(schema,/revoke all on public\.character_transfer_requests from public,anon,authenticated/);
+assert.match(schema,/unique_open_character_transfer/);
+for(const fn of ['list_character_transfer_requests','list_character_transfer_targets','manage_character_transfer'])
+ assert.ok(schema.includes('function public.'+fn),'missing '+fn);
+for(const stage of ['requested','awaiting_target','approved_pending_migration','rejected','cancelled'])
+ assert.ok(schema.includes("'"+stage+"'"),'missing '+stage);
+assert.match(schema,/app_private\.is_gm\(t\.source_campaign_id\)/);
+assert.match(schema,/app_private\.is_gm\(t\.target_campaign_id\)/);
+assert.match(schema,/target_campaign_id/);
+assert.match(schema,/Only character owner may request a transfer/);
+assert.match(schema,/notify_campaign_user/);
+assert.match(main,/CharacterTransfers db=\{db!\} characters=\{playerCharacters\}/);
+assert.match(main,/CharacterTransfers db=\{db!\} campaign=\{campaign\}/);
+assert.match(ui,/list_character_transfer_requests/);
+assert.match(ui,/list_character_transfer_targets/);
+assert.match(ui,/manage_character_transfer/);
+assert.match(ui,/Approve as Source GM/);
+assert.match(ui,/Approve as Destination GM/);
+assert.match(ui,/safe migration remains a separate step/);
+assert.match(main,/Trade invitation received/);
+assert.match(main,/Review trade as/);
+assert.match(main,/setActiveTab\('inventory'\)/);
+assert.match(trade,/new URLSearchParams\(window\.location\.search\)\.get\('trade'\)/);
+assert.match(trade,/TradeQR url=/);
+assert.match(trade,/QR code is not a transfer authorization/);
+console.log('Phase 12 character transfer and QR routing contract passed.');
