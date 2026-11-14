@@ -3,6 +3,7 @@ import type {SupabaseClient} from '@supabase/supabase-js';
 import {Users,Plus,LogIn,LogOut,RefreshCw,Lock,Settings} from 'lucide-react';
 import {inventoryErrorMessage} from './inventoryErrors';
 import PartyChat from './PartyChat';
+import PartyCombatBoard from './PartyCombatBoard';
 import './player-party.css';
 
 type PartyMember={character_id:string;name:string;is_leader?:boolean};
@@ -197,6 +198,7 @@ export default function PlayerPartyManager({db,character,campaign,onPartyChanged
        onClick={()=>void membershipRequest('invite',ownParty.id,inviteCharacter)}>Send Invitation</button>
      </div>}
     <p className="nx-party-help">Your party bank appears in Inventory → Home & Party Banks. Party storage is available only between games.</p>
+    <PartyCombatBoard key={'combat-'+ownParty.id+':'+character} db={db} party={ownParty.id} character={character}/>
     <PartyChat key={ownParty.id+':'+character} db={db} party={ownParty.id} character={character}/>
     <button type="button" className="nx-party-leave" disabled={busy||state.is_running}
      onClick={()=>void action('leave',ownParty.id)}><LogOut size={16}/> Leave Party</button>
