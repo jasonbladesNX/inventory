@@ -57,7 +57,7 @@ export default function GmSessionPartyManager({db,campaign,characters}:{db:Supab
       <option value="approval">Approval required — items need leader/GM approval</option>
      </select>
     </label>
-    <small>Approval required blocks direct item and currency withdrawals. Loot requests provide approved item transfers; currency requests are not yet available.</small>
+    <small>Approval required blocks direct item and currency withdrawals. Players can request either through My Party; the party leader or GM can approve transfers.</small>
     <small>Party bank is shared with these characters:</small>
     {party.members.length===0?<p>No members yet.</p>:<div style={{display:'grid',gap:6}}>
      {party.members.map(m=><div key={m.character_id} style={{display:'flex',justifyContent:'space-between',gap:10}}>
