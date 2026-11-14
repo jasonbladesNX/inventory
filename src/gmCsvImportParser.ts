@@ -5,6 +5,7 @@ export type CsvImportRow=Record<string,string>;
 export type CsvImportProblem={line:number;message:string};
 export type CsvImportParseResult={
   rows:CsvImportRow[];
+  lineNumbers:number[];
   problems:CsvImportProblem[];
 };
 
@@ -75,6 +76,7 @@ export function parseGmImportCsv(input:string,template:GmCsvTemplate):CsvImportP
 
   const problems:CsvImportProblem[]=[];
   const rows:CsvImportRow[]=[];
+  const lineNumbers:number[]=[];
   const seenNames=new Set<string>();
   const seenListings=new Set<string>();
   const seenLoot=new Set<string>();
@@ -192,10 +194,11 @@ export function parseGmImportCsv(input:string,template:GmCsvTemplate):CsvImportP
     }
     for(const message of messages)problems.push({line:rec.line,message});
     rows.push(record);
+    lineNumbers.push(rec.line);
   }
   if((mode==='character-inventory'||mode==='loot-contents')&&totalUnits>10000)
     problems.push({line:0,message:'The file exceeds 10,000 total item units.'});
   if(mode==='loot-contents'&&newLootContainers.size>50)
     problems.push({line:0,message:'A loot CSV can create at most 50 containers in one import.'});
-  return {rows,problems};
+  return {rows,lineNumbers,problems};
 }
