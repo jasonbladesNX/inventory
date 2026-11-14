@@ -233,6 +233,9 @@ function App(){
     return()=>{cancelled=true};
   },[page,session?.user?.id]);
   useEffect(()=>{
+    if(session?.user?.id&&new URLSearchParams(window.location.search).has('trade')&&page==='landing')setPage('player');
+  },[session?.user?.id,page]);
+    useEffect(()=>{
     if(page!=='player'||!session||!db)return;
     let cancelled=false;
     setPlayerCharactersLoading(true);setPlayerCharactersError('');setPlayerCharacters([]);
@@ -259,6 +262,9 @@ function App(){
   const effectAttributes=Array.isArray(campaignRuleset?.configuration?.attributes)?campaignRuleset.configuration.attributes.filter((value:unknown):value is string=>typeof value==='string'):[];
   const allowsCategoryCondition=Array.isArray(effectPolicy?.supported_conditions)&&effectPolicy.supported_conditions.includes('requires_equipped_category');
   const displayName=selectedCampaign?.name||'Campaign';
+  const tradeInvitation=new URLSearchParams(window.location.search).get('trade');
+  const invitationCampaign=new URLSearchParams(window.location.search).get('campaign');
+  const invitedCharacters=tradeInvitation&&invitationCampaign?playerCharacters.filter(person=>person.campaign_id===invitationCampaign):[];
   const isPlay=page==='play'&&Boolean(session&&campaign&&char);
   const signIn=<form className="nx-login-form" onSubmit={e=>{
     e.preventDefault();
@@ -351,6 +357,15 @@ function App(){
         <button type="button" className="nx-back-link" onClick={()=>navigate('landing')}><ChevronLeft size={17}/> Landing</button>
         <div className="nx-page-icon"><UserRound/></div><h1>Player Portal</h1>
         <p>Choose one of your assigned characters to enter its campaign.</p>
+        {tradeInvitation&&invitationCampaign&&<section className="nx-trade-invitation" role="status">
+          <strong>Trade invitation received</strong>
+          <p>Choose your character in the invited campaign to review the trade. A QR invitation never approves or transfers items by itself.</p>
+          {invitedCharacters.length===0?<p>No assigned character matches the invitation campaign. Sign into the participant account.</p>:
+            invitedCharacters.map(person=><button type="button" key={person.character_id} disabled={busy||campaignBusy}
+              onClick={()=>{void openPlayerCharacter(person).then(()=>setActiveTab('inventory'))}}>
+                Review trade as {person.character_name}
+            </button>)}
+        </section>}
         <div className="nx-player-character-list" aria-label="Your characters">
           {playerCharactersLoading?<p role="status">Loading your characters…</p>:
             playerCharactersError?<p className="nx-character-list-error" role="alert">Unable to load your characters: {playerCharactersError}</p>:
