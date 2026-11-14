@@ -326,3 +326,35 @@ Following user browser acceptance of the Party Combat Board, implemented a more 
 - Previous single-item Distribute Loot, Party Messages, and Party Combat Board should continue to work.
 
 **Limitations:** No automatic fair-share/need-before-greed policy or player voting yet. This is GM-directed distribution of eligible top-level bank items, not nested containers, equipment-bound items or reserved items. A full TypeScript/Vite build, GitHub Actions execution, deployment and browser acceptance were not independently verified.
+
+
+## Phase 15 continuation — Party Loot Requests and Leader Approvals (November 14, 2026)
+
+Following browser acceptance of GM Batch Party Loot Distribution, added a player-driven request/review workflow.
+
+### Delivered
+- `docs/sql/phase15_party_loot_requests.sql`: `party_loot_requests` with RLS and no direct anonymous/authenticated table grants, unique pending requests by party/item/character, status/audit history, `list_party_loot_requests(p_party,p_character)` and `manage_party_loot_request(p_party,p_action,p_character,p_item,p_quantity,p_request,p_expected_quantity)`.
+- Active party players can request top-level bank items (with expected stock count), see and cancel their pending requests. The current party leader or campaign GM can review, approve or decline. Previous leaders lose approval permissions immediately on leadership handoff.
+- Approval atomically validates current party membership, recipient inventory, stock freshness, eligible non-equipped/non-container/non-effect/non-trade item status and the active-game lock; moves/splits the item, logs the bank withdrawal and updates request status within one transaction. Stale requests are rejected rather than silently fulfilled against new bank state. No double approvals.
+- `src/PartyLootRequests.tsx` and `src/party-loot-requests.css`: mobile-friendly request form and pending approval queue, with current role/state controls, 20-second refresh and transfer confirmation.
+- Player panel (`src/PlayerPartyManager.tsx`) and GM Party Gameplay (`src/GmPartyGameplay.tsx`) both mount the request panel. GM summary and player Inventory revision refresh after approved transfers.
+- `scripts/test-phase15-party-loot-requests.mjs` added to existing GitHub Actions workflow.
+
+### Rollback database tests passed
+1. Player requested 3 of 7 stocked ingredients; request visible only to permitted accounts.
+2. Player self-approval denied; GM approval moved 3 units to the player inventory, leaving 4 in shared bank.
+3. Repeating approval rejected; request actions blocked during running game.
+4. Leadership transfer A→B: A lost review access and could not approve an existing request; B gained access and approved that same pending request.
+5. All test party/items/request state rolled back and existing permanent QA data preserved.
+
+### Important current policy distinction
+**This is an optional request/approval workflow.** The established `manage_bank_item` RPC still allows active party members to withdraw shared-bank items directly between sessions, as previously designed. Therefore, approval is *not yet a mandatory withdrawal policy*. A later milestone must add a GM-configurable party-bank withdrawal approval setting and enforce it on every withdrawal path if mandatory leader approval is desired. Do not claim this workflow blocks legacy direct withdrawals.
+
+### Browser acceptance
+1. Player opens **My Party → Party Loot Requests**, selects a shared-bank item and requests a positive quantity.
+2. Leader opens the same panel and approves; the item moves to the requesting character's inventory and bank decreases accordingly. Other ordinary members cannot approve.
+3. Transfer leadership and confirm the original leader loses the approval queue while the new leader gains it.
+4. Test Decline, requester Cancel, duplicate request prevention, invalid quantity, stale bank stock, and session lock.
+5. Confirm prior GM Batch Party Loot Distribution, Party Chat and Party Combat Board remain functional.
+
+**Build/deploy status:** SQL rollback tests passed; full TS/Vite build, CI run, and browser deployment not independently verified.
