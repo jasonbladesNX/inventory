@@ -16,6 +16,25 @@ export default function CharacterTransfers({db,campaign,characters=[]}:{db:Supab
  const [notice,setNotice]=useState('');
  const [readiness,setReadiness]=useState<Record<string,{ruleset_match:boolean;dependencies:Record<string,number>;migration_available:boolean;guidance:string}>>({});
  const [migrationChecks,setMigrationChecks]=useState<Record<string,{can_migrate:boolean;blockers:{type:string;source?:string;count?:number}[];guidance:string}>>({});
+ const [manifests,setManifests]=useState<Record<string,any>>({});
+ async function previewMigration(id:string){
+  setError('');
+  const {data,error:e}=await db.rpc('preview_character_migration',{p_request:id});
+  if(e){setError(inventoryErrorMessage(e));return}
+  setManifests(prev=>({...prev,[id]:data}));
+ }
+ async function saveManifest(id:string){
+  if(busy||!window.confirm('Save this mapping snapshot for GM review? This does not move any character records.'))return;
+  setBusy(true);setError('');
+  try{
+   const {error:e}=await db.rpc('save_character_migration_manifest',{
+    p_request:id,p_mapping:manifests[id]??{},p_review:true
+   });
+   if(e)throw e;
+   setNotice('Mapping manifest recorded for GM review. Character transfer remains blocked until all dependencies can be migrated.');
+  }catch(e){setError(inventoryErrorMessage(e))}finally{setBusy(false)}
+ }
+
  async function checkMigration(id:string){
   setError('');
   const {data,error:e}=await db.rpc('get_character_transfer_migration_check',{p_request:id});
@@ -93,6 +112,22 @@ export default function CharacterTransfers({db,campaign,characters=[]}:{db:Supab
      <p>{readiness[t.id].guidance}</p>
      <ul>{Object.entries(readiness[t.id].dependencies).map(([key,count])=><li key={key}>{key.replaceAll('_',' ')}: {count}</li>)}</ul>
     </>}
+
+    <div className="nx-transfer-manifest">
+     <button type="button" disabled={busy} onClick={()=>void previewMigration(t.id)}>Preview Campaign Resource Mapping</button>
+     {manifests[t.id]&&<>
+      <p>This preview does not transfer items or currency. A reviewed mapping is not authorization to bypass migration blockers.</p>
+      <div className="nx-transfer-manifest-grid">
+       {([['Items','item_definitions'],['Equipment slots','equipment_slots'],['Currencies','currency_balances'],['Recipes','learned_recipes']] as const).map(([label,key])=>
+        <div key={key}><strong>{label} ({manifests[t.id][key]?.length??0})</strong>
+         <ul>{(manifests[t.id][key]??[]).map((row:any)=><li key={row.source_id}>
+          {row.name??row.label??row.code??row.source_id}: {row.matches?.length??0} candidate matches
+         </li>)}</ul>
+        </div>)}
+      </div>
+      {t.can_finalize_target&&<button type="button" disabled={busy} onClick={()=>void saveManifest(t.id)}>Save Mapping Review</button>}
+     </>}
+    </div>
     <div className="nx-transfer-migration-actions">
      <button type="button" disabled={busy} onClick={()=>void checkMigration(t.id)}>Check Transfer Eligibility</button>
      {migrationChecks[t.id]&&<>
