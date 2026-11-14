@@ -5,7 +5,8 @@ import {inventoryErrorMessage} from './inventoryErrors';
 import './player-party.css';
 
 type PartyMember={character_id:string;name:string};
-type Party={id:string;name:string;member_count:number;members:PartyMember[]};
+type Party={id:string;name:string;join_policy:'open'|'approval';is_organizer:boolean;member_count:number;members:PartyMember[]};
+type PartyRequest={id:string;party_id:string;party_name:string;character_id:string;character_name:string;request_type:'join'|'invite';can_respond:boolean;can_cancel:boolean};
 type PartyState={campaign_id:string;is_running:boolean;current_party_id:string|null;parties:Party[]};
 
 export default function PlayerPartyManager({db,character,campaign,onPartyChanged}:{
@@ -18,13 +19,27 @@ export default function PlayerPartyManager({db,character,campaign,onPartyChanged
  const [loading,setLoading]=useState(true);
  const [notice,setNotice]=useState('');
  const [error,setError]=useState('');
+ const [requests,setRequests]=useState<PartyRequest[]>([]);
+ const [candidates,setCandidates]=useState<{id:string;name:string}[]>([]);
+ const [inviteCharacter,setInviteCharacter]=useState('');
 
  const refresh=useCallback(async()=>{
-  const {data,error:e}=await db.rpc('list_player_party_options',{p_character:character});
-  if(e)throw e;
-  const next=data as PartyState;
+  const [partyResult,requestResult]=await Promise.all([
+   db.rpc('list_player_party_options',{p_character:character}),
+   db.rpc('list_party_membership_requests',{p_character:character})
+  ]);
+  if(partyResult.error)throw partyResult.error;
+  if(requestResult.error)throw requestResult.error;
+  const next=partyResult.data as PartyState;
+  setRequests((requestResult.data??[]) as PartyRequest[]);
   setState(next);
   setChoice(previous=>next.parties.some(p=>p.id===previous)?previous:'');
+  const mine=next.parties.find(p=>p.id===next.current_party_id);
+  if(mine?.is_organizer){
+   const response=await db.rpc('list_party_invitable_characters',{p_party:mine.id});
+   if(response.error)throw response.error;
+   setCandidates((response.data??[]) as {id:string;name:string}[]);
+  }else setCandidates([]);
  },[db,character]);
 
  useEffect(()=>{
@@ -56,7 +71,25 @@ export default function PlayerPartyManager({db,character,campaign,onPartyChanged
   finally{setBusy(false)}
  }
 
- const ownParty=state.parties.find(p=>p.id===state.current_party_id);
+ async function membershipRequest(action:'request'|'invite'|'accept'|'decline'|'cancel',partyId:string,target:string,requestId?:string){
+  if(busy||state.is_running)return;
+  if(action==='invite'&&!target)return;
+  setBusy(true);setError('');setNotice('');
+  try{
+   const {error:e}=await db.rpc('manage_party_membership_request',{
+    p_character:target,p_party:partyId,p_action:action,p_request:requestId??null
+   });
+   if(e)throw e;
+   await refresh();await onPartyChanged?.();
+   setInviteCharacter('');
+   setNotice(action==='request'?'Join request sent to the organizer.':
+    action==='invite'?'Party invitation created.':
+    action==='accept'?'Party membership approved.':
+    action==='decline'?'Request declined.':'Request cancelled.');
+  }catch(e){setError(inventoryErrorMessage(e))}
+  finally{setBusy(false)}
+ }
+  const ownParty=state.parties.find(p=>p.id===state.current_party_id);
  return <section className="mv-panel nx-player-parties" aria-label="Player party management">
   <div className="nx-player-parties-head">
    <div><h3><Users size={20}/> My Party</h3>
@@ -74,6 +107,15 @@ export default function PlayerPartyManager({db,character,campaign,onPartyChanged
      <span key={m.character_id} className={m.character_id===character?'nx-party-self':''}>
       {m.name}{m.character_id===character?' (you)':''}
      </span>)}</div>
+    <p className="nx-party-help">Join policy: {ownParty.join_policy==='approval'?'Organizer approval':'Open enrollment'}. Your party bank appears in Inventory → Home & Party Banks.</p>
+    {ownParty.is_organizer&&<div className="nx-party-action">
+      <h4>Invite a Character</h4>
+      <label>Campaign character<select value={inviteCharacter} disabled={busy||state.is_running} onChange={e=>setInviteCharacter(e.target.value)}>
+       <option value="">Select character…</option>{candidates.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+      </select></label>
+      <button type="button" disabled={busy||state.is_running||!inviteCharacter}
+       onClick={()=>void membershipRequest('invite',ownParty.id,inviteCharacter)}>Send Invitation</button>
+     </div>}
     <p className="nx-party-help">Your party bank appears in Inventory → Home & Party Banks. Party storage is available only between games.</p>
     <button type="button" className="nx-party-leave" disabled={busy||state.is_running}
      onClick={()=>void action('leave',ownParty.id)}><LogOut size={16}/> Leave Party</button>
@@ -88,15 +130,35 @@ export default function PlayerPartyManager({db,character,campaign,onPartyChanged
     </form>
     <form onSubmit={e=>{e.preventDefault();if(choice)void action('join',choice)}} className="nx-party-action">
      <h4>Join a Party</h4>
-     <p>Choose an existing party in this campaign. Only one party may be active per character.</p>
+     <p>Open parties allow immediate joining. Approval-required parties receive a join request.</p>
      <label>Available parties<select value={choice} disabled={busy||state.is_running||state.parties.length===0}
       onChange={e=>setChoice(e.target.value)}>
       <option value="">Choose a party…</option>
       {state.parties.map(p=><option key={p.id} value={p.id}>{p.name} ({p.member_count} members)</option>)}
      </select></label>
-     <button type="submit" disabled={busy||state.is_running||!choice}><LogIn size={16}/> Join Party</button>
+     <button type="button" disabled={busy||state.is_running||!choice}
+      onClick={()=>{const selected=state.parties.find(p=>p.id===choice);if(!selected)return;
+       if(selected.join_policy==='approval')void membershipRequest('request',selected.id,character);
+       else void action('join',selected.id);
+      }}><LogIn size={16}/> {state.parties.find(p=>p.id===choice)?.join_policy==='approval'?'Request to Join':'Join Party'}</button>
     </form>
    </div>}
+  {requests.length>0&&<div className="nx-party-action">
+   <h4>Pending Party Invitations & Requests</h4>
+   {requests.map(r=><div key={r.id} className="nx-party-request">
+    <strong>{r.party_name}</strong>
+    <span>{r.request_type==='invite'?'Invitation for':'Join request from'} {r.character_name}</span>
+    <div className="nx-party-request-actions">
+     {r.can_respond&&<button type="button" disabled={busy||state.is_running}
+      onClick={()=>void membershipRequest('accept',r.party_id,r.character_id,r.id)}>
+      {r.request_type==='invite'?'Accept Invitation':'Approve Request'}</button>}
+     {r.can_respond&&<button type="button" disabled={busy||state.is_running}
+      onClick={()=>void membershipRequest('decline',r.party_id,r.character_id,r.id)}>Decline</button>}
+     {r.can_cancel&&<button type="button" disabled={busy||state.is_running}
+      onClick={()=>void membershipRequest('cancel',r.party_id,r.character_id,r.id)}>Cancel</button>}
+    </div>
+   </div>)}
+  </div>}
   {notice&&<p className="nx-party-success" role="status">{notice}</p>}
   {error&&<p className="nx-party-error" role="alert">{error}</p>}
  </section>
