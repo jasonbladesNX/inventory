@@ -195,3 +195,31 @@ User reported that there was no way to configure a party from the player interfa
 Open a character that **created and currently belongs to** a party; under Player Portal → Manage [Character]'s Party or gameplay → My Party, click **Configure Party**. Change party name and join policy, verify a different player sees the updated join requirement, and remove a test member. Confirm the GM Start Game lock disables changes. A regular member should not see the configuration button.
 
 **Verification caveat:** DB tests and source-level checks performed; actual TypeScript build, deployment and live player browser checks remain unverified. No real-party data modified.
+
+
+## Phase 15 — Explicit Party Leadership and Transfer (November 14, 2026)
+
+Following acceptance of Party Configuration, user requested one party leader who alone among players can access Configure Party, with the creating player as default and irreversible privilege loss on handoff.
+
+### Changes
+- `docs/sql/phase15_party_leadership.sql`: `campaign_parties.leader_character_id`; existing parties backfilled by creator's character where possible, else earliest member; new parties assign first member as leader through `maintain_party_leader` trigger. Existing `created_by` remains an immutable historical field, **not an authorization role**.
+- `transfer_party_leadership(p_party,p_target_character)`: only authenticated current leader, recipient must be an active member of same party, no self-transfer, only between GM sessions. Transactional row-lock update, before/after audit event. Immediate old-leader privilege loss.
+- `maintain_party_leader` disallows a leader leaving or being removed while other party members remain until they transfer leadership. On an otherwise empty party the last member can leave and leadership becomes null; future first member is promoted automatically.
+- `docs/sql/phase15_party_leadership_authorization.sql` and `docs/sql/phase15_party_leadership_auth_correction.sql`: All existing player/GM party data projection and authorization updated: `configure_party`, `remove_party_member`, `manage_party_membership_request`, `list_party_membership_requests`, `list_party_invitable_characters`, `list_player_party_options`, `list_campaign_parties`. Former creator cannot still configure, invite, approve, remove members, or transfer unless they are the newly assigned current leader (or separately authorized as a campaign GM through GM admin permissions).
+- `src/PlayerPartyManager.tsx`: roster identifies Party Leader; only the current leader sees **Configure Party**; within configuration, **Transfer Party Leadership** lets the leader pick another current member, confirms permanent loss of power, calls server RPC and refreshes UI. New leader receives their controls after refresh. Bank storage stays with the party.
+- `scripts/test-phase15-party-leadership.mjs` registered in GitHub Actions.
+
+### Rollback tests passed
+1. Creating player automatically became leader.
+2. Leadership transferred Player A → B → C using separate real QA test user accounts.
+3. Prior leader immediately lost `is_organizer`, configure permissions, member-removal authorization, invite candidates access, and transfer ability; new leader gained configuration authority.
+4. Self-transfer rejected; leader cannot leave while other members remain until handing over.
+5. Leadership transfer during active GM game blocked.
+6. After handoff, former leader could leave; final member leaving reset vacant leader marker.
+7. GM administrative powers remain separate from player leadership role.
+No test data persisted. Existing QA campaigns and shared banks remain unchanged.
+
+### Browser acceptance
+Test with two player accounts/characters assigned to one party: creator sees **Configure Party → Transfer Party Leadership**. Select another member; confirm; original creator no longer sees Configure Party. Sign in as the recipient and refresh; recipient sees the leader badge and Configure Party and can change settings. Confirm an ordinary member cannot transfer, and transfer is disabled after GM starts the game.
+
+**Build/deployment note:** Server-side rollback tests and source assertions completed. Full TypeScript build, GitHub Actions run and live browser verification not independently confirmed.
