@@ -3,7 +3,7 @@ import type {SupabaseClient} from '@supabase/supabase-js';
 import {Lock,Play,Square,Users} from 'lucide-react';
 import {inventoryErrorMessage} from './inventoryErrors';
 type Character={id:string;name:string};
-type Party={id:string;name:string;join_policy:'open'|'approval';members:{character_id:string;name:string}[]};
+type Party={id:string;name:string;join_policy:'open'|'approval';bank_withdrawal_policy:'direct'|'approval';members:{character_id:string;name:string}[]};
 export default function GmSessionPartyManager({db,campaign,characters}:{db:SupabaseClient;campaign:string;characters:Character[]}){
  const [running,setRunning]=useState(false),[parties,setParties]=useState<Party[]>([]);
  const [name,setName]=useState(''),[chosen,setChosen]=useState<Record<string,string>>({});
@@ -47,6 +47,17 @@ export default function GmSessionPartyManager({db,campaign,characters}:{db:Supab
       <option value="approval">Approval required — organizer/GM reviews requests</option>
      </select>
     </label>
+    <label>Party bank withdrawal policy
+     <select value={party.bank_withdrawal_policy??'direct'} disabled={busy||running}
+      onChange={e=>void action(async()=>{
+       const {error:x}=await db.rpc('set_party_bank_withdrawal_policy',{p_party:party.id,p_policy:e.target.value});
+       if(x)throw x;
+      })}>
+      <option value="direct">Direct — members may withdraw between sessions</option>
+      <option value="approval">Approval required — items need leader/GM approval</option>
+     </select>
+    </label>
+    <small>Approval required blocks direct item and currency withdrawals. Loot requests provide approved item transfers; currency requests are not yet available.</small>
     <small>Party bank is shared with these characters:</small>
     {party.members.length===0?<p>No members yet.</p>:<div style={{display:'grid',gap:6}}>
      {party.members.map(m=><div key={m.character_id} style={{display:'flex',justifyContent:'space-between',gap:10}}>
