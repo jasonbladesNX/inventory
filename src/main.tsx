@@ -23,6 +23,7 @@ import GmCsvImports from './GmCsvImports';
 import GmDashboardCard from './GmDashboardCard';
 import GmZoneManager from './GmZoneManager';
 import GmInitiativeManager from './GmInitiativeManager';
+import CampaignComms from './CampaignComms';
 import './style.css';
 import './app-pages.css';
 
@@ -411,6 +412,7 @@ function App(){
           </GmDashboardCard>
           <GmDashboardCard key={'zones-'+campaign} title="Campaign Zones & Time"><GmZoneManager db={db!} campaign={campaign}/></GmDashboardCard>
           <GmDashboardCard key={'initiative-'+campaign} title="Campaign Initiative"><GmInitiativeManager db={db!} campaign={campaign}/></GmDashboardCard>
+          <GmDashboardCard key={'messages-'+campaign} title="Campaign Messages & Notifications"><CampaignComms db={db!} campaign={campaign} isGm/></GmDashboardCard>
           <GmDashboardCard key={'csv-templates-'+campaign} title="GM CSV Templates">
             <GmCsvTemplates/>
           </GmDashboardCard>
