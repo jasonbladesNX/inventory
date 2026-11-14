@@ -34,13 +34,13 @@ export default function GmZoneManager({db,campaign}:Props){
   try{
    const {error:e}=await db.rpc('manage_campaign_zone',{p_campaign:campaign,p_action:action,p_zone:zone??null,...fields});
    if(e)throw e;
-   await refresh();setFeedback(action==='advance'?'Zone turn advanced.':action==='undo'?'Latest zone advancement safely undone.':'Zone update saved.');
-  }catch(e){setError(inventoryErrorMessage(e))}
+   await refresh();setCorrection(current=>{const next={...current};if(zone)delete next[zone];return next});setFeedback(action==='advance'?'Zone turn advanced.':action==='undo'?'Latest zone advancement safely undone.' :'Zone update saved.');return true;
+  }catch(e){setError(inventoryErrorMessage(e));return false}
   finally{setBusy(false)}
  }
  return <section className="nx-zone-panel" aria-label="Campaign zone management">
   <p>Zones organize characters into independent groups. Advancing a zone affects only its own turn counter and the turn-based durations of characters currently assigned to it; rounds, minutes, hours and rests are separate.</p>
-  <form className="nx-zone-add" onSubmit={e=>{e.preventDefault();if(newName.trim())void act('create',undefined,{p_name:newName.trim()}).then(()=>setNewName(''))}}>
+  <form className="nx-zone-add" onSubmit={e=>{e.preventDefault();if(newName.trim())void act('create',undefined,{p_name:newName.trim()}).then(success=>{if(success)setNewName('')})}}>
    <label>New zone<input maxLength={100} required placeholder="Floor 1" value={newName} disabled={busy} onChange={e=>setNewName(e.target.value)}/></label>
    <button type="submit" disabled={busy||!newName.trim()}>Create Zone</button>
   </form>
