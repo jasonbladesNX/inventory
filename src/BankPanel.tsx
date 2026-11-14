@@ -5,7 +5,7 @@ import {inventoryErrorMessage} from './inventoryErrors';
 import BankTreasury from './BankTreasury';
 import './bank-panel.css';
 type Stored={id:string;name:string;quantity:number;category:string;identified:boolean};
-type Bank={id:string;type:'personal'|'party';name:string;items:Stored[]};
+type Bank={id:string;type:'personal'|'party';withdrawal_policy?:'direct'|'approval';name:string;items:Stored[]};
 type InventoryItem={item_id:string;name:string;quantity:number;eligible:boolean};
 type BanksResult={is_running:boolean;banks:Bank[]};
 export default function BankPanel({db,campaign,character,items,revision=0,onInventoryChanged}:{
@@ -66,10 +66,12 @@ export default function BankPanel({db,campaign,character,items,revision=0,onInve
    {state.banks.map(bank=><div className="nx-bank-card" key={bank.id}>
     <div className="nx-bank-card-heading">{bank.type==='personal'?<Archive size={18}/>:<Users size={18}/>}
      <strong>{bank.name}</strong><small>{bank.items.length} item stacks</small></div>
+    {bank.type==='party'&&bank.withdrawal_policy==='approval'&&
+     <p className="nx-bank-note">Approval required: submit item requests under My Party → Party Loot Requests. Direct item and currency withdrawal is disabled.</p>}
     {bank.items.length===0?<p className="nx-bank-empty">Nothing stored here yet.</p>:
      <div className="nx-bank-items">{bank.items.map(stored=><div key={stored.id} className="nx-bank-item">
       <div><strong>{stored.name}</strong><small>Quantity: {stored.quantity}</small></div>
-      {!state.is_running&&<div className="nx-bank-item-action">
+      {!state.is_running&&!(bank.type==='party'&&bank.withdrawal_policy==='approval')&&<div className="nx-bank-item-action">
        <input type="number" aria-label={'Withdrawal quantity for '+stored.name} min="0.000001" step="any" max={stored.quantity}
         value={withdrawQuantity[stored.id]??String(stored.quantity)}
         onChange={e=>setWithdrawQuantity(v=>({...v,[stored.id]:e.target.value}))}/>
