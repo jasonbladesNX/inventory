@@ -31,7 +31,7 @@ export default function BankTreasury({db,character,banks,running,onChanged}:{
   {banks.map(bank=>{const balances=ledger.banks.find(b=>b.bank_id===bank.id)?.currency??[];
    return <div key={bank.id} style={{border:'1px solid #35697e',borderRadius:9,padding:10}}>
     <strong>{bank.name}</strong>
-    {bank.type==='party'&&bank.withdrawal_policy==='approval'&&<p style={{fontSize:12}}>Party currency withdrawals are restricted by GM policy.</p>}
+    {bank.type==='party'&&bank.withdrawal_policy==='approval'&&<p style={{fontSize:12}}>Direct currency withdrawals require approval. Use My Party → Party Currency Requests to ask the party leader or GM.</p>}
     {balances.length===0?<p style={{fontSize:12}}>No currency stored.</p>:
      balances.filter(c=>Number(c.amount)>0).map(c=><div key={c.currency_id} style={{display:'flex',gap:8,alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',padding:'8px 0'}}>
       <span>{c.amount} {c.code}</span>
