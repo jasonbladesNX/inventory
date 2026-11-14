@@ -111,3 +111,10 @@ All test accounts, campaigns, character records, trades, inventory movements and
 A native QR scanner within the app is not yet implemented; the existing QR invitation can be scanned with the phone camera and deep-linked into the web app. Phase 11 APNs/FCM native push delivery also remains a separate dependency.
 
 **Stop point:** Phase 12 core trade functionality and cross-campaign approval workflow are implemented, but full automatic campaign transfer and live frontend validation remain pending. Do not describe Phase 12 as fully accepted or fully deployed.
+
+## Final follow-up verification
+- Cancellation and GM rejection both passed in rollback transactions. Cancelling/rejecting releases the unique pending-request restriction so a fresh request can be submitted.
+- Unauthorized migration-readiness reads were denied.
+- Source-level integration checks passed **15/15**, including transfer authorization, dual-approval state, migration flag, Player Portal, GM Dashboard, QR routing, trade settlement gating, inventory refresh, and CI registration.
+- Persistent post-test sanity check: **0 transfer requests, 0 trade offers, 1 original character, 1 campaign**; no test records survived.
+- GitHub Actions run results and live frontend deployment remain unverified. Preserve the partial-completion caveat for automatic cross-campaign character migration.
