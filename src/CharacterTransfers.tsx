@@ -17,21 +17,33 @@ export default function CharacterTransfers({db,campaign,characters=[]}:{db:Supab
  const [readiness,setReadiness]=useState<Record<string,{ruleset_match:boolean;dependencies:Record<string,number>;migration_available:boolean;guidance:string}>>({});
  const [migrationChecks,setMigrationChecks]=useState<Record<string,{can_migrate:boolean;blockers:{type:string;source?:string;count?:number}[];guidance:string}>>({});
  const [manifests,setManifests]=useState<Record<string,any>>({});
+ const [mappingChoices,setMappingChoices]=useState<Record<string,Record<string,Record<string,string>>>>({});
+ const mappingSections=['item_definitions','equipment_slots','currency_balances','learned_recipes'] as const;
+ function mappingComplete(id:string){
+  const preview=manifests[id];if(!preview)return false;
+  return mappingSections.every(section=>(preview[section]??[]).every((row:any)=>
+    (row.matches??[]).some((candidate:any)=>candidate.id===mappingChoices[id]?.[section]?.[row.source_id])));
+ }
+
  async function previewMigration(id:string){
   setError('');
   const {data,error:e}=await db.rpc('preview_character_migration',{p_request:id});
   if(e){setError(inventoryErrorMessage(e));return}
   setManifests(prev=>({...prev,[id]:data}));
+  const choices:Record<string,Record<string,string>>={};
+  for(const key of mappingSections)choices[key]=Object.fromEntries((data?.[key]??[]).map((row:any)=>[row.source_id,row.matches?.[0]?.id??'']));
+  setMappingChoices(previous=>({...previous,[id]:choices}));
+
  }
- async function saveManifest(id:string){
+ async function saveManifest(id:string,review:boolean){
   if(busy||!window.confirm('Save this mapping snapshot for GM review? This does not move any character records.'))return;
   setBusy(true);setError('');
   try{
    const {error:e}=await db.rpc('save_character_migration_manifest',{
-    p_request:id,p_mapping:manifests[id]??{},p_review:true
+    p_request:id,p_mapping:mappingChoices[id]??{},p_review:review
    });
    if(e)throw e;
-   setNotice('Mapping manifest recorded for GM review. Character transfer remains blocked until all dependencies can be migrated.');
+   setNotice(review?'Mapping was reviewed and saved. Automatic populated-character transfer is still unavailable.':'Incomplete mapping draft saved. Resolve all missing destinations before review.');
   }catch(e){setError(inventoryErrorMessage(e))}finally{setBusy(false)}
  }
 
@@ -121,11 +133,20 @@ export default function CharacterTransfers({db,campaign,characters=[]}:{db:Supab
        {([['Items','item_definitions'],['Equipment slots','equipment_slots'],['Currencies','currency_balances'],['Recipes','learned_recipes']] as const).map(([label,key])=>
         <div key={key}><strong>{label} ({manifests[t.id][key]?.length??0})</strong>
          <ul>{(manifests[t.id][key]??[]).map((row:any)=><li key={row.source_id}>
-          {row.name??row.label??row.code??row.source_id}: {row.matches?.length??0} candidate matches
+          <label>{row.name??row.label??row.code??row.source_id}
+           <select value={mappingChoices[t.id]?.[key]?.[row.source_id]??''} onChange={e=>setMappingChoices(current=>({
+            ...current,[t.id]:{...current[t.id],[key]:{...current[t.id]?.[key],[row.source_id]:e.target.value}}
+           }))}>
+            <option value="">Unresolved — select destination</option>
+            {(row.matches??[]).map((candidate:any)=><option key={candidate.id} value={candidate.id}>{candidate.name??candidate.label??candidate.code??candidate.id}</option>)}
+           </select>
+          </label>
          </li>)}</ul>
         </div>)}
       </div>
-      {t.can_finalize_target&&<button type="button" disabled={busy} onClick={()=>void saveManifest(t.id)}>Save Mapping Review</button>}
+      {t.can_finalize_target&&<button type="button" disabled={busy} onClick={()=>void saveManifest(t.id,mappingComplete(t.id))}>
+       {mappingComplete(t.id)?'Review & Save Mapping':'Save Unresolved Mapping Draft'}
+      </button>}
      </>}
     </div>
     <div className="nx-transfer-migration-actions">
