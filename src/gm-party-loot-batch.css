@@ -1,0 +1,16 @@
+.nx-loot-batch{display:grid;gap:12px;border:1px solid #3b758b;background:#082b3a;border-radius:10px;padding:12px}
+.nx-loot-batch h3{font:600 17px Georgia,serif;color:#e0f9ff;margin:0}
+.nx-loot-batch>p{font-size:12px;color:#aed1df;margin:0}
+.nx-loot-batch-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,165px),1fr));gap:8px;border:1px solid #366477;border-radius:8px;padding:10px;background:#082433;align-items:end}
+.nx-loot-batch-row>strong{grid-column:1/-1;color:#daf5ff;font-size:13px}
+.nx-loot-batch label{display:grid;gap:6px;font-size:12px;color:#b6dce9}
+.nx-loot-batch select,.nx-loot-batch input{box-sizing:border-box;width:100%;min-width:0;background:#071e2d;color:#e3f7ff;border:1px solid #497a8c;border-radius:7px;padding:9px;min-height:39px}
+.nx-loot-batch button{display:inline-flex;justify-content:center;align-items:center;gap:7px;min-height:39px;border:1px solid #5098ad;color:#e9faff;background:#145065;border-radius:8px;padding:8px 10px;cursor:pointer;font-weight:600}
+.nx-loot-batch button:disabled{opacity:.5;cursor:not-allowed}
+.nx-loot-batch-actions{display:flex;flex-wrap:wrap;gap:9px}
+.nx-loot-batch-preview{display:grid;gap:7px;background:#103747;border:1px solid #79bac8;border-radius:8px;padding:12px}
+.nx-loot-batch-preview strong{color:#d9fcff}
+.nx-loot-batch-preview p{margin:0;font-size:12px;color:#b7dce7}
+.nx-loot-batch-preview button{justify-self:start}
+.nx-loot-batch-error{color:#ffc9c5!important}
+.nx-loot-batch-success{color:#c1f1dc!important}
