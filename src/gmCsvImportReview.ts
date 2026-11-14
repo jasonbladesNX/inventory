@@ -66,7 +66,7 @@ export function reviewGmCsvImport(
         'Duplicate '+group.label+' (also on line '+lines[indexes[0]]+'). Choose a duplicate resolution mode or fix the file.'});
       continue;
     }
-    const primary=strategy==='last'?indexes[indexes.length-1]:indexes[0];
+    const primary=(strategy==='last'||(strategy==='combine'&&!group.canCombine))?indexes[indexes.length-1]:indexes[0];
     for(const i of indexes){
       if(i===primary)continue;
       if(strategy==='combine'&&group.canCombine){
