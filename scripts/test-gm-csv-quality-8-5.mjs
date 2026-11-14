@@ -59,7 +59,7 @@ try{
  }
  const require=createRequire(import.meta.url);
  const {parseGmImportCsv}=require(paths.parser);
- const {reviewGmCsvImport,getGmCsvDuplicateGroups,makeGmCsvReport,gmCsvReportName}=require(paths.helper);
+ const {reviewGmCsvImport,getGmCsvDuplicateGroups,makeGmCsvReport,gmCsvReportName,gmCsvRecommendedFix}=require(paths.helper);
  const {gmCsvTemplates,makeGmTemplateCsv}=require(paths.specs);
  const type=(id)=>gmCsvTemplates.find(t=>t.id===id);
  for(const t of gmCsvTemplates){
@@ -127,6 +127,10 @@ try{
   problems:[{line:3,message:'Stock quantity must be a whole number from 0 to 1,000,000.'}]},
   'shop-stock','first');
  assert.equal(invalid.problems.length,1,'duplicate handling does not erase genuine validation errors');
+ assert.match(gmCsvRecommendedFix('Unknown campaign currency'),/uniquely matching existing campaign name/);
+ assert.match(gmCsvRecommendedFix('Duplicate item name'),/Resolve duplicate rows/);
+ assert.match(gmCsvRecommendedFix('Invalid currency precision'),/configured decimal precision/);
+ assert.match(gmCsvRecommendedFix('CSV line 4: unexpected quote'),/latest downloadable template/);
  const report=makeGmCsvReport('=HYPERLINK("bad")','catalog',[
   {line:3,status:'error',message:'=cmd',action:'@bad'},
   {line:5,status:'resolution',message:'Removed duplicate, kept row 2'}
