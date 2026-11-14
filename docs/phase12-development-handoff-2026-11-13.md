@@ -118,3 +118,19 @@ A native QR scanner within the app is not yet implemented; the existing QR invit
 - Source-level integration checks passed **15/15**, including transfer authorization, dual-approval state, migration flag, Player Portal, GM Dashboard, QR routing, trade settlement gating, inventory refresh, and CI registration.
 - Persistent post-test sanity check: **0 transfer requests, 0 trade offers, 1 original character, 1 campaign**; no test records survived.
 - GitHub Actions run results and live frontend deployment remain unverified. Preserve the partial-completion caveat for automatic cross-campaign character migration.
+
+## Follow-up: Trading UI consistency redesign
+
+User feedback: the prior trading component used legacy generic `panel`, `listrow`, and a lengthy inline form instead of the newer Character/Inventory style.
+
+Changes on `main`:
+- `src/Trading.tsx` now displays a compact Nexus-styled list with clear incoming/outgoing labels, version, approval status, and active/history counts.
+- Selecting a trade opens a responsive item-details-style modal with exchange terms, both-player approval status, expiry, approve, settle, counter, QR, copy link, and cancel actions. These continue to call the secured existing RPCs.
+- “New Trade” opens a matching focused composer popup. Item and currency lines occupy concise horizontal rows with a summarized offer.
+- QR invitation now uses the same modal framing as inventory item details.
+- New `src/trading.css` uses existing fantasy-blue/cyan typography, borders, safe-area padding, and responsive rules.
+- Added `scripts/test-trading-ui-consistency.mjs` and registered it in `.github/workflows/build.yml`. Updated Phase 12 structural regression to locate the settlement guard inside the trade detail popup.
+
+Verification: 21/21 integration/source assertions passed, including settlement guard preservation, approval RPCs, QR safety, modal wiring, mobile breakpoints, and CI registration. **No confirmed production build, browser screenshot validation, or iPhone device test** at this point.
+
+Beta acceptance follow-up: review the compact list on the Inventory tab; open New Trade; compose items and currency; open existing trade details; test Approve, Counteroffer, QR sharing, Settle Trade after both approvals, cancellation, and iPhone layout. The server-side atomic trade safeguards are unchanged.
