@@ -3,7 +3,7 @@ import type {SupabaseClient} from '@supabase/supabase-js';
 import {Lock,Play,Square,Users} from 'lucide-react';
 import {inventoryErrorMessage} from './inventoryErrors';
 type Character={id:string;name:string};
-type Party={id:string;name:string;members:{character_id:string;name:string}[]};
+type Party={id:string;name:string;join_policy:'open'|'approval';members:{character_id:string;name:string}[]};
 export default function GmSessionPartyManager({db,campaign,characters}:{db:SupabaseClient;campaign:string;characters:Character[]}){
  const [running,setRunning]=useState(false),[parties,setParties]=useState<Party[]>([]);
  const [name,setName]=useState(''),[chosen,setChosen]=useState<Record<string,string>>({});
@@ -36,7 +36,18 @@ export default function GmSessionPartyManager({db,campaign,characters}:{db:Supab
   </form>
   <div style={{display:'grid',gap:8}}>{parties.length===0?<p>No parties created yet.</p>:
    parties.map(party=><article key={party.id} style={{border:'1px solid #387990',borderRadius:9,padding:12,display:'grid',gap:8}}>
-    <strong>{party.name}</strong><small>Party bank is shared with these characters:</small>
+    <strong>{party.name}</strong>
+    <label>Player join policy
+     <select value={party.join_policy??'open'} disabled={busy||running}
+      onChange={e=>void action(async()=>{
+       const {error:x}=await db.rpc('set_party_join_policy',{p_party:party.id,p_policy:e.target.value});
+       if(x)throw x;
+      })}>
+      <option value="open">Open — players join immediately</option>
+      <option value="approval">Approval required — organizer/GM reviews requests</option>
+     </select>
+    </label>
+    <small>Party bank is shared with these characters:</small>
     {party.members.length===0?<p>No members yet.</p>:<div style={{display:'grid',gap:6}}>
      {party.members.map(m=><div key={m.character_id} style={{display:'flex',justifyContent:'space-between',gap:10}}>
       <span>{m.name}</span><button type="button" disabled={busy} onClick={()=>void action(async()=>{
