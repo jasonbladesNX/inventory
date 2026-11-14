@@ -4,8 +4,8 @@ import {Users,Plus,LogIn,LogOut,RefreshCw,Lock,Settings} from 'lucide-react';
 import {inventoryErrorMessage} from './inventoryErrors';
 import './player-party.css';
 
-type PartyMember={character_id:string;name:string};
-type Party={id:string;name:string;join_policy:'open'|'approval';is_organizer:boolean;member_count:number;members:PartyMember[]};
+type PartyMember={character_id:string;name:string;is_leader?:boolean};
+type Party={id:string;name:string;join_policy:'open'|'approval';is_organizer:boolean;leader_character_id:string|null;member_count:number;members:PartyMember[]};
 type PartyRequest={id:string;party_id:string;party_name:string;character_id:string;character_name:string;request_type:'join'|'invite';can_respond:boolean;can_cancel:boolean};
 type PartyState={campaign_id:string;is_running:boolean;current_party_id:string|null;parties:Party[]};
 
@@ -25,6 +25,7 @@ export default function PlayerPartyManager({db,character,campaign,onPartyChanged
  const [configOpen,setConfigOpen]=useState(false);
  const [partyDraft,setPartyDraft]=useState('');
  const [policyDraft,setPolicyDraft]=useState<'open'|'approval'>('open');
+ const [nextLeader,setNextLeader]=useState('');
 
  const refresh=useCallback(async()=>{
   const [partyResult,requestResult]=await Promise.all([
@@ -36,6 +37,8 @@ export default function PlayerPartyManager({db,character,campaign,onPartyChanged
   const next=partyResult.data as PartyState;
   setRequests((requestResult.data??[]) as PartyRequest[]);
   setState(next);
+  const myParty=next.parties.find(p=>p.id===next.current_party_id);
+  if(!myParty?.is_organizer)setConfigOpen(false);
   setChoice(previous=>next.parties.some(p=>p.id===previous)?previous:'');
   const mine=next.parties.find(p=>p.id===next.current_party_id);
   if(mine?.is_organizer){
@@ -110,7 +113,23 @@ export default function PlayerPartyManager({db,character,campaign,onPartyChanged
    if(e)throw e;await refresh();await onPartyChanged?.();setNotice('Member removed.');
   }catch(e){setError(inventoryErrorMessage(e))}finally{setBusy(false)}
  }
- const ownParty=state.parties.find(p=>p.id===state.current_party_id);
+ async function transferLeadership(party:Party){
+  const target=party.members.find(m=>m.character_id===nextLeader);
+  if(busy||state.is_running||!party.is_organizer||!target||target.character_id===character)return;
+  if(!window.confirm('Transfer party leadership to '+target.name+'? You will immediately lose all leader configuration and invitation privileges.'))return;
+  setBusy(true);setError('');setNotice('');
+  try{
+   const {error:e}=await db.rpc('transfer_party_leadership',{
+    p_party:party.id,p_target_character:target.character_id
+   });
+   if(e)throw e;
+   setConfigOpen(false);setNextLeader('');
+   await refresh();await onPartyChanged?.();
+   setNotice('Leadership transferred to '+target.name+'. You are now a regular party member.');
+  }catch(e){setError(inventoryErrorMessage(e));void refresh().catch(()=>{})}
+  finally{setBusy(false)}
+ }
+  const ownParty=state.parties.find(p=>p.id===state.current_party_id);
  return <section className="mv-panel nx-player-parties" aria-label="Player party management">
   <div className="nx-player-parties-head">
    <div><h3><Users size={20}/> My Party</h3>
@@ -126,7 +145,7 @@ export default function PlayerPartyManager({db,character,campaign,onPartyChanged
     <div className="nx-party-current-header"><strong>{ownParty.name}</strong><span>{ownParty.member_count} members</span></div>
     <div className="nx-party-members">{ownParty.members.map(m=>
      <span key={m.character_id} className={m.character_id===character?'nx-party-self':''}>
-      {m.name}{m.character_id===character?' (you)':''}
+      {m.name}{m.character_id===character?' (you)':''}{m.is_leader||m.character_id===ownParty.leader_character_id?' · Leader':''}
      </span>)}</div>
     {ownParty.is_organizer&&<>
      <button type="button" aria-expanded={configOpen} disabled={busy}
@@ -152,6 +171,19 @@ export default function PlayerPartyManager({db,character,campaign,onPartyChanged
         onClick={()=>void kickMember(ownParty,m)}>Remove</button>}
       </div>)}
       <p className="nx-party-help">Removing a member revokes shared-bank access without deleting bank contents.</p>
+      <div className="nx-party-transfer-leadership">
+       <h4>Transfer Party Leadership</h4>
+       <p className="nx-party-help">The new leader immediately gains exclusive party configuration, invitation and approval privileges. You will become a regular member.</p>
+       <label>New Party Leader
+        <select value={nextLeader} disabled={busy||state.is_running} onChange={e=>setNextLeader(e.target.value)}>
+         <option value="">Select a party member…</option>
+         {ownParty.members.filter(m=>m.character_id!==ownParty.leader_character_id).map(m=>
+          <option key={m.character_id} value={m.character_id}>{m.name}</option>)}
+        </select>
+       </label>
+       <button type="button" disabled={busy||state.is_running||!nextLeader}
+        onClick={()=>void transferLeadership(ownParty)}>Transfer Leadership</button>
+      </div>
      </div>}
     </>}
     <p className="nx-party-help">Join policy: {ownParty.join_policy==='approval'?'Organizer approval':'Open enrollment'}. Your party bank appears in Inventory → Home & Party Banks.</p>
