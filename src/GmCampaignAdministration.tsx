@@ -1,7 +1,7 @@
 import React,{useCallback,useEffect,useState} from 'react';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {inventoryErrorMessage} from './inventoryErrors';
-type Member={member_id:string;user_id:string;display_name:string;role:string;status:string;character_count:number;active_character_count:number};
+type Member={member_id:string;user_id:string;display_name:string;role:string;status:string;character_count:number;active_character_count:number;is_owner:boolean};
 type Character={id:string;name:string;member_id:string;is_active:boolean};
 type Audit={event_type:string;created_at:string;reason:string};
 type Data={members:Member[];characters:Character[];audit:Audit[]};
@@ -58,10 +58,10 @@ export default function GmCampaignAdministration({db,campaign,isOwner=false,camp
    {data.members.length===0?<p>No members yet.</p>:data.members.map(m=><article key={m.member_id} style={{border:'1px solid #39768c',borderRadius:9,padding:10,display:'grid',gap:7}}>
     <strong>{m.display_name}</strong><small>{m.role} · {m.status} · {m.active_character_count} active characters</small>
     <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-     {m.status==='active'&&m.role==='player'&&<button type="button" disabled={busy} onClick={()=>void run('promote',m.member_id)}>Promote GM</button>}
-     {m.status==='active'&&m.role==='gm'&&<button type="button" disabled={busy} onClick={()=>void run('demote',m.member_id)}>Demote GM</button>}
-     {m.status!=='removed'&&<button type="button" disabled={busy} onClick={()=>void run('remove',m.member_id)}>Remove Member</button>}
-     {m.status==='removed'&&<button type="button" disabled={busy} onClick={()=>void run('reinstate',m.member_id)}>Reinstate</button>}
+     {isOwner&&!m.is_owner&&m.status==='active'&&m.role==='player'&&<button type="button" disabled={busy} onClick={()=>void run('promote',m.member_id)}>Promote GM</button>}
+     {isOwner&&!m.is_owner&&m.status==='active'&&m.role==='gm'&&<button type="button" disabled={busy} onClick={()=>void run('demote',m.member_id)}>Demote GM</button>}
+     {!m.is_owner&&m.status!=='removed'&&<button type="button" disabled={busy} onClick={()=>void run('remove',m.member_id)}>Remove Member</button>}
+     {!m.is_owner&&m.status==='removed'&&<button type="button" disabled={busy} onClick={()=>void run('reinstate',m.member_id)}>Reinstate</button>}
     </div>
    </article>)}
   </div>
