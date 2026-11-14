@@ -9,7 +9,7 @@ for(const text of [
  'campaign_party_messages','enable row level security',
  'revoke all on public.campaign_party_messages',
  'list_party_messages','send_party_message','app_private.is_gm',
- 'campaign_party_members','m.user_id=actor','m.status=\\'active\\'',
+ 'campaign_party_members','m.user_id=actor',"m.status='active'",
  'sender_character_id','p_character','btrim(p_body)',
  'Message length must be 1 to 2000 characters',
  'Party messages are restricted to members and GMs',
