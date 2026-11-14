@@ -27,7 +27,7 @@ assert.ok(schema.includes("p_action='reorder'"));
 assert.ok(integration.includes("'next_with_zone_turn'"));
 assert.ok(integration.includes("perform public.manage_campaign_zone(p_campaign,'advance'"));
 assert.ok(integration.includes("v_item->>'unit'='round'"));
-assert.ok(integration.includes("unique request"));
+assert.ok(integration.includes("p_request is null"));
 assert.ok(main.includes('<GmInitiativeManager db={db!} campaign={campaign}/>'));
 assert.ok(character.includes('<CharacterInitiative db={db} campaign={campaign} character={character}'));
 assert.ok(player.includes('get_character_initiative'));
