@@ -358,3 +358,40 @@ Following browser acceptance of GM Batch Party Loot Distribution, added a player
 5. Confirm prior GM Batch Party Loot Distribution, Party Chat and Party Combat Board remain functional.
 
 **Build/deploy status:** SQL rollback tests passed; full TS/Vite build, CI run, and browser deployment not independently verified.
+
+
+## Phase 15 continuation — GM Party Bank Withdrawal Policy (November 14, 2026)
+
+After user browser acceptance of Player Party Loot Requests/Approvals, closed the previously documented direct-bank withdrawal policy gap.
+
+### Delivered
+- `docs/sql/phase15_party_bank_withdrawal_policy.sql`: adds `campaign_parties.bank_withdrawal_policy` constrained to `direct` (default, preserving existing games) or `approval`. Authenticated, GM-only `set_party_bank_withdrawal_policy(p_party,p_policy)` validates campaign game session lock, changes policy, and logs a campaign audit event.
+- Enforcement is **server-side** in both existing item withdrawal `manage_bank_item` and currency withdrawal `manage_bank_currency`: for party bank withdrawals under `approval`, an authenticated member receives an authorization error and must use an approved request workflow. Deposits and personal-bank withdrawals are unaffected.
+- Existing `list_campaign_parties` exposes policy to GM, `list_character_banks` exposes it to a bank-owning player, and `list_party_loot_requests` exposes policy to the party request UI.
+- `src/GmSessionPartyManager.tsx`: GM Party Management dropdown for Direct versus Approval Required; disabled while gameplay session is active.
+- `src/BankPanel.tsx`: shows approval-required notice and hides direct item withdrawal control for a restricted party bank.
+- `src/BankTreasury.tsx`: shows notice and hides direct currency withdrawal control for a restricted party bank.
+- `src/PartyLootRequests.tsx`: explanatory policy text points players to item request/approval flow.
+- `scripts/test-phase15-party-bank-withdrawal-policy.mjs` registered in GitHub Actions.
+
+### Database rollback tests (passed)
+1. Default `direct` allowed an active party player to withdraw an item.
+2. GM switched policy to `approval`; direct party item withdrawal and direct party currency withdrawal both rejected with authorization errors.
+3. Non-GM was denied permission to change policy.
+4. Player could create an item loot request and GM-approved fulfillment still moved the requested item quantity into that player's carried inventory.
+5. GM restored `direct` and direct withdrawal worked again.
+6. During an active game session even the GM could not change the policy; the GM could change it once the session ended.
+7. All test parties/items/policy changes were rolled back.
+
+### Deliberate limitation
+This phase extends mandatory leader/GM approval to **items** via `Party Loot Requests`. Under `approval` policy, **currency withdrawals are blocked**, but there is **not yet a currency approval-request UI or approval RPC**. Deposit operations remain available between sessions. Consider a dedicated Party Currency Requests milestone next rather than weakening the existing currency guard.
+
+### Browser acceptance
+1. GM Dashboard → Party/Session Manager: find **Party bank withdrawal policy** and set Approval Required.
+2. Player Inventory → Home & Party Banks: party item Withdraw button hidden; personal bank Withdraw remains available. Party Treasury direct currency Withdraw hidden.
+3. Player My Party → Party Loot Requests: request item; leader or GM approves; quantity moves to player, leaving correct bank quantity.
+4. Change policy back to Direct; player party item/currency withdraw actions reappear.
+5. Start game: changing the policy denied, existing bank session lock still works.
+6. Confirm all other Phase 15 flows remain available.
+
+**Status:** Database integration tests and source checks performed; full TypeScript/Vite build, GitHub Actions execution and live browser acceptance not independently verified.
