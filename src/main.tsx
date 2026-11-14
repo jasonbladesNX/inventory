@@ -21,6 +21,7 @@ import GmBulkGrantItems from './GmBulkGrantItems';
 import GmCsvTemplates from './GmCsvTemplates';
 import GmCsvImports from './GmCsvImports';
 import GmDashboardCard from './GmDashboardCard';
+import GmZoneManager from './GmZoneManager';
 import './style.css';
 import './app-pages.css';
 
@@ -407,6 +408,7 @@ function App(){
             </form>
           </section>
           </GmDashboardCard>
+          <GmDashboardCard key={'zones-'+campaign} title="Campaign Zones & Time"><GmZoneManager db={db!} campaign={campaign}/></GmDashboardCard>
           <GmDashboardCard key={'csv-templates-'+campaign} title="GM CSV Templates">
             <GmCsvTemplates/>
           </GmDashboardCard>
