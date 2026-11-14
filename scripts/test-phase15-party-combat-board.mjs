@@ -8,7 +8,7 @@ const gm=read('src/GmPartyGameplay.tsx');
 for(const key of ['get_party_combat_board','zone_initiative_sessions',
  'zone_initiative_entries','active_position','round_number',
  'campaign_party_members','character_zone_assignments',
- 'm.user_id=v_actor','m.status=\\'active\\'',
+ 'm.user_id=v_actor',"m.status='active'",
  'Only party members and campaign GMs may view party combat',
  'revoke all on function public.get_party_combat_board',
  'grant execute on function public.get_party_combat_board'])
