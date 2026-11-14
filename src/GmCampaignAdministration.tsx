@@ -31,9 +31,14 @@ export default function GmCampaignAdministration({db,campaign}:{db:SupabaseClien
   }catch(e){setError(inventoryErrorMessage(e))}finally{setBusy(false)}
  }
  return <section className="nx-admin" style={{display:'grid',gap:14}}>
-  <p>Invite registered Nexus accounts by their user ID, manage campaign membership, and review the administrative audit history.</p>
-  <form onSubmit={e=>{e.preventDefault();void run('invite',undefined,undefined,inviteId)}} style={{display:'grid',gap:8}}>
-   <label>Existing account user ID<input required value={inviteId} onChange={e=>setInviteId(e.target.value)} placeholder="Registered account UUID"/></label>
+  <p>Invite registered Nexus accounts by email, manage campaign membership, and review the administrative audit history.</p>
+  <form onSubmit={e=>{e.preventDefault();void (async()=>{
+    if(busy)return;setBusy(true);setError('');setNotice('');
+    try{const {error:e}=await db.rpc('invite_existing_campaign_user',{p_campaign:campaign,p_email:inviteId});if(e)throw e;
+      setNotice('Invitation sent to the registered account.');setInviteId('');await refresh()
+    }catch(e){setError(inventoryErrorMessage(e))}finally{setBusy(false)}
+   })()}} style={{display:'grid',gap:8}}>
+   <label>Registered player's email<input required type="email" value={inviteId} onChange={e=>setInviteId(e.target.value)} placeholder="player@example.com"/></label>
    <button disabled={busy||!inviteId.trim()} type="submit">Invite Player</button>
   </form>
   <label>Administrative reason (optional)<input maxLength={300} value={reason} onChange={e=>setReason(e.target.value)}/></label>
