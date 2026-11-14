@@ -8,8 +8,8 @@ type Stored={id:string;name:string;quantity:number;category:string;identified:bo
 type Bank={id:string;type:'personal'|'party';name:string;items:Stored[]};
 type InventoryItem={item_id:string;name:string;quantity:number;eligible:boolean};
 type BanksResult={is_running:boolean;banks:Bank[]};
-export default function BankPanel({db,campaign,character,items,onInventoryChanged}:{
- db:SupabaseClient;campaign:string;character:string;items:InventoryItem[];onInventoryChanged:()=>Promise<void>;
+export default function BankPanel({db,campaign,character,items,revision=0,onInventoryChanged}:{
+ db:SupabaseClient;campaign:string;character:string;items:InventoryItem[];revision?:number;onInventoryChanged:()=>Promise<void>;
 }){
  const [state,setState]=useState<BanksResult>({is_running:false,banks:[]});
  const [depositBank,setDepositBank]=useState('');
@@ -38,7 +38,7 @@ export default function BankPanel({db,campaign,character,items,onInventoryChange
   void refresh().catch(e=>{if(alive)setError(inventoryErrorMessage(e))});
   const timer=window.setInterval(()=>{if(alive)void refresh().catch(e=>{if(alive)setError(inventoryErrorMessage(e))})},20000);
   return()=>{alive=false;window.clearInterval(timer)};
- },[refresh]);
+ },[refresh,revision]);
  async function move(action:'deposit'|'withdraw',bankId:string,itemId:string,quantity:number){
   if(busy)return;
   setBusy(true);setMessage('');setError('');
