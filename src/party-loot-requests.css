@@ -1,0 +1,16 @@
+.nx-party-loot-requests{display:grid;gap:10px;background:#082b3b;border:1px solid #36748b;border-radius:10px;padding:12px}
+.nx-party-loot-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.nx-party-loot-head h4{margin:0;display:flex;align-items:center;gap:7px;font:600 15px Georgia,serif;color:#e2f8ff}
+.nx-party-loot-requests p{margin:0;font-size:12px;color:#acceda}
+.nx-party-loot-requests button{background:#10516b;color:#e3faff;border:1px solid #4a98af;border-radius:8px;padding:8px 11px;min-height:39px;cursor:pointer;font-weight:600}
+.nx-party-loot-requests button:disabled{opacity:.5;cursor:not-allowed}
+.nx-party-loot-create{display:grid;grid-template-columns:minmax(0,2fr) minmax(90px,1fr) auto;gap:8px;align-items:end}
+.nx-party-loot-create label{display:grid;gap:6px;font-size:12px;color:#a6d4e1}
+.nx-party-loot-create select,.nx-party-loot-create input{box-sizing:border-box;width:100%;min-width:0;padding:9px;color:#eafaff;background:#061f2f;border:1px solid #3f7a90;border-radius:7px;min-height:39px}
+.nx-party-loot-queue{display:grid;gap:8px}
+.nx-party-loot-queue>strong{font-size:13px;color:#e2f6ff}
+.nx-party-loot-request{display:grid;gap:8px;border:1px solid #396e81;border-radius:8px;background:#0b384a;padding:10px}
+.nx-party-loot-request>div:first-child{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;color:#e0f7ff;font-size:12px}
+.nx-party-loot-actions{display:flex;gap:8px;flex-wrap:wrap}
+.nx-party-loot-success{color:#bbefdb!important}.nx-party-loot-error{color:#ffd0c9!important}.nx-party-loot-locked{color:#f4d5a5!important}
+@media(max-width:520px){.nx-party-loot-create{grid-template-columns:1fr 1fr}.nx-party-loot-create label:first-child{grid-column:1/-1}.nx-party-loot-create button{grid-column:1/-1}}
