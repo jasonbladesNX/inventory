@@ -141,3 +141,55 @@ Root cause located in `src/Trading.tsx`: the modal redesign referenced the state
 Fix committed to `main`: restore both state declarations, use the Nexus panel for Trading's missing-character fallback, and introduce `src/TradingBoundary.tsx` with a recoverable Retry Trading button. `src/main.tsx` now wraps Trading inside that boundary so Trading errors will no longer destroy the entire Inventory screen. Expanded `scripts/test-trading-ui-consistency.mjs` to assert state declarations and error-boundary wiring. Existing backend RPCs and inventory data were not modified.
 
 Status: source-level checks confirm the missing state and boundary problems are resolved. Browser render and full CI build have not been independently verified. User should reload the live app when the updated frontend is deployed and open Inventory.
+
+## Continuation after Inventory black-screen fix — Phase 12.6 Guarded Character Migration
+
+**Implemented November 13, 2026.** The Inventory black-screen fix was accepted by the user. Development resumed on cross-campaign migration with a conservative **dependency-free** in-place transfer path.
+
+### Implemented
+
+- Added `migrated` completion status, `migrated_at` timestamp and `migrated_by` actor to transfer requests.
+- Added internal `app_private.character_transfer_blockers` which checks live foreign-key dependencies on the character, plus inventory items, containers and wallets linked through the holder.
+- Added `get_character_transfer_migration_check`: role-authorized preflight for source/destination campaign ruleset version and overrides, active target membership, an available target zone, no existing active destination character for the owner, and no unhandled references.
+- Added `finalize_character_campaign_transfer`: destination GM only, explicit confirmed source and destination approvals, row locks and repeated preflight. Eligible dependency-free characters move atomically **in place** (original character ID retained). Empty inventory holder, initiative modifier and character's destination zone assignment are migrated. Request marked `migrated`; player receives a Phase 11 notification.
+- Updated `list_character_transfer_requests` to expose `can_finalize_target` only for eligible role/status, not as a substitute for the migration preflight.
+- Updated `get_character_transfer_readiness` so `migration_available` reflects the guarded preflight instead of always returning false.
+- Updated `src/CharacterTransfers.tsx` with explicit blocker review and a destination-GM-only **Finalize Character Transfer** action, shown only after a successful eligibility check.
+- Added `scripts/test-character-migration-12.mjs` to the existing GitHub Actions build workflow.
+
+### SQL source files
+
+- `docs/sql/phase12_dependency_free_character_migration.sql`
+- `docs/sql/phase12_finalize_target_gm_visibility.sql`
+- `docs/sql/phase12_migration_readiness_alignment.sql`
+
+Changes were applied to the existing Nexus Supabase project `fvapsdirjgknxpqlxljx`. No user character was migrated.
+
+### Rollback-only integration tests
+
+1. Eligible synthetic player character, with matching source/destination rulesets and overrides, valid target membership and zone, empty holder and initiative modifier, moved in-place after both GM approvals. Character ID, name, holder and modifier retained; active target zone assigned.
+2. Existing populated test character with inventory was **blocked**. Finalization rejected; original character/campaign unchanged.
+3. Unapproved finalization rejected.
+4. Unauthenticated/unauthorized account could neither finalize nor view dependency report.
+5. Empty synthetic character with different campaign ruleset overrides rejected.
+6. All synthetic accounts, campaigns, transfer requests and temporary character data rolled back.
+
+**Source checks:** 23/23 passed for authorization gates, runtime blocker scanning, server-side migration, user interface, audit state and CI registration.
+
+### Scope restriction — important
+
+**This does not yet migrate characters with populated inventories, wallets, nested containers, equipped items, crafting, active trade/initiative records, or other unresolved linked resources.** Those cases remain in `approved_pending_migration`, with specific blockers displayed. There is no fallback to destructive deletion, data duplication, or silent ruleset conversion. The destination GM must review and finalize an eligible character; approvals alone never move one.
+
+Next development should design transactional transfer of populated characters with explicit cross-campaign definitions, slots, currencies and recipe mapping; audited source/target conversion; and rollback/undo semantics.
+
+**Beta acceptance checklist**
+- [ ] Create an empty test character whose account belongs to two campaigns with compatible rulesets.
+- [ ] Approve from source GM and destination GM.
+- [ ] Check Transfer Eligibility shows no blockers.
+- [ ] Destination GM finalizes; Player Portal lists character under destination campaign.
+- [ ] Character attributes/initiative and default zone remain valid.
+- [ ] Repeat with inventory, a wallet, equipped items, a crafting job or ruleset mismatch: blockers appear, no finalize action.
+- [ ] Different user cannot finalize or view private transfer details.
+- [ ] Verify production CI build, deployed frontend and mobile behavior.
+
+**Verification caveat:** SQL rollback tests and source checks passed. Full TypeScript build, GitHub Actions run and live frontend/browser deployment were not verified in this run. Do not mark this continuation fully accepted until browser testing.
