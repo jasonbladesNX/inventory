@@ -130,3 +130,7 @@ Prior Phase 15 party creation and membership controls were GM-only. Players coul
 All data changes from these tests rolled back. The 10 permanent QA characters remain intact.
 
 **Verification outstanding:** Full TypeScript/Vite build and live mobile/browser acceptance still need checking. GM Dashboard party management remains available. Future enhancements may include invitations/approval requests for private parties and leadership permissions; default parties are open to any active character in that campaign.
+
+### Player-party bank refresh integration
+- `BankPanel` now accepts an optional `revision` counter, and its data-refresh effect reacts to membership changes. `src/main.tsx` passes the existing inventory revision; player create/join/leave advances that counter so newly available party banks appear promptly.
+- No live GitHub Actions run was available for the latest commit during this check; browser and build acceptance remain outstanding.
