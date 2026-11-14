@@ -6,7 +6,7 @@ import './party-loot-requests.css';
 
 type Item={id:string;name:string;quantity:number};
 type Request={id:string;item_id:string;item_name:string;character_id:string;character_name:string;quantity:number;status:string;can_cancel:boolean;can_review:boolean;created_at:string};
-type Snapshot={can_review:boolean;is_running:boolean;items:Item[];requests:Request[]};
+type Snapshot={can_review:boolean;is_running:boolean;withdrawal_policy?:'direct'|'approval';items:Item[];requests:Request[]};
 export default function PartyLootRequests({db,party,character=null,onTransfer}:{
  db:SupabaseClient;party:string;character?:string|null;onTransfer?:()=>Promise<void>;
 }){
@@ -53,7 +53,9 @@ export default function PartyLootRequests({db,party,character=null,onTransfer}:{
    <h4><PackageCheck size={18}/> Party Loot Requests</h4>
    <button type="button" aria-label="Refresh loot requests" disabled={busy} onClick={()=>void refresh().catch(e=>setError(inventoryErrorMessage(e)))}><RefreshCw size={16}/></button>
   </div>
-  <p>Request shared-bank items for your character. The current party leader or GM can approve distribution between game sessions.</p>
+  <p>{data?.withdrawal_policy==='approval'
+   ?'GM policy: direct party-bank withdrawals are disabled. Request items here for leader or GM approval.'
+   :'Request items for leader/GM approval, or withdraw directly from the party bank between sessions.'}</p>
   {data?.is_running&&<p className="nx-party-loot-locked">Game in progress — requesting and approving loot is locked.</p>}
   {loading?<p>Loading requests…</p>:<>
    {canRequest&&<form onSubmit={e=>{e.preventDefault();void act('request')}} className="nx-party-loot-create">
