@@ -223,3 +223,9 @@ No test data persisted. Existing QA campaigns and shared banks remain unchanged.
 Test with two player accounts/characters assigned to one party: creator sees **Configure Party → Transfer Party Leadership**. Select another member; confirm; original creator no longer sees Configure Party. Sign in as the recipient and refresh; recipient sees the leader badge and Configure Party and can change settings. Confirm an ordinary member cannot transfer, and transfer is disabled after GM starts the game.
 
 **Build/deployment note:** Server-side rollback tests and source assertions completed. Full TypeScript build, GitHub Actions run and live browser verification not independently confirmed.
+
+
+### Final party leadership hardening
+- `docs/sql/phase15_party_leadership_pending_request_guard.sql`: Former leaders who authored pending invitations cannot cancel them after transferring leadership. Only current leader, GM, or the requester of their own join request may cancel. The pending-request UI applies the same permissions.
+- Additional rollback test passed: old leader's attempt to cancel an outstanding invite was rejected; new leader successfully cancelled it.
+- `scripts/test-phase15-party-leadership.mjs` now checks this privilege revocation.
