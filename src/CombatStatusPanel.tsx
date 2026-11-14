@@ -143,7 +143,7 @@ export default function CombatStatusPanel({db,character,inventoryVersion,busy,hp
               onClick={()=>void submitNew()}>Apply {kind==='condition'?'Condition':'Effect'}</button>
           </>}
           {dialog==='advance'&&!tempOpen&&<>
-            <p>Advance time for this character. Campaign-wide GM time advancement will be added later.</p>
+            <p>Advance this character’s personal effect timers only. Zone turns are advanced by the GM in Campaign Zones & Time. Character time and zone turns are separate.</p>
             <label>Amount <input type="number" min="1" max="100000" step="1" value={advanceAmount} onChange={e=>setAdvanceAmount(e.target.value)}/></label>
             <label>Unit <select value={advanceUnit} onChange={e=>setAdvanceUnit(e.target.value)}>{units.filter(u=>u!=='permanent').map(unit=><option key={unit} value={unit}>{unit}</option>)}</select></label>
             <button type="button" disabled={disabled||!validInt(advanceAmount,1,100000)} onClick={()=>{void (async()=>{if(await act('advance',{amount:Number(advanceAmount),unit:advanceUnit}))setDialog(null)})()}}>Advance Time</button>
