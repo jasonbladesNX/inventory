@@ -1,4 +1,4 @@
-import React,{useCallback,useEffect,useState} from 'react';
+import React,{useCallback,useEffect,useRef,useState} from 'react';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {inventoryErrorMessage} from './inventoryErrors';
 import './zone-initiative.css';
@@ -10,11 +10,16 @@ export default function CharacterInitiative({db,campaign,character,onChanged}:{d
  const [saving,setSaving]=useState(false);
  const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
+ const previous=useRef<{character:string;zone:string;round:number}|null>(null);
  const refresh=useCallback(async()=>{
   const {data,error:e}=await db.rpc('get_character_initiative',{p_character:character});
   if(e)throw e;
-  setInfo(data as Initiative);
- },[db,character]);
+  const next=data as Initiative;
+  const old=previous.current;
+  previous.current={character,zone:next.zone_id,round:next.round};
+  setInfo(next);
+  if(old&&old.character===character&&old.zone===next.zone_id&&old.round!==next.round)void onChanged?.().catch(()=>{});
+ },[db,character,onChanged]);
  useEffect(()=>{setInfo(null);setError('');void refresh().catch(e=>setError(inventoryErrorMessage(e)))},[refresh]);
  useEffect(()=>{const timer=window.setInterval(()=>void refresh().catch(()=>{}),15000);return()=>window.clearInterval(timer)},[refresh]);
  useEffect(()=>{if(info){setModifier(String(info.my_modifier));setRoll(info.my_roll==null?'':String(info.my_roll))}},[info?.my_modifier,info?.my_roll,info?.zone_id]);
