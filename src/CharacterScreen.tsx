@@ -1004,7 +1004,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
       <div className="mv-ornament" aria-hidden="true">✦</div>
     </div>
     {tab==='character'&&<div className="mv-panels">
-      <CharacterZoneStatus db={db} character={character}/>
+      <CharacterZoneStatus db={db} character={character} onZoneChanged={onInventoryChanged}/>
       {useSuccess&&<p className="mv-use-success" role="status">{useSuccess}</p>}
       <div className="mv-character-action-row">
       <CombatStatusPanel db={db} character={character} inventoryVersion={inventoryVersion}
