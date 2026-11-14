@@ -75,3 +75,13 @@ Rollback-only database tests passed:
 
 ## Continuation
 Preserve the existing four bottom gameplay tabs (Character, Inventory, Shop, Craft), campaign zone/time model, and all security controls. The next phase should be decided following acceptance, rather than assumed complete.
+
+## Phase 11 follow-up fix — GM messages missing from player panel (Nov 13, 2026)
+Observed: live campaign had two GM whole-campaign announcements, each with only sender's message copy, zero notification rows and no distinct non-owner player account. The owner also owns an active player character; the announcement sender-exclusion logic therefore caused the player's notification inbox to appear empty. Additionally, the Character screen presented messages in a collapsed details panel.
+Changes:
+- `docs/sql/phase11_dual_role_announcement_notification_fix.sql`: when a GM sender also owns an active player character in the announcement audience, create the sender's **player-facing** announcement notification. Applies to whole-campaign and zone audience only; private DM recipient restrictions unchanged.
+- Backfilled the two existing qualifying announcements, with uniqueness/deduplication; verified 2 live messages and 2 restored notifications.
+- `src/CharacterScreen.tsx`: expand Messages & Notifications section by default.
+- `scripts/test-campaign-comms-11.mjs`: regression coverage for sender notification, backfill and panel visibility.
+Verification: rollback-only test passed for sending an announcement as the GM, receiving a new notification on the same account, reading it from `get_campaign_notification_state` and reading the message via `list_campaign_messages`. No new test records persisted.
+Caveat: production TypeScript build, CI status and Cloudflare frontend deployment have not been independently confirmed.
