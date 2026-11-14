@@ -19,6 +19,13 @@ export default function BankPanel({db,campaign,character,items,onInventoryChange
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState('');
  const [error,setError]=useState('');
+ const [history,setHistory]=useState<{bank_id:string;actor_character:string;action:string;kind:string;item_name:string;amount:number;occurred_at:string}[]>([]);
+ async function loadHistory(){
+  const {data,error:e}=await db.rpc('list_character_bank_activity',{p_character:character,p_limit:30});
+  if(e){setError(inventoryErrorMessage(e));return}
+  setHistory((data??[]) as typeof history);
+ }
+
  const refresh=useCallback(async()=>{
   const {data,error:e}=await db.rpc('list_character_banks',{p_character:character});
   if(e)throw e;
@@ -83,6 +90,14 @@ export default function BankPanel({db,campaign,character,items,onInventoryChange
    </div>
   </form>}
   <BankTreasury db={db} character={character} banks={state.banks} running={state.is_running} onChanged={async()=>{await onInventoryChanged();await refresh()}}/>
+  <details className="nx-bank-history"><summary>Bank Activity History</summary>
+   <button type="button" onClick={()=>void loadHistory()}>Load Recent Activity</button>
+   {history.length===0?<p>No bank activity loaded.</p>:
+    <ul>{history.map((entry,index)=><li key={index}>
+      {entry.actor_character} {entry.action==='deposit'?'deposited':'withdrew'} {entry.amount} {entry.item_name}
+      {' · '}{new Date(entry.occurred_at).toLocaleString()}
+    </li>)}</ul>}
+  </details>
   <p className="nx-bank-note">Banked items are not carried, cannot be equipped or consumed, and do not participate in normal player trades. Both bank types are available between sessions only.</p>
   {message&&<p className="nx-bank-message" role="status">{message}</p>}
   {error&&<p className="nx-bank-error" role="alert">{error}</p>}
