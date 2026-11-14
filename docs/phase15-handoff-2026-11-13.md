@@ -76,3 +76,30 @@ All synthetic accounts, inventory and currency movements, party memberships, ses
 - Verify iPhone layout and that Inventory cannot black-screen from bank UI errors.
 
 **Handoff stop point:** User-requested personal and party banks implemented with server locks; Phase 15 full broader party gameplay roadmap remains incomplete.
+
+
+## Phase 15 continued gameplay implementation (supersedes older pending roadmap descriptions above)
+- `docs/sql/phase15_party_gameplay.sql`: GM-only `manage_party_gameplay` atomic party zone move, short/long rest through existing per-character RPC, and per-user private party GM message; `get_party_gameplay_summary` returns party roster, zones, HP, initiative summary.
+- `docs/sql/phase15_party_loot_distribution.sql`: GM distribution of party bank loot to active party members between sessions; full/partial item stacks, audited and locked while game active.
+- `docs/sql/phase15_party_bank_loot_preview.sql`: GM gameplay summary includes party bank item entries for distribution UI.
+- `src/GmPartyGameplay.tsx`: GM party roster/initiative, zone moves, group rest, private message, bank loot distribution, all with confirmation and error feedback.
+- `src/main.tsx`: GM Party Gameplay panel.
+- `docs/sql/phase15_bank_wallet_hardening.sql`: bank wallet balance and holder reassignment blocked while game active, even by alternate mutations.
+- `docs/sql/phase15_bank_activity.sql`: item/currency history of personal/accessible party banks, rolled-back query tested. `src/BankPanel.tsx` shows bank activity.
+- Phase 15 source regression suite expanded, registered in GitHub Actions.
+
+Additional rollback SQL tests passed: two-party-player currency deposit/withdraw; wallet old/new and holder reassignment attempts blocked in active session; GM party zone moves, group long rest, direct party messaging; GM party-bank loot preview/distribution blocked during game and allowed between games.
+
+### Updated milestone status
+- 15.1 Party creation & membership: core implemented.
+- 15.2 Shared items, individual home bank and party bank: implemented with server-side between-session restrictions; nested containers intentionally restricted.
+- 15.3 Personal & party currency bank/treasury: implemented.
+- 15.4 Group loot distribution: GM party-bank distribution implemented; advanced claim/award policies not implemented.
+- 15.5 Party item/currency transfers: shared-bank transfers implemented; dedicated multi-party trade negotiation not implemented.
+- 15.6 Party movement across zones: GM bulk party move implemented.
+- 15.7 Party initiative: GM party initiative **summary** implemented, not a separate coordinated party initiative engine.
+- 15.8 Group rests: implemented through existing character rest rules and atomic transaction, no separate group downtime planning.
+- 15.9 Party GM messages: private messages sent to party participants; player-to-party chat not implemented.
+- 15.10 Database rollback tests and source regressions implemented. **Live Cloudflare UI/browser checks and actual full TypeScript build remain unverified.**
+
+**The personal and party banks are the core delivered user-requested additions.** Remaining optional party-gameplay expansions should be separately scoped and browser-tested. No existing campaign data was mutated by rollback tests.
