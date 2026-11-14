@@ -21,7 +21,7 @@ returns jsonb language plpgsql security definer set search_path='' as $$
 declare existing public.campaigns%rowtype;actor uuid:=auth.uid();v_settings jsonb;k text;v jsonb;
 begin
  if actor is null or not app_private.is_gm(p_campaign) then raise exception 'GM access required' using errcode='42501';end if;
- if jsonb_typeof(p_changes)<>'object' or jsonb_object_length(p_changes)=0 or length(p_changes::text)>1000
+ if jsonb_typeof(p_changes)<>'object' or p_changes='{}'::jsonb or length(p_changes::text)>1000
  then raise exception 'Invalid changes' using errcode='22023';end if;
  select * into existing from public.campaigns where id=p_campaign for update;
  if existing.id is null or existing.status<>'active' then raise exception 'Campaign is not active' using errcode='22023';end if;
