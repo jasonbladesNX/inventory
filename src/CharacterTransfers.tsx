@@ -14,7 +14,14 @@ export default function CharacterTransfers({db,campaign,characters=[]}:{db:Supab
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
- const refresh=useCallback(async()=>{
+ const [readiness,setReadiness]=useState<Record<string,{ruleset_match:boolean;dependencies:Record<string,number>;migration_available:boolean;guidance:string}>>({});
+ async function checkReadiness(id:string){
+  setError('');
+  const {data,error:e}=await db.rpc('get_character_transfer_readiness',{p_request:id});
+  if(e){setError(inventoryErrorMessage(e));return}
+  setReadiness(current=>({...current,[id]:data}));
+ }
+  const refresh=useCallback(async()=>{
   const {data,error:e}=await db.rpc('list_character_transfer_requests',{p_campaign:campaign??null});
   if(e)throw e;setRequests((data??[]) as Transfer[]);
  },[db,campaign]);
@@ -59,7 +66,15 @@ export default function CharacterTransfers({db,campaign,characters=[]}:{db:Supab
    <span>Status: {t.status.replaceAll('_',' ')}</span>
    {t.reason&&<p>{t.reason}</p>}
    <small>{new Date(t.created_at).toLocaleString()}</small>
-   <div className="nx-transfer-actions">
+   {t.status==='approved_pending_migration'&&<div className="nx-transfer-readiness">
+    <button type="button" disabled={busy} onClick={()=>void checkReadiness(t.id)}>Review Migration Dependencies</button>
+    {readiness[t.id]&&<>
+     <p>Rulesets: {readiness[t.id].ruleset_match?'Match':'Different'}</p>
+     <p>{readiness[t.id].guidance}</p>
+     <ul>{Object.entries(readiness[t.id].dependencies).map(([key,count])=><li key={key}>{key.replaceAll('_',' ')}: {count}</li>)}</ul>
+    </>}
+   </div>}
+      <div className="nx-transfer-actions">
     {t.can_approve_source&&<button type="button" disabled={busy} onClick={()=>void mutate('approve_source',t.id)}>Approve as Source GM</button>}
     {t.can_approve_target&&<button type="button" disabled={busy} onClick={()=>void mutate('approve_target',t.id)}>Approve as Destination GM</button>}
     {(t.can_approve_source||t.can_approve_target)&&<button type="button" disabled={busy} onClick={()=>void mutate('reject',t.id)}>Reject</button>}
