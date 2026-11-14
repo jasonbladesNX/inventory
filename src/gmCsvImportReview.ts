@@ -17,10 +17,17 @@ const ref=(row:CsvImportRow,id:string,name:string)=>low(row[id])||low(row[name])
 const duplicateMessages=/^Duplicate (item name in CSV|merchant\/item\/currency listing in CSV|container\/item reward|container\/currency reward)/;
 
 const keyFor=(row:CsvImportRow,kind:CsvImportKind)=>{
-  if(kind==='catalog')return 'catalog:'+low(row.item_name);
-  if(kind==='character-inventory')return 'character:'+ref(row,'character_id','character_name')+'|item:'+ref(row,'item_definition_id','item_name');
-  if(kind==='shop-stock')return 'merchant:'+ref(row,'merchant_id','merchant_name')+'|item:'+ref(row,'item_definition_id','item_name')+'|currency:'+low(row.currency_code);
-  return 'container:'+ref(row,'container_id','container_name')+'|'+low(row.entry_type)+':'+(low(row.entry_type)==='currency'?low(row.currency_code):ref(row,'item_definition_id','item_name'));
+  if(kind==='catalog')return JSON.stringify(['catalog',low(row.item_name)]);
+  if(kind==='character-inventory')return JSON.stringify([
+    'character',ref(row,'character_id','character_name'),ref(row,'item_definition_id','item_name')
+  ]);
+  if(kind==='shop-stock')return JSON.stringify([
+    'shop',ref(row,'merchant_id','merchant_name'),ref(row,'item_definition_id','item_name'),low(row.currency_code)
+  ]);
+  return JSON.stringify([
+    'loot',ref(row,'container_id','container_name'),low(row.entry_type),
+    low(row.entry_type)==='currency'?low(row.currency_code):ref(row,'item_definition_id','item_name')
+  ]);
 };
 const labelFor=(row:CsvImportRow,kind:CsvImportKind)=>{
   if(kind==='catalog')return display(row.item_name);
