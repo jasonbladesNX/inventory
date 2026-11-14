@@ -53,6 +53,7 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
   const [duplicateStrategy,setDuplicateStrategy]=useState<CsvDuplicateStrategy>('reject');
   const [serverIssues,setServerIssues]=useState<CsvImportProblem[]>([]);
   const [receipt,setReceipt]=useState<string|null>(null);
+  const [receiptName,setReceiptName]=useState('');
   const [preview,setPreview]=useState<ImportResponse|null>(null);
   const [confirm,setConfirm]=useState(false);
   const [working,setWorking]=useState<'reading'|'preview'|'import'|null>(null);
@@ -81,7 +82,7 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
   const reset=()=>{
     request.current++;
     setFileName('');setRows([]);setProblems([]);setLineNumbers([]);setPreview(null);
-    setDuplicateStrategy('reject');setServerIssues([]);setReceipt(null);
+    setDuplicateStrategy('reject');setServerIssues([]);setReceipt(null);setReceiptName('');
     setConfirm(false);setWorking(null);setError('');setSuccess('');
     if(fileInput.current)fileInput.current.value='';
   };
@@ -178,6 +179,7 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
         kind==='loot-contents'?`${result.new_containers} new loot container(s), ${result.item_rows} item reward row(s), and ${result.currency_rows} currency reward row(s)`:
         `${result.total_units} unit(s) granted across ${result.row_count} row(s)`;
       setSuccess(`Import successful: ${qty}. The batch was committed as one transaction.`);
+      setReceiptName(gmCsvReportName(fileName||'import.csv','receipt'));
       setReceipt(makeGmCsvReport(fileName||'import.csv',kind,
         preview.rows.map((item,i)=>({
           line:review.sourceLines[i]??(i+2),status:'imported' as const,
@@ -271,7 +273,7 @@ export default function GmCsvImports({db,campaign,onImported}:Props){
       {(issues.length>0||review.decisions.length>0||Boolean(error))&&<button type="button"
         className="nx-csv-import-report" onClick={downloadDiagnostics}>Download Validation Report</button>}
       {receipt&&<button type="button" className="nx-csv-import-report"
-        onClick={()=>saveGmCsvReport(receipt,gmCsvReportName('nexus-gm-import','receipt'))}>
+        onClick={()=>saveGmCsvReport(receipt,receiptName||'nexus-gm-import-receipt.csv')}>
         Download Import Receipt
       </button>}
       <button type="button" className="nx-csv-import-clear" disabled={Boolean(working)} onClick={reset}>Clear File</button>
