@@ -1,0 +1,30 @@
+.nx-bank-panel{display:grid;gap:12px;margin:12px 0}
+.nx-bank-heading,.nx-bank-card-heading{display:flex;align-items:center;gap:9px}
+.nx-bank-heading{justify-content:space-between}
+.nx-bank-heading h3{margin:0;display:flex;align-items:center;gap:8px;font:500 19px Georgia,serif;text-transform:uppercase;color:#e4faff}
+.nx-bank-heading svg{color:#71dcf4}.nx-bank-heading p,.nx-bank-note{font-size:11px;color:#a0c3d0;margin:5px 0 0}
+.nx-bank-refresh{display:grid;place-items:center;width:42px;height:42px;border:1px solid #357f95;background:#0b3b4c;border-radius:8px;color:#e6faff}
+.nx-bank-locked{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid #c69f69;background:#46351b6b;border-radius:9px;color:#f5dab4}
+.nx-bank-locked div{display:grid;gap:5px}.nx-bank-locked span{font-size:12px}
+.nx-bank-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:10px}
+.nx-bank-card{border:1px solid #376b7e;border-radius:10px;background:#092736;padding:12px;min-width:0}
+.nx-bank-card-heading{flex-wrap:wrap;color:#d8f5ff}.nx-bank-card-heading svg{color:#73e0f4}
+.nx-bank-card-heading strong{font-size:14px}.nx-bank-card-heading small{color:#96c0ce;margin-left:auto}
+.nx-bank-empty{color:#97bfcf;font-size:12px}
+.nx-bank-items{display:grid;gap:8px;margin-top:12px}
+.nx-bank-item{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid #31576a;padding-top:9px}
+.nx-bank-item>div:first-child{display:grid;gap:4px;min-width:0}
+.nx-bank-item strong{font-size:12px;color:#e0f5ff;overflow-wrap:anywhere}
+.nx-bank-item small{font-size:11px;color:#9ac5d5}
+.nx-bank-item-action{display:flex;gap:5px;align-items:center}
+.nx-bank-item-action input{width:69px;min-width:0!important}
+.nx-bank-panel button:not(.nx-bank-refresh){min-height:40px;padding:8px 11px;border:1px solid #4fc9e1;border-radius:8px;background:#0c5068;color:#e6faff;font-size:12px;font-weight:700}
+.nx-bank-panel button:disabled{opacity:.5;cursor:not-allowed}
+.nx-bank-deposit{display:grid;gap:10px;padding:12px;border:1px solid #326278;border-radius:10px;background:#082635}
+.nx-bank-deposit h4{display:flex;align-items:center;gap:7px;color:#cceefa;margin:0;font:500 16px Georgia,serif}
+.nx-bank-deposit-fields{display:grid;grid-template-columns:1fr 1.3fr 90px auto;gap:8px;align-items:end}
+.nx-bank-deposit-fields label{display:grid;gap:4px;font-size:11px;color:#a7d5e5}
+.nx-bank-deposit-fields input,.nx-bank-deposit-fields select,.nx-bank-item-action input{box-sizing:border-box;width:100%;min-height:40px;padding:7px;border:1px solid #397f98;background:#082638;color:#eafaff;border-radius:8px;margin:0}
+.nx-bank-message{color:#b7f1dd}.nx-bank-error{color:#ffd2ce}
+@media(max-width:650px){.nx-bank-deposit-fields{grid-template-columns:1fr 90px}.nx-bank-deposit-fields label:first-child{grid-column:1/-1}.nx-bank-deposit-fields button{grid-column:1/-1}.nx-bank-item{flex-wrap:wrap}}
+@media(max-width:400px){.nx-bank-card{padding:10px}.nx-bank-item-action{width:100%;justify-content:flex-end}}
