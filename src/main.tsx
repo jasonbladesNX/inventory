@@ -27,6 +27,9 @@ import GmInitiativeManager from './GmInitiativeManager';
 import CampaignComms from './CampaignComms';
 import CharacterTransfers from './CharacterTransfers';
 import GmCampaignAdministration from './GmCampaignAdministration';
+import BankPanel from './BankPanel';
+import FeatureErrorBoundary from './FeatureErrorBoundary';
+import GmSessionPartyManager from './GmSessionPartyManager';
 import './style.css';
 import './app-pages.css';
 
@@ -439,6 +442,7 @@ function App(){
         </div>
         {campaign&&!campaignBusy&&!gmAccess&&<section className="nx-page-card nx-warning"><Shield size={20}/><div><h2>GM permission required</h2><p>Your account doesn't have manager access to this campaign. Select another campaign or use the Player Portal.</p></div></section>}
         {campaign&&gmAccess&&!campaignBusy&&<>
+          <GmDashboardCard key={'party-'+campaign} title="Parties & Game Session"><GmSessionPartyManager db={db!} campaign={campaign} characters={chars}/></GmDashboardCard>
           <GmDashboardCard key={'admin-'+campaign} title="Campaign Administration"><GmCampaignAdministration db={db!} campaign={campaign}/></GmDashboardCard>
           <GmDashboardCard key={'transfers-'+campaign} title="Character Transfer Requests"><CharacterTransfers db={db!} campaign={campaign}/></GmDashboardCard>
           <GmDashboardCard key={'characters-'+campaign} title="Character Management">
@@ -660,6 +664,10 @@ function App(){
           tab={activeTab} onTabChange={setActiveTab}/>
         {activeTab==='inventory'&&<section className="nx-play-extras">
           <ConnectionChecks db={db!} campaign={campaign} character={char}/>
+          <FeatureErrorBoundary key={'bank-'+campaign+':'+char} title="Bank Storage">
+            <BankPanel db={db!} campaign={campaign} character={char} items={items}
+              onInventoryChanged={async()=>{await loadChar(campaign,char)}}/>
+          </FeatureErrorBoundary>
           <TradingBoundary key={'trading-boundary-'+campaign+':'+char} character={char}>
             <Trading key={campaign+':'+char} db={db!} campaign={campaign} character={char} characters={recipients} onInventoryChanged={async()=>{await loadChar(campaign,char)}}/>
           </TradingBoundary>
