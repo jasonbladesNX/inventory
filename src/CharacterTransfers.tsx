@@ -4,7 +4,7 @@ import {inventoryErrorMessage} from './inventoryErrors';
 import './character-transfers.css';
 type Character={character_id:string;character_name:string;campaign_id:string;campaign_name:string};
 type Target={id:string;name:string};
-type Transfer={id:string;character_id:string;character_name:string;source_campaign:string;target_campaign:string;status:string;reason:string;created_at:string;can_approve_source:boolean;can_approve_target:boolean;can_cancel:boolean};
+type Transfer={id:string;character_id:string;character_name:string;source_campaign:string;target_campaign:string;status:string;reason:string;created_at:string;can_approve_source:boolean;can_approve_target:boolean;can_cancel:boolean;can_finalize_target:boolean};
 export default function CharacterTransfers({db,campaign,characters=[]}:{db:SupabaseClient;campaign?:string;characters?:Character[]}){
  const [requests,setRequests]=useState<Transfer[]>([]);
  const [chosen,setChosen]=useState('');
@@ -15,6 +15,26 @@ export default function CharacterTransfers({db,campaign,characters=[]}:{db:Supab
  const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
  const [readiness,setReadiness]=useState<Record<string,{ruleset_match:boolean;dependencies:Record<string,number>;migration_available:boolean;guidance:string}>>({});
+ const [migrationChecks,setMigrationChecks]=useState<Record<string,{can_migrate:boolean;blockers:{type:string;source?:string;count?:number}[];guidance:string}>>({});
+ async function checkMigration(id:string){
+  setError('');
+  const {data,error:e}=await db.rpc('get_character_transfer_migration_check',{p_request:id});
+  if(e){setError(inventoryErrorMessage(e));return}
+  setMigrationChecks(current=>({...current,[id]:data}));
+ }
+ async function finalizeMigration(id:string){
+  if(busy)return;
+  if(!window.confirm('Move this dependency-free character to the destination campaign? This changes the character campaign and cannot be undone through this screen.'))return;
+  setBusy(true);setError('');setNotice('');
+  try{
+   const {error:e}=await db.rpc('finalize_character_campaign_transfer',{p_request:id});
+   if(e)throw e;
+   await refresh();
+   setMigrationChecks(current=>{const next={...current};delete next[id];return next});
+   setNotice('Character successfully transferred to the destination campaign.');
+  }catch(e){setError(inventoryErrorMessage(e))}finally{setBusy(false)}
+ }
+
  async function checkReadiness(id:string){
   setError('');
   const {data,error:e}=await db.rpc('get_character_transfer_readiness',{p_request:id});
@@ -48,7 +68,7 @@ export default function CharacterTransfers({db,campaign,characters=[]}:{db:Supab
   }catch(e){setError(inventoryErrorMessage(e))}finally{setBusy(false)}
  }
  return <section className="nx-transfer" aria-label="Character transfer requests">
-  <p>Move a character between campaigns only after both GMs approve. Approval does not move inventories or ruleset data automatically; safe migration remains a separate step.</p>
+  <p>Character transfers require source and destination GM approval. The destination GM may finalize an eligible dependency-free character after reviewing its migration checks. Populated characters remain blocked until their campaign-linked data can be migrated safely.</p>
   {characters.length>0&&<form className="nx-transfer-form" onSubmit={e=>{e.preventDefault();void mutate('request')}}>
    <label>Character<select required value={chosen} disabled={busy} onChange={e=>setChosen(e.target.value)}>
     <option value="">Choose character</option>{characters.map(c=><option key={c.character_id} value={c.character_id}>{c.character_name} — {c.campaign_name}</option>)}
@@ -73,6 +93,18 @@ export default function CharacterTransfers({db,campaign,characters=[]}:{db:Supab
      <p>{readiness[t.id].guidance}</p>
      <ul>{Object.entries(readiness[t.id].dependencies).map(([key,count])=><li key={key}>{key.replaceAll('_',' ')}: {count}</li>)}</ul>
     </>}
+    <div className="nx-transfer-migration-actions">
+     <button type="button" disabled={busy} onClick={()=>void checkMigration(t.id)}>Check Transfer Eligibility</button>
+     {migrationChecks[t.id]&&<>
+      <p>{migrationChecks[t.id].guidance}</p>
+      {migrationChecks[t.id].blockers.length>0&&<ul>{migrationChecks[t.id].blockers.map((blocker,index)=><li key={index}>
+       {blocker.type.replaceAll('_',' ')}{blocker.source?' — '+blocker.source:''}{blocker.count!=null?' ('+blocker.count+')':''}
+      </li>)}</ul>}
+      {t.can_finalize_target&&migrationChecks[t.id].can_migrate&&<button type="button" disabled={busy} onClick={()=>void finalizeMigration(t.id)}>
+       Finalize Character Transfer
+      </button>}
+     </>}
+    </div>
    </div>}
       <div className="nx-transfer-actions">
     {t.can_approve_source&&<button type="button" disabled={busy} onClick={()=>void mutate('approve_source',t.id)}>Approve as Source GM</button>}
