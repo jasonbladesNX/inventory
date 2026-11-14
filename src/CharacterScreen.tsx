@@ -1008,7 +1008,7 @@ export default function CharacterScreen({db,campaign,campaignName,character,char
     {tab==='character'&&<div className="mv-panels">
       <CharacterZoneStatus db={db} character={character} onZoneChanged={onInventoryChanged}/>
       <CharacterInitiative db={db} campaign={campaign} character={character} onChanged={onInventoryChanged}/>
-      <details className="nx-character-comms"><summary>Messages & Notifications</summary><CampaignComms db={db} campaign={campaign}/></details>
+      <details className="nx-character-comms" open><summary>Messages & Notifications</summary><CampaignComms db={db} campaign={campaign}/></details>
       {useSuccess&&<p className="mv-use-success" role="status">{useSuccess}</p>}
       <div className="mv-character-action-row">
       <CombatStatusPanel db={db} character={character} inventoryVersion={inventoryVersion}
