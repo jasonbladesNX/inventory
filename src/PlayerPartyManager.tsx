@@ -1,6 +1,6 @@
 import React,{useCallback,useEffect,useState} from 'react';
 import type {SupabaseClient} from '@supabase/supabase-js';
-import {Users,Plus,LogIn,LogOut,RefreshCw,Lock} from 'lucide-react';
+import {Users,Plus,LogIn,LogOut,RefreshCw,Lock,Settings} from 'lucide-react';
 import {inventoryErrorMessage} from './inventoryErrors';
 import './player-party.css';
 
@@ -22,6 +22,9 @@ export default function PlayerPartyManager({db,character,campaign,onPartyChanged
  const [requests,setRequests]=useState<PartyRequest[]>([]);
  const [candidates,setCandidates]=useState<{id:string;name:string}[]>([]);
  const [inviteCharacter,setInviteCharacter]=useState('');
+ const [configOpen,setConfigOpen]=useState(false);
+ const [partyDraft,setPartyDraft]=useState('');
+ const [policyDraft,setPolicyDraft]=useState<'open'|'approval'>('open');
 
  const refresh=useCallback(async()=>{
   const [partyResult,requestResult]=await Promise.all([
@@ -89,7 +92,25 @@ export default function PlayerPartyManager({db,character,campaign,onPartyChanged
   }catch(e){setError(inventoryErrorMessage(e))}
   finally{setBusy(false)}
  }
-  const ownParty=state.parties.find(p=>p.id===state.current_party_id);
+  async function saveSettings(party:Party){
+  if(busy||state.is_running||!party.is_organizer)return;
+  setBusy(true);setError('');setNotice('');
+  try{
+   const {error:e}=await db.rpc('configure_party',{p_party:party.id,p_name:partyDraft.trim(),p_policy:policyDraft});
+   if(e)throw e;await refresh();await onPartyChanged?.();
+   setConfigOpen(false);setNotice('Party settings saved.');
+  }catch(e){setError(inventoryErrorMessage(e))}finally{setBusy(false)}
+ }
+ async function kickMember(party:Party,member:PartyMember){
+  if(busy||state.is_running||!party.is_organizer||member.character_id===character)return;
+  if(!window.confirm('Remove '+member.name+'? Their shared-bank access will end, but bank contents remain.'))return;
+  setBusy(true);setError('');setNotice('');
+  try{
+   const {error:e}=await db.rpc('remove_party_member',{p_party:party.id,p_character:member.character_id});
+   if(e)throw e;await refresh();await onPartyChanged?.();setNotice('Member removed.');
+  }catch(e){setError(inventoryErrorMessage(e))}finally{setBusy(false)}
+ }
+ const ownParty=state.parties.find(p=>p.id===state.current_party_id);
  return <section className="mv-panel nx-player-parties" aria-label="Player party management">
   <div className="nx-player-parties-head">
    <div><h3><Users size={20}/> My Party</h3>
@@ -107,6 +128,32 @@ export default function PlayerPartyManager({db,character,campaign,onPartyChanged
      <span key={m.character_id} className={m.character_id===character?'nx-party-self':''}>
       {m.name}{m.character_id===character?' (you)':''}
      </span>)}</div>
+    {ownParty.is_organizer&&<>
+     <button type="button" aria-expanded={configOpen} disabled={busy}
+      onClick={()=>{if(!configOpen){setPartyDraft(ownParty.name);setPolicyDraft(ownParty.join_policy)}setConfigOpen(!configOpen)}}>
+      <Settings size={16}/> Configure Party
+     </button>
+     {configOpen&&<div className="nx-party-action nx-party-settings">
+      <h4>Party Settings</h4>
+      <form className="nx-party-settings-form" onSubmit={e=>{e.preventDefault();void saveSettings(ownParty)}}>
+       <label>Party Name<input required maxLength={100} value={partyDraft}
+        disabled={busy||state.is_running} onChange={e=>setPartyDraft(e.target.value)}/></label>
+       <label>Join Policy<select value={policyDraft} disabled={busy||state.is_running}
+        onChange={e=>setPolicyDraft(e.target.value as 'open'|'approval')}>
+         <option value="open">Open — join immediately</option>
+         <option value="approval">Approval Required — organizer reviews requests</option>
+        </select></label>
+       <button type="submit" disabled={busy||state.is_running||!partyDraft.trim()}>Save Party Settings</button>
+      </form>
+      <h4>Manage Members</h4>
+      {ownParty.members.map(m=><div key={m.character_id} className="nx-party-manage-member">
+       <span>{m.name}{m.character_id===character?' (you)':''}</span>
+       {m.character_id!==character&&<button type="button" disabled={busy||state.is_running}
+        onClick={()=>void kickMember(ownParty,m)}>Remove</button>}
+      </div>)}
+      <p className="nx-party-help">Removing a member revokes shared-bank access without deleting bank contents.</p>
+     </div>}
+    </>}
     <p className="nx-party-help">Join policy: {ownParty.join_policy==='approval'?'Organizer approval':'Open enrollment'}. Your party bank appears in Inventory → Home & Party Banks.</p>
     {ownParty.is_organizer&&<div className="nx-party-action">
       <h4>Invite a Character</h4>
