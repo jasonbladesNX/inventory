@@ -19,6 +19,8 @@ export default function Trading({db,campaign,character,characters,onInventoryCha
  async function act(fn:()=>Promise<void>){setWorking(true);setMessage('');try{await fn();await refresh()}catch(e:any){setMessage(e.message||String(e))}finally{setWorking(false)}}
  const invitation=new URLSearchParams(window.location.search).get('trade');
  const [invitationShown,setInvitationShown]=useState(false);
+ const [composerOpen,setComposerOpen]=useState(false);
+ const [detailTrade,setDetailTrade]=useState<string|null>(null);
  useEffect(()=>{if(!invitation||invitationShown||!loaded)return;const match=trades.find(t=>t.trade_id===invitation);if(match){setDetailTrade(match.trade_id);setMessage('Trade invitation opened. Review the terms before approving.');}else setMessage('Trade invitation not found in this campaign or your account is not authorized to see it.');setInvitationShown(true)},[invitation,trades,invitationShown,loaded]);
  useEffect(()=>{
   if(!composerOpen&&!detailTrade&&!qrTrade)return;
