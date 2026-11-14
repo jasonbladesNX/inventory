@@ -26,6 +26,7 @@ import GmZoneManager from './GmZoneManager';
 import GmInitiativeManager from './GmInitiativeManager';
 import CampaignComms from './CampaignComms';
 import CharacterTransfers from './CharacterTransfers';
+import GmCampaignAdministration from './GmCampaignAdministration';
 import './style.css';
 import './app-pages.css';
 
@@ -59,6 +60,7 @@ function App(){
   const[playerCharacters,setPlayerCharacters]=useState<PlayerCharacter[]>([]);
   const[playerCharactersLoading,setPlayerCharactersLoading]=useState(false);
   const[playerCharactersError,setPlayerCharactersError]=useState('');
+  const[campaignInvitations,setCampaignInvitations]=useState<{campaign_id:string;campaign_name:string}[]>([]);
   const[register,setRegister]=useState(false);
   const[systems,setSystems]=useState<any[]>([]);
   const[campaigns,setCampaigns]=useState<Row[]>([]);
@@ -238,6 +240,16 @@ function App(){
   },[session?.user?.id,page]);
     useEffect(()=>{
     if(page!=='player'||!session||!db)return;
+    let alive=true;
+    void db.rpc('list_my_campaign_invitations').then(({data,error})=>{
+      if(!alive)return;
+      if(error)setPlayerCharactersError(inventoryErrorMessage(error));
+      else setCampaignInvitations((data||[]) as {campaign_id:string;campaign_name:string}[]);
+    });
+    return()=>{alive=false};
+  },[page,session?.user?.id]);
+    useEffect(()=>{
+    if(page!=='player'||!session||!db)return;
     let cancelled=false;
     setPlayerCharactersLoading(true);setPlayerCharactersError('');setPlayerCharacters([]);
     void Promise.resolve(db.rpc('list_my_player_characters')).then(({data,error})=>{
@@ -367,6 +379,21 @@ function App(){
                 Review trade as {person.character_name}
             </button>)}
         </section>}
+        {campaignInvitations.length>0&&<section className="nx-page-card">
+          <h2>Campaign Invitations</h2>
+          {campaignInvitations.map(inv=><div key={inv.campaign_id} className="nx-player-character-card">
+            <strong>{inv.campaign_name}</strong>
+            <button type="button" disabled={busy} onClick={()=>{void run(async()=>{
+              await rpc('respond_to_campaign_invitation',{p_campaign:inv.campaign_id,p_accept:true});
+              setCampaignInvitations(v=>v.filter(i=>i.campaign_id!==inv.campaign_id));
+              await loadCampaigns();
+            })}}>Join Campaign</button>
+            <button type="button" disabled={busy} onClick={()=>{void run(async()=>{
+              await rpc('respond_to_campaign_invitation',{p_campaign:inv.campaign_id,p_accept:false});
+              setCampaignInvitations(v=>v.filter(i=>i.campaign_id!==inv.campaign_id));
+            })}}>Decline</button>
+          </div>)}
+        </section>}
         <div className="nx-player-character-list" aria-label="Your characters">
           {playerCharactersLoading?<p role="status">Loading your characters…</p>:
             playerCharactersError?<p className="nx-character-list-error" role="alert">Unable to load your characters: {playerCharactersError}</p>:
@@ -412,6 +439,7 @@ function App(){
         </div>
         {campaign&&!campaignBusy&&!gmAccess&&<section className="nx-page-card nx-warning"><Shield size={20}/><div><h2>GM permission required</h2><p>Your account doesn't have manager access to this campaign. Select another campaign or use the Player Portal.</p></div></section>}
         {campaign&&gmAccess&&!campaignBusy&&<>
+          <GmDashboardCard key={'admin-'+campaign} title="Campaign Administration"><GmCampaignAdministration db={db!} campaign={campaign}/></GmDashboardCard>
           <GmDashboardCard key={'transfers-'+campaign} title="Character Transfer Requests"><CharacterTransfers db={db!} campaign={campaign}/></GmDashboardCard>
           <GmDashboardCard key={'characters-'+campaign} title="Character Management">
           <section className="nx-page-card nx-gm-tools">
