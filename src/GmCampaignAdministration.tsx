@@ -5,7 +5,7 @@ type Member={member_id:string;user_id:string;display_name:string;role:string;sta
 type Character={id:string;name:string;member_id:string;is_active:boolean};
 type Audit={event_type:string;created_at:string;reason:string};
 type Data={members:Member[];characters:Character[];audit:Audit[]};
-export default function GmCampaignAdministration({db,campaign}:{db:SupabaseClient;campaign:string}){
+export default function GmCampaignAdministration({db,campaign,isOwner=false,campaignStatus='active',onCampaignChanged}:{db:SupabaseClient;campaign:string;isOwner?:boolean;campaignStatus?:string;onCampaignChanged?:()=>Promise<void>}){
  const [data,setData]=useState<Data>({members:[],characters:[],audit:[]});
  const [inviteId,setInviteId]=useState('');
  const [target,setTarget]=useState('');
@@ -32,6 +32,17 @@ export default function GmCampaignAdministration({db,campaign}:{db:SupabaseClien
  }
  return <section className="nx-admin" style={{display:'grid',gap:14}}>
   <p>Invite registered Nexus accounts by email, manage campaign membership, and review the administrative audit history.</p>
+  {isOwner&&<div style={{display:'flex',gap:9,alignItems:'center',flexWrap:'wrap'}}>
+   <strong>Campaign: {campaignStatus}</strong>
+   <button type="button" disabled={busy} onClick={()=>{if(!window.confirm(campaignStatus==='archived'?'Restore this campaign and its previous settings?':'Archive campaign? The Player Portal will hide this campaign and trading/shops will be disabled.'))return;
+    void (async()=>{setBusy(true);setError('');setNotice('');try{
+      const {error:e}=await db.rpc('manage_campaign_lifecycle',{p_campaign:campaign,p_action:campaignStatus==='archived'?'restore':'archive',p_reason:reason});
+      if(e)throw e;await onCampaignChanged?.();await refresh();
+      setNotice('Campaign lifecycle updated.');
+    }catch(e){setError(inventoryErrorMessage(e))}finally{setBusy(false)}})()
+   }}>{campaignStatus==='archived'?'Restore Campaign':'Archive Campaign'}</button>
+  </div>}
+
   <form onSubmit={e=>{e.preventDefault();void (async()=>{
     if(busy)return;setBusy(true);setError('');setNotice('');
     try{const {error:e}=await db.rpc('invite_existing_campaign_user',{p_campaign:campaign,p_email:inviteId});if(e)throw e;
