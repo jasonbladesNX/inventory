@@ -2,6 +2,7 @@ import React,{useCallback,useEffect,useState} from 'react';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {Archive,Lock,Package,RefreshCw,Users} from 'lucide-react';
 import {inventoryErrorMessage} from './inventoryErrors';
+import BankTreasury from './BankTreasury';
 import './bank-panel.css';
 type Stored={id:string;name:string;quantity:number;category:string;identified:boolean};
 type Bank={id:string;type:'personal'|'party';name:string;items:Stored[]};
@@ -81,6 +82,7 @@ export default function BankPanel({db,campaign,character,items,onInventoryChange
     <button disabled={busy||!depositItem||!depositBank} type="submit">Deposit</button>
    </div>
   </form>}
+  <BankTreasury db={db} character={character} banks={state.banks} running={state.is_running} onChanged={async()=>{await onInventoryChanged();await refresh()}}/>
   <p className="nx-bank-note">Banked items are not carried, cannot be equipped or consumed, and do not participate in normal player trades. Both bank types are available between sessions only.</p>
   {message&&<p className="nx-bank-message" role="status">{message}</p>}
   {error&&<p className="nx-bank-error" role="alert">{error}</p>}
