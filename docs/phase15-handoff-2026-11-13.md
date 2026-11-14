@@ -294,3 +294,35 @@ Following browser acceptance of private party messaging, implemented the next pa
 3. GM advances to the next party member; the highlighted acting character updates after refresh (or the next 15-second poll).
 4. Members in different zones appear in separate groupings. Non-members and characters who leave should not access the party board.
 5. Combat controls remain GM-only; Party Messages and bank/session locks continue to work.
+
+
+## Phase 15 continuation — Atomic Batch Party Loot Distribution (November 14, 2026)
+
+Following user browser acceptance of the Party Combat Board, implemented a more capable GM loot allocation workflow on top of the existing single-recipient `distribute_party_bank_loot` RPC. Existing single-item distribution remains supported and unchanged.
+
+### Delivered
+- `docs/sql/phase15_party_batch_loot.sql`: `batch_distribute_party_bank_loot(p_party,p_allocations,p_apply=false)`. Requires campaign GM membership, an active campaign, session not running, valid 1–25 row JSON allocation array, active party recipients with carried inventory, positive quantities, compatible bank-stored items and expected original stock counts. Deterministically locks source item rows, verifies aggregate allocation does not exceed stock, and checks expected quantities so stale previews cannot silently transfer other amounts. In preview mode, returns validated allocation summaries but transfers nothing. In apply mode, calls the existing `distribute_party_bank_loot` within the same PostgreSQL transaction; any row failure aborts the entire batch. Existing activity logging is preserved by reusing the established RPC.
+- `src/GmPartyLootBatch.tsx`, `src/gm-party-loot-batch.css`: responsive GM editor to add/remove up to 25 allocations. Each row selects item, recipient, quantity; displays source stock. "Preview All" validates; only then "Confirm & Distribute All" performs server-side validation again after explicit confirmation. Edits and stock changes invalidate the preview. Successful apply clears allocations and refreshes bank summary.
+- `src/GmPartyGameplay.tsx`: new batch panel below existing Distribute Party Bank Loot action, leaving all GM party mechanics intact.
+- `scripts/test-phase15-party-batch-loot.mjs`: source regression registered with GitHub Actions.
+
+### Database rollback verification (passed)
+1. GM created a temporary party with two active QA characters and a 10-unit stack of test ingredients in its bank, all inside a transaction.
+2. Dry-run returned two validated allocations with no item changes.
+3. Over-allocation of 12 units rejected.
+4. Stale expected-stock count rejected.
+5. Atomic apply distributed 3 to character A, 4 to character B and left 3 in bank; both activity events used existing logging.
+6. Non-GM could not preview or allocate.
+7. Active GM game session blocked distribution.
+8. All test allocations/items/party records rolled back, preserving the user's permanent test data.
+9. Source-level integration verification: 15/15 checks passed.
+
+### Browser acceptance
+- GM Dashboard → Party Gameplay → select party → **Batch Party Loot Distribution**.
+- Add two allocations for the same banked stack to two different party members. Preview and confirm. Verify both recipient inventories and remaining party-bank quantity.
+- Preview once, then change an allocation: the old confirmation should disappear.
+- Preview, have another user change bank stock, then attempt to confirm. The stale allocation must fail without moving any inventory.
+- Start Game: preview/apply must be denied at the database layer; ending game restores access.
+- Previous single-item Distribute Loot, Party Messages, and Party Combat Board should continue to work.
+
+**Limitations:** No automatic fair-share/need-before-greed policy or player voting yet. This is GM-directed distribution of eligible top-level bank items, not nested containers, equipment-bound items or reserved items. A full TypeScript/Vite build, GitHub Actions execution, deployment and browser acceptance were not independently verified.
