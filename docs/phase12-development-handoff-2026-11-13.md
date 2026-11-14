@@ -134,3 +134,10 @@ Changes on `main`:
 Verification: 21/21 integration/source assertions passed, including settlement guard preservation, approval RPCs, QR safety, modal wiring, mobile breakpoints, and CI registration. **No confirmed production build, browser screenshot validation, or iPhone device test** at this point.
 
 Beta acceptance follow-up: review the compact list on the Inventory tab; open New Trade; compose items and currency; open existing trade details; test Approve, Counteroffer, QR sharing, Settle Trade after both approvals, cancellation, and iPhone layout. The server-side atomic trade safeguards are unchanged.
+
+## Emergency correction — Inventory black screen after Trading redesign
+Root cause located in `src/Trading.tsx`: the modal redesign referenced the state values `composerOpen` and `detailTrade` inside effects and rendering, but their `useState` declarations had been omitted. Opening Inventory mounted Trading, causing a render-time JavaScript ReferenceError and a blank/black screen.
+
+Fix committed to `main`: restore both state declarations, use the Nexus panel for Trading's missing-character fallback, and introduce `src/TradingBoundary.tsx` with a recoverable Retry Trading button. `src/main.tsx` now wraps Trading inside that boundary so Trading errors will no longer destroy the entire Inventory screen. Expanded `scripts/test-trading-ui-consistency.mjs` to assert state declarations and error-boundary wiring. Existing backend RPCs and inventory data were not modified.
+
+Status: source-level checks confirm the missing state and boundary problems are resolved. Browser render and full CI build have not been independently verified. User should reload the live app when the updated frontend is deployed and open Inventory.
